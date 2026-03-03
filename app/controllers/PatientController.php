@@ -7,6 +7,7 @@ namespace modules\controllers;
 use DateTime;
 use assets\includes\Database;
 use modules\models\repositories\ConsultationRepository;
+use modules\models\repositories\CustomGroupRepository;
 use modules\models\repositories\PatientRepository;
 use modules\models\repositories\UserRepository;
 use modules\models\entities\Consultation;
@@ -109,6 +110,17 @@ class PatientController
         [$processedMetrics, $userLayout] = $this->loadMonitoringData($userId, $patientId);
         $chartTypes = $this->monitorModel->getAllChartTypes();
 
+        $customGroupRepo = new CustomGroupRepository($this->pdo);
+        $rawGroups = $customGroupRepo->getGroupsByUser($userId);
+        $customGroups = [];
+        foreach ($rawGroups as $group) {
+            $customGroups[] = [
+                'id' => (int) $group['id'],
+                'name' => (string) $group['name'],
+                'indicator_ids' => $customGroupRepo->getIndicatorsByGroup((int) $group['id']),
+            ];
+        }
+
         /** @var array<int, \modules\models\entities\Consultation> $pastCons */
         $pastCons = array_values($pastConsultations);
         /** @var array<int, \modules\models\entities\Consultation> $futCons */
@@ -121,7 +133,8 @@ class PatientController
             $processedMetrics,
             $patientData,
             $chartTypes,
-            $userLayout
+            $userLayout,
+            $customGroups
         );
         $view->show();
     }

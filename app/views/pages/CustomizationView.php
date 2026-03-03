@@ -65,7 +65,7 @@ final class CustomizationView
                     <section class="dm-customize">
                         <div class="dm-customize-header">
                             <div>
-                                <h1>Personnaliser le tableau de bord</h1>
+                                <h1>Personnaliser le tableau de bord<   /h1>
                                 <p>Déplacez, redimensionnez et masquez les widgets.</p>
                             </div>
                             <div class="dm-customize-actions">

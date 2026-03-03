@@ -42,17 +42,13 @@ document.addEventListener('DOMContentLoaded', () => {
     if (filterBtns.length > 0) {
         filterBtns.forEach(btn => {
             btn.addEventListener('click', () => {
-                // Remove active class for all buttons
                 filterBtns.forEach(b => b.classList.remove('active'));
-
-                // Add active class to clicked button
                 btn.classList.add('active');
 
                 const filterValue = btn.getAttribute('data-filter');
                 const cards = document.querySelectorAll('.card');
 
                 cards.forEach(card => {
-                    // Save original grid positions if not saved yet
                     if (!card.hasAttribute('data-orig-grid-col')) {
                         card.setAttribute('data-orig-grid-col', card.style.gridColumn || 'auto');
                         card.setAttribute('data-orig-grid-row', card.style.gridRow || 'auto');
@@ -61,24 +57,32 @@ document.addEventListener('DOMContentLoaded', () => {
                     const origCol = card.getAttribute('data-orig-grid-col');
                     const origRow = card.getAttribute('data-orig-grid-row');
 
+                    const getAutoSpan = (styleStr) => {
+                        if (!styleStr || styleStr === 'auto') return 'auto';
+                        const parts = styleStr.split('/');
+                        if (parts.length > 1) return 'auto / ' + parts[1].trim();
+                        return 'auto';
+                    };
+
                     if (filterValue === 'all') {
                         card.style.display = '';
-                        // Restore original positions
                         card.style.gridColumn = origCol;
                         card.style.gridRow = origRow;
+                    } else if (filterValue === 'custom_group') {
+                        const indicatorsRaw = btn.getAttribute('data-group-indicators') || '';
+                        const groupIds = indicatorsRaw.split(',').map(s => s.trim()).filter(Boolean);
+                        const cardParamId = card.getAttribute('data-parameter-id') || '';
+                        if (groupIds.includes(cardParamId)) {
+                            card.style.display = '';
+                            card.style.gridColumn = getAutoSpan(origCol);
+                            card.style.gridRow = getAutoSpan(origRow);
+                        } else {
+                            card.style.display = 'none';
+                        }
                     } else {
                         const cardCategory = card.getAttribute('data-category');
                         if (cardCategory === filterValue) {
                             card.style.display = '';
-                            // Change position to auto but keep spans so they flow sequentially
-                            const getAutoSpan = (styleStr) => {
-                                if (!styleStr || styleStr === 'auto') return 'auto';
-                                const parts = styleStr.split('/');
-                                if (parts.length > 1) {
-                                    return 'auto / ' + parts[1].trim();
-                                }
-                                return 'auto';
-                            };
                             card.style.gridColumn = getAutoSpan(origCol);
                             card.style.gridRow = getAutoSpan(origRow);
                         } else {

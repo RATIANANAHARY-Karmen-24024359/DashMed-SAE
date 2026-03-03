@@ -94,6 +94,8 @@ function resolveRoute(string $path): array
         return ['modules\\controllers\\UserController', 'profile'];
     if ($segments[0] === 'customization')
         return ['modules\\controllers\\UserController', 'customization'];
+    if ($segments[0] === 'custom_group')
+        return ['modules\\controllers\\UserController', 'customGroup'];
 
     if ($segments[0] === 'sysadmin')
         return ['modules\\controllers\\AdminController', 'panel'];

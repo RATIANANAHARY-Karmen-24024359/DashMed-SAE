@@ -14,6 +14,8 @@ DROP VIEW IF EXISTS `view_patient_indicator_status`;
 DROP VIEW IF EXISTS `view_latest_patient_data`;
 
 -- Drops (tables)
+DROP TABLE IF EXISTS `custom_group_indicators`;
+DROP TABLE IF EXISTS `custom_groups`;
 DROP TABLE IF EXISTS `consultations`;
 DROP TABLE IF EXISTS `user_parameter_order`;
 DROP TABLE IF EXISTS `user_parameter_chart_pref`;
@@ -138,6 +140,36 @@ CREATE TABLE `consultations` (
                                  CONSTRAINT `fk_consultations_user`
                                      FOREIGN KEY (`id_user`) REFERENCES `users` (`id_user`)
                                          ON DELETE RESTRICT ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Table custom_groups
+CREATE TABLE `custom_groups` (
+                                 `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+                                 `name` VARCHAR(100) NOT NULL,
+                                 `user_id` INT UNSIGNED NOT NULL,
+                                 `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+                                 PRIMARY KEY (`id`),
+
+                                 CONSTRAINT `fk_custom_groups_user`
+                                     FOREIGN KEY (`user_id`) REFERENCES `users` (`id_user`)
+                                         ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Table custom_group_indicators
+CREATE TABLE `custom_group_indicators` (
+                                           `group_id` INT UNSIGNED NOT NULL,
+                                           `indicator_id` VARCHAR(50) NOT NULL,
+
+                                           PRIMARY KEY (`group_id`, `indicator_id`),
+
+                                           CONSTRAINT `fk_cgi_group`
+                                               FOREIGN KEY (`group_id`) REFERENCES `custom_groups` (`id`)
+                                                   ON DELETE CASCADE ON UPDATE CASCADE,
+
+                                           CONSTRAINT `fk_cgi_indicator`
+                                               FOREIGN KEY (`indicator_id`) REFERENCES `parameter_reference` (`parameter_id`)
+                                                   ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- Ordre d’affichage des indicateurs par utilisateur

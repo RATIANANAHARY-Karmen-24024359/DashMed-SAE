@@ -40,6 +40,9 @@ class DashboardView
     /** @var array<string, mixed> User layout preferences */
     private array $userLayout;
 
+    /** @var array<int, array{id: int, name: string, indicator_ids: array<int, string>}> Custom groups */
+    private array $customGroups;
+
     /**
      * Constructor.
      *
@@ -55,6 +58,7 @@ class DashboardView
      * @param array<string, mixed> $patientData Patient info
      * @param array<string, mixed> $chartTypes Visualizations
      * @param array<string, mixed> $userLayout Layout prefs
+     * @param array<int, array{id: int, name: string, indicator_ids: array<int, string>}> $customGroups Custom groups
      */
     public function __construct(
         array $consultationsPassees = [],
@@ -63,7 +67,8 @@ class DashboardView
         array $patientMetrics = [],
         array $patientData = [],
         array $chartTypes = [],
-        array $userLayout = []
+        array $userLayout = [],
+        array $customGroups = []
     ) {
         $this->consultationsPassees = $consultationsPassees;
         $this->consultationsFutures = $consultationsFutures;
@@ -72,6 +77,7 @@ class DashboardView
         $this->patientData = $patientData;
         $this->chartTypes = $chartTypes;
         $this->userLayout = $userLayout;
+        $this->customGroups = $customGroups;
     }
 
     /**
@@ -197,14 +203,24 @@ class DashboardView
                     sort($uniqueCategories);
                     ?>
 
-                    <?php if (!empty($uniqueCategories)) : ?>
+                    <?php if (!empty($uniqueCategories)): ?>
                         <div class="category-filters">
                             <button class="category-filter-btn active" data-filter="all">Toutes</button>
-                            <?php foreach ($uniqueCategories as $cat) : ?>
+                            <?php foreach ($uniqueCategories as $cat): ?>
                                 <button class="category-filter-btn" data-filter="<?= htmlspecialchars($cat, ENT_QUOTES, 'UTF-8') ?>">
                                     <?= htmlspecialchars($cat, ENT_QUOTES, 'UTF-8') ?>
                                 </button>
                             <?php endforeach; ?>
+                            <?php if (!empty($this->customGroups)): ?>
+                                <div class="category-vert-separator"></div>
+                                <?php foreach ($this->customGroups as $cg): ?>
+                                    <button class="category-filter-btn category-filter-btn--custom" data-filter="custom_group"
+                                        data-group-id="<?= (int) $cg['id'] ?>"
+                                        data-group-indicators="<?= htmlspecialchars(implode(',', $cg['indicator_ids']), ENT_QUOTES, 'UTF-8') ?>">
+                                        <?= htmlspecialchars($cg['name'], ENT_QUOTES, 'UTF-8') ?>
+                                    </button>
+                                <?php endforeach; ?>
+                            <?php endif; ?>
                         </div>
                     <?php endif; ?>
 
@@ -230,7 +246,7 @@ class DashboardView
                     }
                     ?>
 
-                    <?php if (!empty($priorityMetrics)) : ?>
+                    <?php if (!empty($priorityMetrics)): ?>
                         <?php
                         $criticalCount = 0;
                         $warningCount = 0;
@@ -254,8 +270,7 @@ class DashboardView
                         ?>
                         <section class="critical-zone" id="priority-zone">
                             <div class="critical-zone-header">
-                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                     stroke-width="2"
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                                     stroke-linecap="round" stroke-linejoin="round">
                                     <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2
                                         2 0 0 0-3.42 0z" />
@@ -264,11 +279,11 @@ class DashboardView
                                 </svg>
                                 <h2>Alertes prioritaires</h2>
                                 <div class="alert-badges">
-                                    <?php if ($criticalCount > 0) : ?>
+                                    <?php if ($criticalCount > 0): ?>
                                         <span class="alert-badge alert-badge--critical"><?= $criticalCount ?>
                                             critique<?= $criticalCount > 1 ? 's' : '' ?></span>
                                     <?php endif; ?>
-                                    <?php if ($warningCount > 0) : ?>
+                                    <?php if ($warningCount > 0): ?>
                                         <span class="alert-badge alert-badge--warning"><?= $warningCount ?>
                                             alerte<?= $warningCount > 1 ? 's' : '' ?></span>
                                     <?php endif; ?>
@@ -363,8 +378,8 @@ class DashboardView
                             <option value="" <?= $current === null ? 'selected' : '' ?>>
                                 -- Sélectionnez une chambre --
                             </option>
-                            <?php if (!empty($this->rooms)) : ?>
-                                <?php foreach ($this->rooms as $s) :
+                            <?php if (!empty($this->rooms)): ?>
+                                <?php foreach ($this->rooms as $s):
                                     $room_id = (int) $s['room_id'];
                                     if ($room_id <= 0) {
                                         continue;
@@ -405,11 +420,11 @@ class DashboardView
                             $this->consultationsFutures
                         );
 
-                        if (!empty($toutesConsultations)) :
+                        if (!empty($toutesConsultations)):
                             $consultationsAffichees = $toutesConsultations;
                             ?>
                             <section class="evenement" id="consultation-list">
-                                <?php foreach ($consultationsAffichees as $consultation) :
+                                <?php foreach ($consultationsAffichees as $consultation):
                                     $dateStr = (string) $consultation->getDate();
                                     try {
                                         $dateObj = new \DateTime($dateStr);
@@ -441,12 +456,12 @@ class DashboardView
                                         <div class="evenement-content">
                                             <div class="date-container <?php if ($isPast) {
                                                 echo 'has-tooltip';
-                                                                       } ?>" <?php if ($isPast) {
-                      echo 'data-tooltip="Consultation déjà effectuée"';
-                                                                       } ?>>
+                                            } ?>" <?php if ($isPast) {
+                                                 echo 'data-tooltip="Consultation déjà effectuée"';
+                                             } ?>>
                                                 <span class="date">
                                                     <?php echo htmlspecialchars($this->formatDate($dateStr)); ?></span>
-                                                <?php if ($isPast) :
+                                                <?php if ($isPast):
                                                     ?><span class="status-dot"></span><?php
                                                 endif; ?>
                                             </div>
@@ -456,7 +471,7 @@ class DashboardView
                                     </a>
                                 <?php endforeach; ?>
                             </section>
-                        <?php else : ?>
+                        <?php else: ?>
                             <p>Aucune consultation</p>
                         <?php endif; ?>
 
@@ -484,8 +499,7 @@ class DashboardView
                 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
                 <script src="https://cdn.jsdelivr.net/npm/moment@2.30.1/moment.min.js"></script>
                 <script src="https://cdn.jsdelivr.net/npm/moment@2.30.1/locale/fr.js"></script>
-                <script
-                    src="https://cdn.jsdelivr.net/npm/chartjs-adapter-moment@1.0.1/dist/chartjs-adapter-moment.min.js">
+                <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-moment@1.0.1/dist/chartjs-adapter-moment.min.js">
                 </script>
                 <script src="https://cdn.jsdelivr.net/npm/hammerjs@2.0.8"></script>
                 <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1/dist/chartjs-plugin-zoom.min.js">
