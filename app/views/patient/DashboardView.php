@@ -207,7 +207,7 @@ class DashboardView
                         ?>
                     </section>
                 </section>
-                <button id="aside-restore-btn" onclick="toggleDesktopAside()" title="Afficher le menu">
+                <button id="aside-restore-btn" onclick="toggleDesktopAside()" title="Afficher / Masquer le menu">
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <path d="M15 18l-6-6 6-6" />
                     </svg>
@@ -265,12 +265,6 @@ class DashboardView
                             <div class="pi-header">
                                 <h1><?= $firstName . ' ' . $lastName ?></h1>
                                 <span class="pi-age"><?= $age ?></span>
-                                <button class="aside-collapse-btn" onclick="toggleDesktopAside()" title="Masquer le menu">
-                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                        stroke-width="2">
-                                        <path d="M9 18l6-6-6-6" />
-                                    </svg>
-                                </button>
                             </div>
                             <p class="pi-cause"><?= $admissionCause ?></p>
 
