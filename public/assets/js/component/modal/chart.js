@@ -704,7 +704,7 @@ async function updatePanelChart(panelId, chartId, title) {
         if (canvas) canvas.style.opacity = '0.5';
 
         try {
-            const fetchLimit = 5000;
+            const fetchLimit = 0;
             const dateParam = targetDate ? `&date=${encodeURIComponent(targetDate)}` : '';
             const res = await fetch(`/api_history?param=${encodeURIComponent(paramId)}&limit=${fetchLimit}${dateParam}`);
             if (!res.ok) throw new Error('Fetch failed');
