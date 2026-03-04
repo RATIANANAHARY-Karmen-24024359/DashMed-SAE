@@ -1,4 +1,5 @@
 const finiteVals = (arr) => (arr ?? []).map(item => item && typeof item === 'object' && item.y !== undefined ? item.y : item).map(Number).filter(Number.isFinite);
+const historyCache = {}; // Client-side cache for history API calls
 
 function generateChartData(rawData, visibleSpanMs) {
     if (!rawData || !rawData.length) return { labels: [], data: [], points: [] };
@@ -704,12 +705,21 @@ async function updatePanelChart(panelId, chartId, title) {
         if (canvas) canvas.style.opacity = '0.5';
 
         try {
+            // fetchLimit=0 triggers server-side streaming LTTB (fetching all history)
             const fetchLimit = 0;
             const dateParam = targetDate ? `&date=${encodeURIComponent(targetDate)}` : '';
-            const res = await fetch(`/api_history?param=${encodeURIComponent(paramId)}&limit=${fetchLimit}${dateParam}`);
-            if (!res.ok) throw new Error('Fetch failed');
-            const dataArr = await res.json();
-            if (dataArr.error) throw new Error(dataArr.error);
+            const cacheKey = `${paramId}-${fetchLimit}-${targetDate || 'now'}`;
+
+            let dataArr;
+            if (historyCache[cacheKey]) {
+                dataArr = historyCache[cacheKey]; // Return from client memory cache
+            } else {
+                const res = await fetch(`/api_history?param=${encodeURIComponent(paramId)}&limit=${fetchLimit}${dateParam}`);
+                if (!res.ok) throw new Error('Fetch failed');
+                dataArr = await res.json();
+                if (dataArr.error) throw new Error(dataArr.error);
+                historyCache[cacheKey] = dataArr; // Commit to client memory cache
+            }
 
             if (dataArr.length === 0) {
                 if (canvas) canvas.style.display = 'none';
