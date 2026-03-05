@@ -5,8 +5,16 @@ const CLOSE_ICON = `
         <path d="M6 18L18 6M6 6l12 12"/>
     </svg>`;
 
+const CLOCK_ICON = `
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+        <circle cx="12" cy="12" r="10"/>
+        <polyline points="12 6 12 12 16 14"/>
+    </svg>`;
+
 function scrollToCard(parameterId) {
     const panel = document.querySelector(`[data-param-id="${parameterId}"]`);
+    let found = false;
+
     if (panel) {
         const slug = panel.closest('[id^="detail-"]')?.id?.replace('detail-', '');
         if (slug) {
@@ -15,15 +23,37 @@ function scrollToCard(parameterId) {
                 card.scrollIntoView({ behavior: 'smooth', block: 'center' });
                 card.classList.add('card--highlight');
                 setTimeout(() => card.classList.remove('card--highlight'), 2000);
-                return;
+                found = true;
             }
         }
     }
-    const cardByParam = document.querySelector(`.card[data-detail-id*="${parameterId}"]`);
-    if (cardByParam) {
-        cardByParam.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        cardByParam.classList.add('card--highlight');
-        setTimeout(() => cardByParam.classList.remove('card--highlight'), 2000);
+
+    if (!found) {
+        const cardByParam = document.querySelector(`.card[data-detail-id*="${parameterId}"]`);
+        if (cardByParam) {
+            cardByParam.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            cardByParam.classList.add('card--highlight');
+            setTimeout(() => cardByParam.classList.remove('card--highlight'), 2000);
+            found = true;
+        }
+    }
+
+    if (!found) {
+        const currentUrl = new URL(window.location.href);
+        const isMonitoring = currentUrl.pathname.includes('/monitoring') ||
+            currentUrl.searchParams.get('page') === 'monitoring';
+
+        if (!isMonitoring) {
+            const monitoringUrl = new URL(window.location.href);
+            monitoringUrl.searchParams.set('page', 'monitoring');
+            monitoringUrl.searchParams.set('highlight', parameterId);
+
+            if (monitoringUrl.pathname.endsWith('/dashboard')) {
+                monitoringUrl.pathname = monitoringUrl.pathname.replace(/\/dashboard$/, '/monitoring');
+            }
+
+            window.location.href = monitoringUrl.toString();
+        }
     }
 }
 
@@ -34,9 +64,14 @@ if (_audioCtx.state === 'suspended') {
 
 const DashMedGlobalAlerts = (function () {
     const API_URL = 'api-alerts.php';
-    const CHECK_INTERVAL = 300000;
+    const CHECK_INTERVAL = 5000;
     let displayedIds = new Set();
     let activeCriticalToasts = new Map();
+
+    function getNotificationTimeout() {
+        const saved = localStorage.getItem('dashmed_notif_timeout');
+        return saved ? parseInt(saved, 10) : 20000;
+    }
 
     const esc = s => {
         const d = document.createElement('div');
@@ -56,19 +91,34 @@ const DashMedGlobalAlerts = (function () {
             unit,
             threshType: threshMatch?.[1] || '',
             threshVal: threshMatch?.[2] || '',
-            threshUnit: threshMatch?.[3]?.trim() || unit
+            threshUnit: threshMatch?.[3]?.trim() || unit,
+            timestamp: a.timestamp
         };
     }
 
     function buildToastHTML(a, type, timeout) {
-        const { param, val, unit, threshType, threshVal, threshUnit } = parseAlertData(a);
+        const { param, timestamp } = parseAlertData(a);
         const hasCard = !!a.parameterId;
+
+        let t = new Date();
+        if (timestamp) {
+            if (typeof timestamp === 'string') {
+                t = new Date(timestamp.replace(' ', 'T'));
+            } else {
+                t = new Date(timestamp);
+            }
+            if (isNaN(t.getTime())) t = new Date();
+        }
+
+        const heures = String(t.getHours()).padStart(2, '0');
+        const minutes = String(t.getMinutes()).padStart(2, '0');
+        const timeStr = `${heures}H${minutes}`;
+        const msg = `DEPASSEMENT DE ${param.toUpperCase()} À ${timeStr}.`;
+
         return `
             <div class="medical-alert ${type} ${hasCard ? 'medical-alert--clickable' : ''}" ${hasCard ? `data-param-id="${esc(String(a.parameterId))}"` : ''}>
                 <div class="medical-alert-body">
-                    <div class="medical-alert-param">${esc(param)}</div>
-                    <div class="medical-alert-value">${val}<span class="unit">${esc(unit)}</span></div>
-                    <div class="medical-alert-threshold">Seuil ${threshType} attendu : <strong>${threshVal} ${esc(threshUnit)}</strong></div>
+                    <div class="medical-alert-param">${esc(msg)}</div>
                 </div>
                 <button class="medical-alert-close" data-close>${CLOSE_ICON}</button>
                 <div class="medical-alert-progress"><div class="medical-alert-progress-bar" style="animation-duration:${timeout}ms"></div></div>
@@ -105,8 +155,9 @@ const DashMedGlobalAlerts = (function () {
     });
 
     function showWarningToast(a) {
+        const timeout = getNotificationTimeout();
         iziToast.warning({
-            ...baseToastOpts(buildToastHTML(a, 'warning', 20000), 20000),
+            ...baseToastOpts(buildToastHTML(a, 'warning', timeout), timeout),
             onOpening: (_, t) => {
                 t.querySelector('[data-close]')?.addEventListener('click', () => iziToast.hide({}, t));
                 t.querySelector('.medical-alert--clickable')?.addEventListener('click', (e) => {
@@ -119,15 +170,17 @@ const DashMedGlobalAlerts = (function () {
     }
 
     function showInfoToast(a) {
-        iziToast.info({ ...baseToastOpts(buildInfoToastHTML(a, 20000), 20000) });
+        const timeout = getNotificationTimeout();
+        iziToast.info({ ...baseToastOpts(buildInfoToastHTML(a, timeout), timeout) });
     }
 
     function showCriticalToast(a) {
         const id = getAlertId(a);
         if (activeCriticalToasts.has(id)) return;
 
+        const timeout = getNotificationTimeout() * 1.5;
         const opts = {
-            ...baseToastOpts(buildToastHTML(a, 'critical', 40000), 40000),
+            ...baseToastOpts(buildToastHTML(a, 'critical', timeout), timeout),
             onOpening: (_, t) => {
                 activeCriticalToasts.set(id, t);
                 t.querySelector('[data-close]')?.addEventListener('click', () => {
@@ -158,7 +211,7 @@ const DashMedGlobalAlerts = (function () {
     }
 
     function getAlertId(a) {
-        return `${a.parameterId}_${a.value || a.rdvTime || ''}`;
+        return `${a.parameterId}_${a.type || a.rdvTime || ''}`;
     }
 
     function playAlertSound(type) {
@@ -183,16 +236,9 @@ const DashMedGlobalAlerts = (function () {
     function showAlert(a) {
         if (localStorage.getItem('dashmed_dnd') === 'true') return;
         if (!a?.type) return;
-        const id = getAlertId(a);
-        if (displayedIds.has(id)) return;
-        if (typeof NotifHistory !== 'undefined' && NotifHistory.isInHistory(id)) {
-            displayedIds.add(id);
-            return;
-        }
-        displayedIds.add(id);
-        if (typeof NotifHistory !== 'undefined') NotifHistory.add(a);
 
         playAlertSound(a.type);
+        if (typeof NotifHistory !== 'undefined') NotifHistory.add(a);
 
         if (a.type === 'error') showCriticalToast(a);
         else if (a.type === 'info') showInfoToast(a);
@@ -217,12 +263,90 @@ const DashMedGlobalAlerts = (function () {
         } catch { return []; }
     }
 
+    const ACTIVE_STATES_KEY = 'dashmed_active_states_by_room';
+
+    function getCurrentRoom() {
+        const urlRoom = new URLSearchParams(location.search).get('room');
+        if (urlRoom) return urlRoom;
+        const cookieMatch = document.cookie.match(/room_id=(\d+)/);
+        return cookieMatch ? cookieMatch[1] : null;
+    }
+
+    function getActiveStates() {
+        const room = getCurrentRoom() || 'global';
+        const all = JSON.parse(localStorage.getItem(ACTIVE_STATES_KEY) || '{}');
+        return all[room] || {};
+    }
+
+    function saveActiveStates(states) {
+        const room = getCurrentRoom() || 'global';
+        const all = JSON.parse(localStorage.getItem(ACTIVE_STATES_KEY) || '{}');
+        all[room] = states;
+        localStorage.setItem(ACTIVE_STATES_KEY, JSON.stringify(all));
+    }
+
     async function check() {
-        (await fetchAlerts()).forEach((a, i) => setTimeout(() => showAlert(a), i * 600));
+        if (localStorage.getItem('dashmed_dnd') === 'true') return;
+
+        const alerts = await fetchAlerts();
+        const activeStates = getActiveStates();
+        const newStates = {};
+        const toShow = [];
+
+        alerts.forEach(a => {
+            if (a.type === 'info') {
+                const id = getAlertId(a);
+                if (!displayedIds.has(id)) {
+                    displayedIds.add(id);
+                    toShow.push(a);
+                }
+            } else {
+                const paramId = String(a.parameterId);
+                const type = a.type;
+                newStates[paramId] = type;
+
+                if (activeStates[paramId] !== type) {
+                    toShow.push(a);
+                }
+            }
+        });
+
+        saveActiveStates(newStates);
+
+        toShow.forEach((a, i) => setTimeout(() => showAlert(a), i * 600));
     }
 
     function init() {
         if (typeof iziToast === 'undefined') return;
+
+        const params = new URLSearchParams(window.location.search);
+        const highlight = params.get('highlight');
+        if (highlight) {
+            setTimeout(() => {
+                const panel = document.querySelector(`[data-param-id="${highlight}"]`);
+                if (panel) {
+                    const slug = panel.closest('[id^="detail-"]')?.id?.replace('detail-', '');
+                    if (slug) {
+                        const card = document.querySelector(`[data-slug="${slug}"]`);
+                        if (card) {
+                            card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                            card.click();
+                        }
+                    }
+                } else {
+                    const cardByParam = document.querySelector(`.card[data-detail-id*="${highlight}"]`);
+                    if (cardByParam) {
+                        cardByParam.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        cardByParam.click();
+                    }
+                }
+                // Cleanup URL
+                const url = new URL(window.location.href);
+                url.searchParams.delete('highlight');
+                window.history.replaceState({}, '', url.toString());
+            }, 800);
+        }
+
         setTimeout(check, 1500);
         setInterval(check, CHECK_INTERVAL);
     }
@@ -282,13 +406,6 @@ const NotifHistory = (function () {
         updateBadge();
     }
 
-    function isInHistory(alertId) {
-        const h = getHistory();
-        return h.some(n => {
-            const nId = `${n.parameterId}_${n.value || n.rdvTime || ''}`;
-            return nId === alertId;
-        });
-    }
 
     function updateBadge() {
         const btn = document.querySelector('.action-btn[aria-label="Notifications"]');
@@ -361,6 +478,18 @@ const NotifHistory = (function () {
                             <input type="range" class="notif-volume-slider" min="0" max="100" value="${currentVol}" orient="vertical">
                         </div>
                     </div>
+                    <div class="notif-time-container">
+                        <button class="notif-time-btn" title="Durée des notifications">
+                            ${CLOCK_ICON}
+                        </button>
+                        <div class="notif-time-selector-wrapper">
+                            <button class="notif-time-option" data-time="5000">5 secondes</button>
+                            <button class="notif-time-option" data-time="10000">10 secondes</button>
+                            <button class="notif-time-option" data-time="20000">20 secondes</button>
+                            <button class="notif-time-option" data-time="40000">40 secondes</button>
+                            <button class="notif-time-option" data-time="60000">1 minute</button>
+                        </div>
+                    </div>
                     <button class="notif-panel-close">${CLOSE_ICON}</button>
                 </div>
             </div>
@@ -422,6 +551,34 @@ const NotifHistory = (function () {
             updateVolumeIcon(val);
         });
 
+        const timeBtn = panel.querySelector('.notif-time-btn');
+        const timeWrapper = panel.querySelector('.notif-time-selector-wrapper');
+        const timeOptions = panel.querySelectorAll('.notif-time-option');
+
+        const savedTime = localStorage.getItem('dashmed_notif_timeout') || '20000';
+        timeOptions.forEach(opt => {
+            if (opt.dataset.time === savedTime) opt.classList.add('active');
+            opt.addEventListener('click', () => {
+                const val = opt.dataset.time;
+                localStorage.setItem('dashmed_notif_timeout', val);
+                timeOptions.forEach(o => o.classList.remove('active'));
+                opt.classList.add('active');
+                timeWrapper.classList.remove('active');
+            });
+        });
+
+        timeBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            timeWrapper.classList.toggle('active');
+            volWrapper.classList.remove('active');
+        });
+
+        document.addEventListener('click', (e) => {
+            if (!timeWrapper.contains(e.target) && !timeBtn.contains(e.target)) {
+                timeWrapper.classList.remove('active');
+            }
+        });
+
         const dndToggle = panel.querySelector('#notif-panel-dnd');
         dndToggle.checked = getDndState();
         dndToggle.addEventListener('change', e => setDndState(e.target.checked));
@@ -442,16 +599,33 @@ const NotifHistory = (function () {
         body.innerHTML = h.map((n, i) => {
             const type = n.type === 'error' ? 'critical' : (n.type === 'info' ? 'info' : 'warning');
             const param = n.title?.split('—')[1]?.trim() || n.rdvTime || 'Alerte';
-            const valMatch = n.message?.match(/(\d+[,.]?\d*)\s*([^\(]+)/);
-            const val = valMatch ? `${valMatch[1]} ${valMatch[2].trim()}` : (n.rdvTime || '—');
             const hasCard = type !== 'info' && !!n.parameterId;
+
+            let messageStr = '';
+            if (type === 'info') {
+                messageStr = n.rdvTime || '—';
+            } else {
+                let t = new Date();
+                if (n.timestamp) {
+                    if (typeof n.timestamp === 'string') {
+                        t = new Date(n.timestamp.replace(' ', 'T'));
+                    } else {
+                        t = new Date(n.timestamp);
+                    }
+                    if (isNaN(t.getTime())) t = new Date();
+                }
+                const heures = String(t.getHours()).padStart(2, '0');
+                const minutes = String(t.getMinutes()).padStart(2, '0');
+                messageStr = `DEPASSEMENT DE ${param.toUpperCase()} À ${heures}H${minutes}.`;
+            }
+
             return `<div class="notif-item ${type} ${hasCard ? 'notif-item--clickable' : ''}" data-idx="${i}" ${hasCard ? `data-param-id="${n.parameterId}"` : ''}>
                 <div class="notif-item-content">
                     <div class="notif-item-header">
-                        <div class="notif-item-param">${param}</div>
+                        <div class="notif-item-param">${type === 'info' ? param : messageStr}</div>
                         <div class="notif-item-time">${formatTime(n.timestamp)}</div>
                     </div>
-                    <div class="notif-item-value">${val}</div>
+                    ${type === 'info' ? `<div class="notif-item-value">${messageStr}</div>` : ''}
                 </div>
                 <button class="notif-item-delete">${CLOSE_ICON}</button>
             </div>`;
@@ -479,11 +653,13 @@ const NotifHistory = (function () {
         if (dndToggle) dndToggle.checked = getDndState();
         overlay?.classList.add('active');
         panel?.classList.add('active');
+        document.body.classList.add('notif-panel-open');
     };
 
     const close = () => {
         overlay?.classList.remove('active');
         panel?.classList.remove('active');
+        document.body.classList.remove('notif-panel-open');
     };
 
     function init() {

@@ -236,6 +236,110 @@
     gap: 0.5rem;
 }
 
+.notif-time-container {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.notif-time-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: #94a3b8;
+    line-height: 0;
+    padding: 0.25rem;
+    transition: color 0.15s ease;
+}
+
+.notif-time-btn:hover {
+    color: #0f172a;
+}
+
+.notif-time-btn svg {
+    width: 1rem;
+    height: 1rem;
+    stroke-width: 2.5;
+}
+
+.notif-time-selector-wrapper {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    transform: translateY(10px);
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 0.5rem;
+    padding: 0.5rem;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.2s ease, transform 0.2s ease, visibility 0.2s ease;
+    z-index: 10;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 100px;
+}
+
+.notif-time-selector-wrapper.active {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(5px);
+}
+
+.notif-time-option {
+    background: none;
+    border: none;
+    padding: 0.4rem 0.6rem;
+    text-align: left;
+    font-size: 0.75rem;
+    color: #475569;
+    cursor: pointer;
+    border-radius: 0.375rem;
+    transition: background 0.15s ease, color 0.15s ease;
+    white-space: nowrap;
+}
+
+.notif-time-option:hover {
+    background: #f1f5f9;
+    color: #0f172a;
+}
+
+.notif-time-option.active {
+    background: #eff6ff;
+    color: #2563eb;
+    font-weight: 600;
+}
+
+[data-theme="dark"] .notif-time-btn {
+    color: var(--text-muted);
+}
+
+[data-theme="dark"] .notif-time-btn:hover {
+    color: var(--text-main);
+}
+
+[data-theme="dark"] .notif-time-selector-wrapper {
+    background: var(--bg-surface);
+    border-color: var(--border-subtle);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+
+[data-theme="dark"] .notif-time-option {
+    color: var(--text-muted);
+}
+
+[data-theme="dark"] .notif-time-option:hover {
+    background: var(--bg-surface-hover);
+    color: var(--text-main);
+}
+
+[data-theme="dark"] .notif-time-option.active {
+    background: rgba(37, 99, 235, 0.15);
+    color: #60a5fa;
+}
+
 .notif-volume-container {
     position: relative;
     display: flex;
@@ -490,6 +594,14 @@
 
 body.aside-collapsed .iziToast-wrapper-topRight {
     right: 0 !important;
+}
+
+body.notif-panel-open .iziToast-wrapper-topRight {
+    right: calc(var(--aside-w, 0px) + 350px) !important;
+}
+
+body.aside-collapsed.notif-panel-open .iziToast-wrapper-topRight {
+    right: 350px !important;
 }
 
 @media (max-width: 780px) {
@@ -837,20 +949,50 @@ body.aside-collapsed .iziToast-wrapper-topRight {
 
 @keyframes card-highlight {
     0% {
-        box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.6);
+        box-shadow: 0 0 0 0 rgba(79, 70, 229, 0), 0 0 0 0 rgba(255, 255, 255, 0);
+        transform: scale(1);
+        z-index: 100;
     }
 
-    50% {
-        box-shadow: 0 0 0 8px rgba(99, 102, 241, 0.15);
+    15% {
+        box-shadow: 0 0 0 12px rgba(79, 70, 229, 0.4), 0 0 40px 20px rgba(79, 70, 229, 0.2);
+        transform: scale(1.05);
+        z-index: 100;
+        outline: 2px solid rgba(255, 255, 255, 0.8);
     }
 
     100% {
-        box-shadow: 0 0 0 0 rgba(99, 102, 241, 0);
+        box-shadow: 0 0 0 0 rgba(79, 70, 229, 0), 0 0 0 0 rgba(79, 70, 229, 0);
+        transform: scale(1);
+        z-index: 1;
     }
 }
 
 .card--highlight {
-    animation: card-highlight 2s ease forwards;
+    animation: card-highlight 2.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    position: relative;
+}
+
+.card--alert.card--highlight {
+    animation-name: card-highlight-red;
+}
+
+@keyframes card-highlight-red {
+    0% {
+        box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
+        transform: scale(1);
+    }
+
+    15% {
+        box-shadow: 0 0 0 12px rgba(239, 68, 68, 0.4), 0 0 40px 20px rgba(239, 68, 68, 0.2);
+        transform: scale(1.05);
+        outline: 2px solid rgba(255, 255, 255, 0.8);
+    }
+
+    100% {
+        box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
+        transform: scale(1);
+    }
 }
 
 .medical-alert {
