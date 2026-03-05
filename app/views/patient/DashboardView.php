@@ -177,6 +177,32 @@ class DashboardView
 
                     <input type="hidden" id="context-patient-id" value="<?= $patientIdAttr ?>">
 
+                    <?php
+                    $uniqueCategories = [];
+                    foreach ($this->patientMetrics as $pmRow) {
+                        $cat = '';
+                        if ($pmRow instanceof \modules\models\entities\Indicator) {
+                            $cat = $pmRow->getCategory();
+                        } else {
+                            $cat = $pmRow['category'] ?? ($pmRow['view_data']['category'] ?? '');
+                        }
+                        if ($cat && !in_array($cat, $uniqueCategories, true)) {
+                            $uniqueCategories[] = $cat;
+                        }
+                    }
+                    sort($uniqueCategories);
+                    ?>
+
+                    <?php if (!empty($uniqueCategories)) : ?>
+                        <div class="category-filters">
+                            <button class="category-filter-btn active" data-filter="all">Toutes</button>
+                            <?php foreach ($uniqueCategories as $cat) : ?>
+                                <button class="category-filter-btn" data-filter="<?= htmlspecialchars($cat, ENT_QUOTES, 'UTF-8') ?>">
+                                    <?= htmlspecialchars($cat, ENT_QUOTES, 'UTF-8') ?>
+                                </button>
+                            <?php endforeach; ?>
+                        </div>
+                    <?php endif; ?>
 
                     <section class="skeleton-wrapper skeleton-monitoring-grid" id="skeleton-cards" data-skeleton-for="real-cards"
                         data-skeleton-auto data-skeleton-delay="400">

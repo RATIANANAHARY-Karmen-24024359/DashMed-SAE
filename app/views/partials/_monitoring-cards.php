@@ -39,8 +39,8 @@ $escape = static fn(mixed $value): string => htmlspecialchars(
     'UTF-8'
 );
 
-if (!empty($patientMetrics)): ?>
-    <?php foreach ($patientMetrics as $row): ?>
+if (!empty($patientMetrics)) : ?>
+    <?php foreach ($patientMetrics as $row) : ?>
         <?php
         if ($row instanceof \modules\models\entities\Indicator) {
             $viewData = $row->getViewData();
@@ -58,6 +58,7 @@ if (!empty($patientMetrics)): ?>
         $chartType = $viewData['chart_type'] ?? 'line';
         $stateClass = $viewData['card_class'] ?? '';
         $critFlag = (bool) ($viewData['is_crit_flag'] ?? false);
+        $category = $viewData['category'] ?? '';
         $chartConfig = $viewData['chart_config'] ?? '{}';
         $chartAllowed = $viewData['chart_allowed'] ?? ['line'];
 
@@ -111,6 +112,7 @@ if (!empty($patientMetrics)): ?>
         ?>
 
         <article id="indicateurs-<?= $escape($parameterId) ?>" class="card <?= $stateClass ?>" style="<?= $gridStyle ?>"
+                 data-category="<?= $escape($category) ?>"
             data-display="<?= $escape($display) ?>" data-value="<?= $escape($value) ?>" data-crit="<?= $critFlag ? '1' : '0' ?>"
             data-detail-id="<?= $escape($idPrefix . 'detail-' . $slug) ?>" data-slug="<?= $escape($slug) ?>"
             data-chart='<?= $escape($chartConfig) ?>' data-chart-type="<?= $escape($chartType) ?>"
