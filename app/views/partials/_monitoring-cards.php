@@ -165,6 +165,11 @@ if (!empty($patientMetrics)): ?>
             </div>
 
             <div class="card-spark" style="display: <?= $isValueOnly ? 'none' : 'block' ?>;">
+                <div class="card-chart-loader">
+                    <svg class="card-chart-loader-svg" viewBox="0 0 50 50">
+                        <circle class="card-chart-loader-circle" cx="25" cy="25" r="20" />
+                    </svg>
+                </div>
                 <canvas class="card-spark-canvas" id="<?= $escape($idPrefix) ?>spark-<?= $escape($slug) ?>">
                 </canvas>
                 <div class="no-data-placeholder" style="display:none;">
@@ -351,6 +356,11 @@ viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-li
                 </div>
 
                 <div class="canvas-wrapper">
+                    <div class="modal-chart-loader">
+                        <svg class="modal-chart-loader-svg" viewBox="0 0 50 50">
+                            <circle class="modal-chart-loader-circle" cx="25" cy="25" r="20" />
+                        </svg>
+                    </div>
                     <canvas class="modal-chart chart-<?= $escape($chartType) ?>" tabindex="-1"
                         data-id="<?= $escape($idPrefix) ?>modal-chart-<?= $escape($slug) ?>"></canvas>
                 </div>

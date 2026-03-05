@@ -408,110 +408,242 @@ class DashboardView
                         }
 
                         const mainGrid = document.getElementById('real-cards');
+                        if (!mainGrid) return;
 
-                        if (mainGrid) {
-                            Array.from(mainGrid.querySelectorAll('.card')).forEach(card => {
-                                if (!card.classList.contains('card--alert') && !card.classList.contains('card--warn')) {
-                                    card.style.display = 'none';
-                                } else {
-                                    card.style.display = 'flex';
-                                }
-                            });
+                        mainGrid.style.gridAutoFlow = 'dense';
+
+                        const HIDE_DELAY = 20000;
+                        const cardStates = new WeakMap();
+
+                        function getSpan(card) {
+                            const colMatch = (card.style.gridColumn || '').match(/span\s+(\d+)/);
+                            const rowMatch = (card.style.gridRow || '').match(/span\s+(\d+)/);
+                            return {
+                                w: colMatch ? parseInt(colMatch[1]) : 4,
+                                h: rowMatch ? parseInt(rowMatch[1]) : 3
+                            };
                         }
 
-                        setInterval(() => {
-                            if (!mainGrid) return;
+                        function getAlertColor(card) {
+                            if (card.classList.contains('card--alert')) return 'var(--color-critical, #EF4444)';
+                            if (card.classList.contains('card--warn')) return 'var(--color-warning, #F59E0B)';
+                            return 'var(--text-muted, #999)';
+                        }
 
-                            Array.from(mainGrid.querySelectorAll('.card')).forEach(card => {
-                                const isAlert = card.classList.contains('card--alert') || card.classList.contains('card--warn');
+                        function buildSVG(card, color, remaining) {
+                            const old = card.querySelector('.hide-progress');
+                            if (old) old.remove();
 
-                                if (card.dataset.animating === 'true') return;
+                            const w = card.offsetWidth;
+                            const h = card.offsetHeight;
+                            if (w === 0 || h === 0) return null;
+                            const inset = 2;
+                            const rx = 12;
+                            const rw = w - inset * 2;
+                            const rh = h - inset * 2;
+                            const perimeter = 2 * (rw + rh) - (8 - 2 * Math.PI) * rx;
 
-                                if (isAlert) {
-                                    if (card.hideTimeout) {
-                                        clearTimeout(card.hideTimeout);
-                                        card.hideTimeout = null;
+                            const ns = 'http://www.w3.org/2000/svg';
+                            const svg = document.createElementNS(ns, 'svg');
+                            svg.classList.add('hide-progress');
+                            svg.setAttribute('viewBox', `0 0 ${w} ${h}`);
+                            svg.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;z-index:10;pointer-events:none;';
 
-                                        const prog = card.querySelector('.hide-progress');
-                                        if (prog) prog.remove();
-                                    }
+                            const rect = document.createElementNS(ns, 'rect');
+                            rect.setAttribute('x', inset);
+                            rect.setAttribute('y', inset);
+                            rect.setAttribute('width', rw);
+                            rect.setAttribute('height', rh);
+                            rect.setAttribute('rx', rx);
+                            rect.setAttribute('ry', rx);
+                            rect.setAttribute('fill', 'none');
+                            rect.setAttribute('stroke', color);
+                            rect.setAttribute('stroke-width', '3');
+                            rect.setAttribute('stroke-dasharray', perimeter);
+                            rect.setAttribute('stroke-dashoffset', '0');
+                            rect.setAttribute('stroke-linecap', 'round');
 
-                                    if (card.style.display === 'none') {
-                                        card.dataset.animating = 'true';
-                                        card.style.display = 'flex';
+                            svg.appendChild(rect);
+                            card.style.position = 'relative';
+                            card.appendChild(svg);
 
-                                        const animation = card.animate([
-                                            { transform: 'scale(0.5) translateY(20px)', opacity: 0 },
-                                            { transform: 'scale(1) translateY(0)', opacity: 1 }
-                                        ], {
-                                            duration: 400,
-                                            easing: 'cubic-bezier(0.34, 1.56, 0.64, 1)'
-                                        });
+                            const safeRemaining = Math.max(1, remaining);
+                            const startOffset = ((HIDE_DELAY - safeRemaining) / HIDE_DELAY) * perimeter;
 
-                                        animation.onfinish = () => { card.dataset.animating = 'false'; };
-                                    }
-                                } else if (!isAlert && card.style.display !== 'none' && !card.hideTimeout) {
-                                    card.style.position = 'relative';
-                                    const w = card.offsetWidth;
-                                    const h = card.offsetHeight;
-                                    const inset = 2;
-                                    const rx = 12;
-                                    const rw = w - inset * 2;
-                                    const rh = h - inset * 2;
-                                    const perimeter = 2 * (rw + rh) - (8 - 2 * Math.PI) * rx;
+                            const anim = rect.animate([
+                                { strokeDashoffset: startOffset },
+                                { strokeDashoffset: perimeter }
+                            ], { duration: safeRemaining, easing: 'linear' });
 
-                                    const ns = 'http://www.w3.org/2000/svg';
-                                    const svg = document.createElementNS(ns, 'svg');
-                                    svg.classList.add('hide-progress');
-                                    svg.setAttribute('viewBox', `0 0 ${w} ${h}`);
-                                    svg.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;z-index:10;pointer-events:none;';
+                            return anim;
+                        }
 
-                                    const rect = document.createElementNS(ns, 'rect');
-                                    rect.setAttribute('x', inset);
-                                    rect.setAttribute('y', inset);
-                                    rect.setAttribute('width', rw);
-                                    rect.setAttribute('height', rh);
-                                    rect.setAttribute('rx', rx);
-                                    rect.setAttribute('ry', rx);
-                                    rect.setAttribute('fill', 'none');
-                                    rect.setAttribute('stroke', 'var(--color-critical, #EF4444)');
-                                    rect.setAttribute('stroke-width', '3');
-                                    rect.setAttribute('stroke-dasharray', perimeter);
-                                    rect.setAttribute('stroke-dashoffset', '0');
-                                    rect.setAttribute('stroke-linecap', 'round');
-
-                                    svg.appendChild(rect);
-                                    card.appendChild(svg);
-
-                                    rect.animate([
-                                        { strokeDashoffset: 0 },
-                                        { strokeDashoffset: perimeter }
-                                    ], { duration: 2500, easing: 'linear' });
-
-                                    card.hideTimeout = setTimeout(() => {
-                                        card.dataset.animating = 'true';
-
-                                        const progToRemove = card.querySelector('.hide-progress');
-                                        if (progToRemove) progToRemove.remove();
-
-                                        const animation = card.animate([
-                                            { transform: 'scale(1)', opacity: 1 },
-                                            { transform: 'scale(0.5)', opacity: 0 }
-                                        ], {
-                                            duration: 300,
-                                            easing: 'cubic-bezier(0.4, 0, 0.2, 1)'
-                                        });
-
-                                        animation.onfinish = () => {
-                                            card.style.display = 'none';
-                                            card.dataset.animating = 'false';
-                                            card.hideTimeout = null;
-                                        };
-                                    }, 2500);
+                        const resizeObserver = new ResizeObserver(entries => {
+                            for (const entry of entries) {
+                                const card = entry.target;
+                                const state = cardStates.get(card);
+                                if (!state || !state.isCountingDown || state.hidden) continue;
+                                
+                                state.svgAnim = buildSVG(card, state.lastAlertColor || 'var(--text-muted, #999)', state.remaining);
+                                if (state.svgAnim && state.isHovered) {
+                                    state.svgAnim.pause();
                                 }
+                            }
+                        });
+
+                        function showCard(card) {
+                            const state = cardStates.get(card);
+                            if (!state) return;
+
+                            const prog = card.querySelector('.hide-progress');
+                            if (prog) prog.remove();
+
+                            const needsAnim = state.hidden;
+                            if (state.hidden) {
+                                state.hidden = false;
+                                const span = state.span;
+                                card.style.gridColumn = `auto / span ${span.w}`;
+                                card.style.gridRow = `auto / span ${span.h}`;
+                                card.style.display = 'flex';
+                            }
+
+                            if (needsAnim && !state.animating) {
+                                state.animating = true;
+                                const anim = card.animate([
+                                    { transform: 'scale(0.5) translateY(20px)', opacity: 0 },
+                                    { transform: 'scale(1) translateY(0)', opacity: 1 }
+                                ], { duration: 400, easing: 'cubic-bezier(0.34, 1.56, 0.64, 1)' });
+                                anim.onfinish = () => { state.animating = false; };
+                            }
+                        }
+
+                        function startHideCountdown(card, color) {
+                            const state = cardStates.get(card);
+                            if (!state || state.hidden || state.isCountingDown || state.animating) return;
+
+                            state.isCountingDown = true;
+                            state.remaining = HIDE_DELAY;
+                            state.lastTick = Date.now();
+                            state.isPaused = false;
+                            
+                            state.svgAnim = buildSVG(card, color, state.remaining);
+                            
+                            const isModalOpened = (activeModalCard === card && document.body.classList.contains('modal-open'));
+                            if (state.isHovered || isModalOpened) {
+                                state.isPaused = true;
+                                if (state.svgAnim) state.svgAnim.pause();
+                            }
+                            
+                            resizeObserver.observe(card);
+                        }
+
+                        Array.from(mainGrid.querySelectorAll('.card')).forEach(card => {
+                            const isAlert = card.classList.contains('card--alert') || card.classList.contains('card--warn');
+                            const span = getSpan(card);
+
+                            cardStates.set(card, {
+                                hidden: !isAlert,
+                                animating: false,
+                                isCountingDown: false,
+                                isHovered: false,
+                                isPaused: false,
+                                remaining: isAlert ? HIDE_DELAY : 0,
+                                lastTick: Date.now(),
+                                svgAnim: null,
+                                span: span,
+                                lastAlertColor: isAlert ? getAlertColor(card) : null
                             });
 
-                        }, 1000);
+                            card.addEventListener('click', () => {
+                                activeModalCard = card;
+                            });
+
+                            card.addEventListener('mouseenter', () => {
+                                const state = cardStates.get(card);
+                                if (state) state.isHovered = true;
+                            });
+                            
+                            card.addEventListener('mouseleave', () => {
+                                const state = cardStates.get(card);
+                                if (state) state.isHovered = false;
+                            });
+
+                            if (isAlert) {
+                                card.style.gridColumn = `auto / span ${span.w}`;
+                                card.style.gridRow = `auto / span ${span.h}`;
+                            } else {
+                                card.style.display = 'none';
+                                card.style.gridColumn = '0';
+                                card.style.gridRow = '0';
+                            }
+                        });
+
+                        setInterval(() => {
+                            const now = Date.now();
+                            const isModalGloballyOpen = document.body.classList.contains("modal-open");
+
+                            Array.from(mainGrid.querySelectorAll('.card')).forEach(card => {
+                                const state = cardStates.get(card);
+                                if (!state) return;
+
+                                const isAlert = card.classList.contains('card--alert') || card.classList.contains('card--warn');
+
+                                if (isAlert) {
+                                    const wasInCountdown = state.isCountingDown;
+                                    if (state.isCountingDown) {
+                                        state.isCountingDown = false;
+                                        resizeObserver.unobserve(card);
+                                    }
+                                    state.lastAlertColor = getAlertColor(card);
+                                    showCard(card, wasInCountdown);
+                                    state.lastTick = now;
+                                } else if (!state.hidden && !state.animating) {
+                                    if (!state.isCountingDown) {
+                                        startHideCountdown(card, state.lastAlertColor || 'var(--text-muted, #999)');
+                                    } else {
+                                        const isModalOpened = (activeModalCard === card && isModalGloballyOpen);
+                                        const shouldBePaused = state.isHovered || isModalOpened;
+                                        
+                                        if (shouldBePaused && !state.isPaused) {
+                                            state.isPaused = true;
+                                            if (state.svgAnim) state.svgAnim.pause();
+                                        } else if (!shouldBePaused && state.isPaused) {
+                                            state.isPaused = false;
+                                            if (state.svgAnim) state.svgAnim.play();
+                                        }
+
+                                        if (!state.isPaused) {
+                                            state.remaining -= (now - state.lastTick);
+                                        }
+                                        state.lastTick = now;
+
+                                        if (state.remaining <= 0) {
+                                            state.isCountingDown = false;
+                                            resizeObserver.unobserve(card);
+                                            
+                                            state.animating = true;
+                                            const prog = card.querySelector('.hide-progress');
+                                            if (prog) prog.remove();
+
+                                            const anim = card.animate([
+                                                { transform: 'scale(1)', opacity: 1 },
+                                                { transform: 'scale(0.5)', opacity: 0 }
+                                            ], { duration: 300, easing: 'cubic-bezier(0.4, 0, 0.2, 1)' });
+
+                                            anim.onfinish = () => {
+                                                card.style.display = 'none';
+                                                card.style.gridColumn = '0';
+                                                card.style.gridRow = '0';
+                                                state.hidden = true;
+                                                state.animating = false;
+                                                state.lastAlertColor = null;
+                                                if (activeModalCard === card) activeModalCard = null;
+                                            };
+                                        }
+                                    }
+                                }
+                            });
+                        }, 50);
                     });
                 </script>
             </main>
