@@ -194,7 +194,8 @@ class DashboardView
                         if ($pmRow instanceof \modules\models\entities\Indicator) {
                             $cat = $pmRow->getCategory();
                         } else {
-                            $cat = $pmRow['category'] ?? ($pmRow['view_data']['category'] ?? '');
+                            /** @var array{category?: string, view_data?: array{category?: string}} $pmRow */
+                            $cat = (string) ($pmRow['category'] ?? ($pmRow['view_data']['category'] ?? ''));
                         }
                         if ($cat && !in_array($cat, $uniqueCategories, true)) {
                             $uniqueCategories[] = $cat;
@@ -207,8 +208,9 @@ class DashboardView
                         <div class="category-filters">
                             <button class="category-filter-btn active" data-filter="all">Toutes</button>
                             <?php foreach ($uniqueCategories as $cat): ?>
-                                <button class="category-filter-btn" data-filter="<?= htmlspecialchars($cat, ENT_QUOTES, 'UTF-8') ?>">
-                                    <?= htmlspecialchars($cat, ENT_QUOTES, 'UTF-8') ?>
+                                <button class="category-filter-btn"
+                                    data-filter="<?= htmlspecialchars((string) $cat, ENT_QUOTES, 'UTF-8') ?>">
+                                    <?= htmlspecialchars((string) $cat, ENT_QUOTES, 'UTF-8') ?>
                                 </button>
                             <?php endforeach; ?>
                             <?php if (!empty($this->customGroups)): ?>
@@ -217,8 +219,8 @@ class DashboardView
                                     <button class="category-filter-btn category-filter-btn--custom" data-filter="custom_group"
                                         data-group-id="<?= (int) $cg['id'] ?>"
                                         data-group-indicators="<?= htmlspecialchars(implode(',', $cg['indicator_ids']), ENT_QUOTES, 'UTF-8') ?>"
-                                        data-group-layout='<?= htmlspecialchars(json_encode($cg['layout'] ?? []), ENT_QUOTES, 'UTF-8') ?>'
-                                        style="border-color: <?= htmlspecialchars($cg['color'] ?? '#3b82f6', ENT_QUOTES, 'UTF-8') ?>; color: <?= htmlspecialchars($cg['color'] ?? '#3b82f6', ENT_QUOTES, 'UTF-8') ?>;">
+                                        data-group-layout='<?= htmlspecialchars((string) json_encode($cg['layout']), ENT_QUOTES, 'UTF-8') ?>'
+                                        style="border-color: <?= htmlspecialchars($cg['color'], ENT_QUOTES, 'UTF-8') ?>; color: <?= htmlspecialchars($cg['color'], ENT_QUOTES, 'UTF-8') ?>;">
                                         <?= htmlspecialchars($cg['name'], ENT_QUOTES, 'UTF-8') ?>
                                     </button>
                                 <?php endforeach; ?>

@@ -97,7 +97,8 @@ class CustomGroupRepository extends BaseRepository
         );
         $st->execute([':id' => $groupId, ':user_id' => $userId]);
         $row = $st->fetch();
-        return $row ?: null;
+        /** @var array{id: int, name: string, color: string}|false $row */
+        return is_array($row) ? $row : null;
     }
 
     /**
@@ -177,13 +178,11 @@ class CustomGroupRepository extends BaseRepository
      */
     public function updateGroup(int $groupId, int $userId, string $name, string $color, array $indicatorIds): void
     {
-        // Check standard ownership and update name/color
         $st = $this->pdo->prepare(
             'UPDATE custom_groups SET name = :name, color = :color WHERE id = :id AND user_id = :user_id'
         );
         $st->execute([':name' => $name, ':color' => $color, ':id' => $groupId, ':user_id' => $userId]);
 
-        // If not modified, maybe it doesn't belong to the user. Stop here if no rows affected? 
         if ($st->rowCount() === 0 && !$this->groupExistsForUser($groupId, $userId)) {
             return;
         }
@@ -215,7 +214,7 @@ class CustomGroupRepository extends BaseRepository
      *
      * @param int $groupId
      * @param int $userId
-     * @return array<int, array>
+     * @return array<int, array{id: string, name: string, category: string, x: int|null, y: int|null, w: int, h: int}>
      */
     public function getGroupIndicatorsWithLayout(int $groupId, int $userId): array
     {
@@ -238,12 +237,10 @@ class CustomGroupRepository extends BaseRepository
             $w = $row['grid_w'] !== null ? $row['grid_w'] : $row['def_w'];
             $h = $row['grid_h'] !== null ? $row['grid_h'] : $row['def_h'];
 
-            // Fallback grid dimension to min bounds if all are null (e.g parameter never added to main layout)
             if ($w === null)
                 $w = 4;
             if ($h === null)
                 $h = 3;
-            // grid_x and grid_y can be null, gridstack will position them implicitly.
 
             $final[] = [
                 'id' => $row['id'],

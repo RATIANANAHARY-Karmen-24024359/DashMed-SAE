@@ -160,19 +160,21 @@ document.addEventListener('DOMContentLoaded', () => {
         form?.addEventListener('submit', updateLayout);
         updateLayout();
 
-        return { grid, updateLayout, markChanged, hideWidget, restoreWidget, addWidget: (opts) => {
-            const el = grid.addWidget(opts);
-            if (el) {
-                el.querySelectorAll('.dm-widget-hide').forEach((btn) => {
-                    btn.addEventListener('click', (e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        hideWidget(el);
+        return {
+            grid, updateLayout, markChanged, hideWidget, restoreWidget, addWidget: (opts) => {
+                const el = grid.addWidget(opts);
+                if (el) {
+                    el.querySelectorAll('.dm-widget-hide').forEach((btn) => {
+                        btn.addEventListener('click', (e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            hideWidget(el);
+                        });
                     });
-                });
+                }
+                return el;
             }
-            return el;
-        }};
+        };
     }
 
     const mainManager = initGridManager(
@@ -181,10 +183,11 @@ document.addEventListener('DOMContentLoaded', () => {
         'hidden-widgets-list',
         'customize-form',
         'unsaved-bar',
-        'save-changes-btn'
+        null
     );
 
     if (mainManager) {
+        window._mainGridManager = mainManager;
         document.getElementById('reset-layout-btn')?.addEventListener('click', (e) => {
             e.preventDefault();
             if (confirm('Réinitialiser la disposition par défaut ?')) {

@@ -30,7 +30,7 @@ final class CustomizationView
      * @param array<int, array{id: string, name: string}> $hidden Hidden widgets
      * @param array<int, array{parameter_id: string, display_name: string, category: string}> $allParameters
      * @param array<int, array{id: int, name: string, color: string, indicator_ids: array<int, string>}> $existingGroups
-     * @param array{group: array{id: int, name: string, color: string}, indicators: array<int, array>}|null $editGroupData Edit group data
+     * @param array{group: array{id: int, name: string, color: string}, indicators: array<int, array{id: string, name: string, category: string, x: int|null, y: int|null, w: int, h: int}>}|null $editGroupData Edit group data
      * @return void
      */
     public function show(
@@ -60,7 +60,7 @@ final class CustomizationView
 
         $groupsByCategory = [];
         foreach ($allParameters as $param) {
-            $cat = $param['category'] ?? 'Autre';
+            $cat = $param['category'];
             $groupsByCategory[$cat][] = $param;
         }
         ksort($groupsByCategory);
@@ -403,12 +403,6 @@ final class CustomizationView
                                             <?php endforeach; ?>
                                         </div>
                                     </div>
-
-                                    <div class="dm-customize-actions">
-                                        <button type="submit" class="dm-btn dm-btn--primary" id="edit-group-btn">
-                                            Enregistrer les modifications
-                                        </button>
-                                    </div>
                                 </form>
                             </div>
                             <script>
@@ -422,7 +416,7 @@ final class CustomizationView
 
             <div id="unsaved-bar" class="unsaved-bar" style="display:none;">
                 <p>Modifications non enregistrées</p>
-                <button id="save-changes-btn" class="dm-btn dm-btn--primary">Enregistrer</button>
+                <button type="submit" id="save-changes-btn" class="dm-btn dm-btn--primary">Enregistrer</button>
             </div>
             <script src="https://cdn.jsdelivr.net/npm/gridstack@10/dist/gridstack-all.js"></script>
             <script src="assets/js/pages/customization-grid.js"></script>
@@ -447,10 +441,17 @@ final class CustomizationView
                                 targetContent.style.display = 'block';
                             }
 
+                            const unsavedBar = document.getElementById('unsaved-bar');
                             if (targetId === 'tab-layout') {
                                 layoutActions.style.display = 'flex';
                             } else {
                                 layoutActions.style.display = 'none';
+                            }
+
+                            if (targetId === 'tab-layout' || targetId === 'tab-edit_group') {
+                                unsavedBar.style.display = 'flex';
+                            } else {
+                                unsavedBar.style.display = 'none';
                             }
                         });
                     });
@@ -461,6 +462,21 @@ final class CustomizationView
                         const targetLabel = document.querySelector(`.dm-tab-label[data-target="tab-${tabParam}"]`);
                         if (targetLabel) targetLabel.click();
                     }
+
+                    document.getElementById('save-changes-btn')?.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        const editGroupTab = document.getElementById('tab-edit_group');
+                        const isEditGroupActive = editGroupTab && editGroupTab.style.display !== 'none';
+
+                        if (isEditGroupActive) {
+                            const editForm = document.getElementById('edit-group-form');
+                            if (window._editGridManager) window._editGridManager.updateLayout();
+                            if (editForm) editForm.requestSubmit();
+                        } else {
+                            if (window._mainGridManager) window._mainGridManager.updateLayout();
+                            document.getElementById('customize-form')?.submit();
+                        }
+                    });
 
                     const existingNames = <?= json_encode(array_values($existingGroupNames)) ?>;
                     const form = document.getElementById('create-group-form');

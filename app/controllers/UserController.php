@@ -398,8 +398,9 @@ class UserController
         }
 
         $rawIndicators = $_POST['indicators'] ?? [];
-        $indicators = is_array($rawIndicators) ? $rawIndicators : [];
-        $indicators = array_filter(array_map('strval', $indicators));
+        /** @var array<int, mixed> $rawArr */
+        $rawArr = is_array($rawIndicators) ? $rawIndicators : [];
+        $indicators = array_filter(array_map(static fn(mixed $v): string => is_scalar($v) ? (string) $v : '', $rawArr));
 
         if (empty($indicators)) {
             $_SESSION['group_msg'] = ['type' => 'error', 'text' => 'Sélectionnez au moins un indicateur.'];
@@ -450,10 +451,18 @@ class UserController
         $userId = $this->requireAuth();
         $repo = new CustomGroupRepository($this->pdo);
 
-        $groupId = (int) ($_POST['group_id'] ?? 0);
-        $name = trim((string) ($_POST['group_name'] ?? ''));
-        $color = trim((string) ($_POST['group_color'] ?? '#3b82f6'));
-        $indicators = array_filter(array_map('strval', $_POST['indicators'] ?? []));
+        /** @var mixed $rawGroupId */
+        $rawGroupId = $_POST['group_id'] ?? 0;
+        $groupId = (int) (is_numeric($rawGroupId) ? $rawGroupId : 0);
+        /** @var mixed $rawName */
+        $rawName = $_POST['group_name'] ?? '';
+        $name = trim(is_string($rawName) ? $rawName : '');
+        /** @var mixed $rawColor */
+        $rawColor = $_POST['group_color'] ?? '#3b82f6';
+        $color = trim(is_string($rawColor) ? $rawColor : '#3b82f6');
+        /** @var array<int, mixed> $rawEditInds */
+        $rawEditInds = is_array($_POST['indicators'] ?? null) ? $_POST['indicators'] : [];
+        $indicators = array_filter(array_map(static fn(mixed $v): string => is_scalar($v) ? (string) $v : '', $rawEditInds));
 
         if ($groupId <= 0 || $name === '' || empty($indicators)) {
             $_SESSION['group_msg'] = ['type' => 'error', 'text' => 'Données invalides.'];
