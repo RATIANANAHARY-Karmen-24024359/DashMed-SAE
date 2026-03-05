@@ -607,6 +607,10 @@ async function updatePanelChart(panelId, chartId, title) {
 
     const unit = (panel.dataset.unit || '').trim().toLowerCase();
 
+    const modalLoader = panel.querySelector('.modal-chart-loader');
+    const hideLoader = () => { if (modalLoader) modalLoader.classList.add('hidden'); };
+    const showLoader = () => { if (modalLoader) modalLoader.classList.remove('hidden'); };
+
     if (chartType === 'value') {
         const valueRaw = panel.dataset.value || '—';
         const unitRaw = panel.dataset.unitRaw || '';
@@ -622,6 +626,7 @@ async function updatePanelChart(panelId, chartId, title) {
 
         if (canvas) canvas.style.display = 'none';
         if (noDataPlaceholder) noDataPlaceholder.style.display = 'none';
+        hideLoader();
         return;
     }
 
@@ -679,6 +684,7 @@ async function updatePanelChart(panelId, chartId, title) {
                 colors: ['var(--chart-color)', 'var(--chart-grid-color, #334155)']
             }
         );
+        hideLoader();
     } else {
         const targetDate = panel.dataset.targetDate || '';
         const now = new Date();
@@ -688,20 +694,7 @@ async function updatePanelChart(panelId, chartId, title) {
         const slug = slugMatch ? slugMatch[1] : '';
         const paramId = panel.dataset.paramId || slug;
 
-        let spinner = panel.querySelector('.chart-loading-spinner');
-        if (!spinner) {
-            spinner = document.createElement('div');
-            spinner.className = 'chart-loading-spinner';
-            spinner.innerHTML = '<div style="width: 30px; height: 30px; border: 3px solid var(--border-color); border-top-color: var(--chart-color); border-radius: 50%; animation: spin 1s linear infinite;"></div><style>@keyframes spin { to { transform: rotate(360deg); } }</style>';
-            spinner.style.position = 'absolute';
-            spinner.style.top = '50%';
-            spinner.style.left = '50%';
-            spinner.style.transform = 'translate(-50%, -50%)';
-            spinner.style.zIndex = '100';
-            panel.appendChild(spinner);
-            panel.style.position = 'relative';
-        }
-        spinner.style.display = 'block';
+        showLoader();
         if (canvas) canvas.style.opacity = '0.5';
 
         try {
@@ -724,7 +717,7 @@ async function updatePanelChart(panelId, chartId, title) {
             if (dataArr.length === 0) {
                 if (canvas) canvas.style.display = 'none';
                 if (noDataPlaceholder) noDataPlaceholder.style.display = 'flex';
-                spinner.style.display = 'none';
+                hideLoader();
                 return;
             } else {
                 if (canvas) canvas.style.display = 'block';
@@ -746,7 +739,7 @@ async function updatePanelChart(panelId, chartId, title) {
             const generated = generateChartData(rawData);
 
             if (canvas) canvas.style.opacity = '1';
-            spinner.style.display = 'none';
+            hideLoader();
 
             createChart(
                 chartType,
@@ -767,7 +760,7 @@ async function updatePanelChart(panelId, chartId, title) {
         } catch (err) {
             console.error('Error fetching chart data:', err);
             if (canvas) canvas.style.opacity = '1';
-            if (spinner) spinner.style.display = 'none';
+            hideLoader();
         }
     }
 }

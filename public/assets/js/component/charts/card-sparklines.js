@@ -20,6 +20,9 @@
         const valueOnlyContainer = card.querySelector('.card-value-only-container');
         const sparkContainer = card.querySelector('.card-spark');
         const headerValue = card.querySelector('.card-header .value');
+        const chartLoader = card.querySelector('.card-chart-loader');
+
+        const hideLoader = () => { if (chartLoader) chartLoader.classList.add('hidden'); };
 
         /**
          * CSS Layout Toggling:
@@ -31,6 +34,7 @@
             if (valueOnlyContainer) valueOnlyContainer.style.display = 'flex';
             if (sparkContainer) sparkContainer.style.display = 'none';
             if (headerValue) headerValue.style.display = 'none';
+            hideLoader();
             return;
         } else {
             if (valueOnlyContainer) valueOnlyContainer.style.display = 'none';
@@ -41,7 +45,7 @@
         const dataList = card.querySelector("ul[data-spark]");
         const canvas = card.querySelector("canvas.card-spark-canvas");
 
-        if (!canvas || !dataList) return;
+        if (!canvas || !dataList) { hideLoader(); return; }
 
         const canvasId = canvas.id;
 
@@ -51,6 +55,7 @@
         if (!items.length) {
             if (canvas) canvas.style.display = 'none';
             if (noDataPlaceholder) noDataPlaceholder.style.display = 'flex';
+            hideLoader();
             return;
         }
 
@@ -71,6 +76,7 @@
         if (!rawData.length) {
             if (canvas) canvas.style.display = 'none';
             if (noDataPlaceholder) noDataPlaceholder.style.display = 'flex';
+            hideLoader();
             return;
         }
 
@@ -246,6 +252,8 @@
 
             createChart(type, title, labels, data, canvasId, "var(--chart-color)", thresholds, view, extra);
         }
+
+        hideLoader();
     };
 
     cards.forEach((card) => {
