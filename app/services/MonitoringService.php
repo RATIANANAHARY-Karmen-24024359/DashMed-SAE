@@ -206,7 +206,7 @@ class MonitoringService
             return $tsA <=> $tsB;
         });
 
-        $histForHtml = array_slice($histForHtml, -100);
+        // NO LIMIT as per user request
 
         foreach ($histForHtml as $hItem) {
             $ts = $hItem['timestamp'] ?? null;

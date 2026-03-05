@@ -340,9 +340,7 @@
                             li.dataset.flag = metric.is_crit_flag ? '1' : '0';
 
                             dataList.appendChild(li);
-                            while (dataList.children.length > 50) {
-                                dataList.removeChild(dataList.firstElementChild);
-                            }
+                            // No pruning as per user request
 
                             if (canvas && canvas.chartInstance) {
                                 const chart = canvas.chartInstance;

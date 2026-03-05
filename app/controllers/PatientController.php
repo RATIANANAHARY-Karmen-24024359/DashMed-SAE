@@ -109,9 +109,7 @@ class PatientController
         [$processedMetrics, $userLayout] = $this->loadMonitoringData($userId, $patientId);
         $chartTypes = $this->monitorModel->getAllChartTypes();
 
-        /** @var array<int, \modules\models\entities\Consultation> $pastCons */
         $pastCons = array_values($pastConsultations);
-        /** @var array<int, \modules\models\entities\Consultation> $futCons */
         $futCons = array_values($futureConsultations);
 
         $view = new DashboardView(
@@ -718,40 +716,23 @@ class PatientController
                 }
             }
 
-            // High volume data processing (limit=0 or > 10,000)
+            // Simplified path: NO DOWNSAMPLING as per user request
             if ($limit === 0 || $limit > 10000) {
-                $totalRows = $this->monitorModel->countRawHistoryByParameter($patientId, $parameterId, $targetDate);
-                
-                // --- SQL PRE-AGGREGATION OPTIMIZATION ---
-                // For massive datasets (e.g. > 50k rows), perform a first pass reduction in SQL
-                // to minimize PHP memory usage and CPU load from the LTTB algorithm.
-                if ($totalRows > 50000) {
-                    $interval = (int) ceil($totalRows / 5000); // Target approximately 5000 buckets
-                    $stream = $this->monitorModel->streamPreAggregatedHistoryByParameter($patientId, $parameterId, $interval, $targetDate);
-                    // Update totalRows for the stream downsampler
-                    $totalRows = (int) ceil($totalRows / $interval); 
-                } else {
-                    $stream = $this->monitorModel->streamRawHistoryByParameter($patientId, $parameterId, $targetDate, $limit);
+                $stream = $this->monitorModel->streamRawHistoryByParameter($patientId, $parameterId, $targetDate, 0);
+
+                $formatted = [];
+                foreach ($stream as $hItem) {
+                    $ts = $hItem['timestamp'];
+                    $val = $hItem['value'];
+                    $flag = $hItem['alert_flag'];
+                    $rawTs = (strpos($ts, '+') === false && strpos($ts, 'Z') === false) ? $ts . ' UTC' : $ts;
+                    $formatted[] = [
+                        'time_iso' => $ts !== '' ? date('c', (int) strtotime($rawTs)) : '',
+                        'value' => $val !== null ? (string) round((float)$val, 2) : '',
+                        'flag' => ($flag == 1) ? '1' : '0'
+                    ];
                 }
-                
-                // Formatter Generator: normalizing database output
-                $formatter = function (\Generator $source) {
-                    foreach ($source as $hItem) {
-                        $ts = $hItem['timestamp'];
-                        $val = $hItem['value'];
-                        $flag = $hItem['alert_flag'];
-                        $rawTs = (strpos($ts, '+') === false && strpos($ts, 'Z') === false) ? $ts . ' UTC' : $ts;
-                        yield [
-                            'time_iso' => $ts !== '' ? date('c', (int) strtotime($rawTs)) : '',
-                            'value' => $val !== null ? (string) round((float)$val, 2) : '',
-                            'flag' => ($flag == 1) ? '1' : '0'
-                        ];
-                    }
-                };
-                
-                $downsampler = new \modules\services\DownsamplingService();
-                $formatted = $downsampler->downsampleLTTBStream($formatter($stream), $totalRows, 5000);
-                
+
                 $jsonResult = json_encode($formatted);
                 file_put_contents($cacheFile, $jsonResult);
                 echo $jsonResult;
@@ -982,7 +963,7 @@ class PatientController
 
         try {
             $metrics = $this->monitorModel->getLatestMetrics($patientId);
-            $rawHistory = $this->monitorModel->getRawHistory($patientId);
+            $rawHistory = $this->monitorModel->getRawHistory($patientId, 0);
             $prefs = $this->prefModel->getUserPreferences($userId);
             /** @var array<int, array<string, mixed>> */
             $processedMetrics = $this->monitoringService->processMetrics($metrics, $rawHistory, $prefs);

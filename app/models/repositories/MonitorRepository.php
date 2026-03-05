@@ -169,7 +169,7 @@ class MonitorRepository extends BaseRepository
      * @param int $limit Max records
      * @return array<int, array{parameter_id: string, value: float|null, timestamp: string, alert_flag: int}>
      */
-    public function getRawHistory(int $patientId, int $limit = 5000): array
+    public function getRawHistory(int $patientId, int $limit = 0): array
     {
         try {
             $sql = "
@@ -181,12 +181,10 @@ class MonitorRepository extends BaseRepository
             FROM {$this->table}
             WHERE id_patient = :id
               AND archived = 0
-            ORDER BY `timestamp` DESC
-            LIMIT :limit
+            ORDER BY `timestamp` ASC
         ";
             $st = $this->pdo->prepare($sql);
             $st->bindValue(':id', $patientId, \PDO::PARAM_INT);
-            $st->bindValue(':limit', $limit, \PDO::PARAM_INT);
             $st->execute();
             return $st->fetchAll();
         } catch (\PDOException $e) {
@@ -229,7 +227,6 @@ class MonitorRepository extends BaseRepository
                 }
             }
 
-            $limitSql = $limit > 0 ? 'LIMIT :limit' : '';
             $sql = "
             SELECT 
                 parameter_id,
@@ -241,8 +238,7 @@ class MonitorRepository extends BaseRepository
               AND parameter_id = :paramId
               AND archived = 0
               $dateCondition
-            ORDER BY `timestamp` DESC
-            $limitSql
+            ORDER BY `timestamp` ASC
         ";
             $st = $this->pdo->prepare($sql);
             $st->bindValue(':id', $patientId, \PDO::PARAM_INT);
@@ -256,12 +252,9 @@ class MonitorRepository extends BaseRepository
                 }
                 $st->bindValue(':targetDateEnd', $formattedDate, \PDO::PARAM_STR);
             }
-            if ($limit > 0) {
-                $st->bindValue(':limit', $limit, \PDO::PARAM_INT);
-            }
 
             $st->execute();
-            return array_reverse($st->fetchAll()); // Reverse array to ascending order for chronological LTTB processing
+            return $st->fetchAll();
         } catch (\PDOException $e) {
             error_log("MonitorRepository::getRawHistoryByParameter Error: " . $e->getMessage());
             return [];
@@ -301,17 +294,7 @@ class MonitorRepository extends BaseRepository
                 }
             }
             
-            $limitSql = $limit > 0 ? 'LIMIT :limit' : '';
-
-            $sql = $limit > 0 ? "
-            SELECT * FROM (
-                SELECT parameter_id, value, `timestamp`, alert_flag
-                FROM {$this->table}
-                WHERE id_patient = :id AND parameter_id = :paramId AND archived = 0 $dateCondition
-                ORDER BY `timestamp` DESC
-                $limitSql
-            ) AS sub ORDER BY `timestamp` ASC
-            " : "
+            $sql = "
             SELECT parameter_id, value, `timestamp`, alert_flag
             FROM {$this->table}
             WHERE id_patient = :id AND parameter_id = :paramId AND archived = 0 $dateCondition

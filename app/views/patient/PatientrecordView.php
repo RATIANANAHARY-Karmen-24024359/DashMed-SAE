@@ -17,6 +17,12 @@ class PatientrecordView
 {
     /** @var array<string, mixed> Patient medical/admin data */
     private array $patientData;
+    
+    /** @var array<int, \modules\models\entities\Consultation> Past consultations */
+    private array $pastConsultations;
+
+    /** @var array<int, \modules\models\entities\Consultation> Future consultations */
+    private array $futureConsultations;
 
     /** @var array<int, array{
      *   id_user: int,
@@ -52,10 +58,11 @@ class PatientrecordView
         array $doctors = [],
         ?array $msg = null
     ) {
+        $this->pastConsultations = $consultationsPassees;
+        $this->futureConsultations = $consultationsFutures;
         $this->patientData = $patientData;
         $this->doctors = $doctors;
         $this->msg = $msg;
-        unset($consultationsPassees, $consultationsFutures);
     }
 
     /**
@@ -212,6 +219,53 @@ class PatientrecordView
                                     <?php else : ?>
                                         <div class="empty-state">
                                             <p>Aucun médecin assigné à ce patient.</p>
+                                        </div>
+                                    <?php endif; ?>
+                                </div>
+                            </section>
+
+                        <div class="grid-column-right">
+
+                            <section class="card-section consultations-card">
+                                <div class="card-header">
+                                    <h2>Consultations & Examens</h2>
+                                    <a href="?page=medicalprocedure&id_patient=<?= $h($this->patientData['id_patient'] ?? '') ?>" 
+                                       class="btn-view-all">Gérer</a>
+                                </div>
+                                <div class="consultations-list">
+                                    <?php if (!empty($this->futureConsultations)) : ?>
+                                        <div class="consultation-subset">
+                                            <h3>À venir</h3>
+                                            <?php foreach ($this->futureConsultations as $cons) : ?>
+                                                <div class="consultation-item future">
+                                                    <div class="item-date"><?= $h($cons->getDate()) ?></div>
+                                                    <div class="item-content">
+                                                        <span class="item-title"><?= $h($cons->getTitle() ?: $cons->getType()) ?></span>
+                                                        <span class="item-doctor">Dr. <?= $h($cons->getDoctor()) ?></span>
+                                                    </div>
+                                                </div>
+                                            <?php endforeach; ?>
+                                        </div>
+                                    <?php endif; ?>
+
+                                    <?php if (!empty($this->pastConsultations)) : ?>
+                                        <div class="consultation-subset">
+                                            <h3>Historique récent</h3>
+                                            <?php foreach (array_slice($this->pastConsultations, 0, 5) as $cons) : ?>
+                                                <div class="consultation-item past">
+                                                    <div class="item-date"><?= $h($cons->getDate()) ?></div>
+                                                    <div class="item-content">
+                                                        <span class="item-title"><?= $h($cons->getTitle() ?: $cons->getType()) ?></span>
+                                                        <span class="item-doctor">Dr. <?= $h($cons->getDoctor()) ?></span>
+                                                    </div>
+                                                </div>
+                                            <?php endforeach; ?>
+                                        </div>
+                                    <?php endif; ?>
+
+                                    <?php if (empty($this->pastConsultations) && empty($this->futureConsultations)) : ?>
+                                        <div class="empty-state">
+                                            <p>Aucune consultation enregistrée.</p>
                                         </div>
                                     <?php endif; ?>
                                 </div>
