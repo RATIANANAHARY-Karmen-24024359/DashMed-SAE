@@ -464,9 +464,7 @@ document.addEventListener('change', function (e) {
 
 // SSE Modal Sync
 (function () {
-    let source = new EventSource('/api_stream');
-
-    source.onmessage = function (event) {
+    window.addEventListener('DashMedMetricsUpdate', function (event) {
         const modal = document.querySelector(".modal");
         if (!modal || !modal.classList.contains("show-modal")) return;
 
@@ -482,7 +480,7 @@ document.addEventListener('change', function (e) {
         if (!slug) return;
 
         try {
-            const metrics = JSON.parse(event.data);
+            const metrics = event.detail;
             if (metrics.error) return;
 
             const metric = metrics.find(m => m.slug === slug);
@@ -510,6 +508,7 @@ document.addEventListener('change', function (e) {
                     if (!exists) {
                         ds.push([time, val]);
                         ds.sort((a, b) => a[0] - b[0]);
+                        // Allow growth up to high limits but drop earliest if it gets too large
                         if (ds.length > 5000) ds.shift();
 
                         chart.setOption({ series: [{ data: ds }] });
@@ -523,5 +522,5 @@ document.addEventListener('change', function (e) {
         } catch (e) {
             console.error('Modal live metrics fetch error:', e);
         }
-    };
+    });
 })();

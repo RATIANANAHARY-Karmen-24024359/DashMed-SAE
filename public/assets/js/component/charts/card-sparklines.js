@@ -274,12 +274,10 @@
         });
     });
 
-    let source = new EventSource('/api_stream');
-
-    source.onmessage = function (event) {
+    window.addEventListener('DashMedMetricsUpdate', function (event) {
         if (!document.querySelector("article.card")) return;
         try {
-            const metrics = JSON.parse(event.data);
+            const metrics = event.detail;
             if (metrics.error) return;
 
             metrics.forEach(metric => {
@@ -377,10 +375,6 @@
         } catch (e) {
             console.error('SSE metrics fetch error:', e);
         }
-    };
-
-    source.onerror = function () {
-        console.warn("SSE connection lost. Reconnecting...");
-    };
+    });
 
 })();

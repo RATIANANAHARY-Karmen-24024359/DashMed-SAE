@@ -363,6 +363,9 @@ class DashboardView
                 <script src="assets/js/pages/dash.js"></script>
                 <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
 
+                <!-- Global SSE stream service -->
+                <script src="assets/js/service/stream.js?v=<?= time() ?>"></script>
+
                 <script src="assets/js/component/modal/chart.js?v=<?= time() ?>"></script>
                 <script src="assets/js/component/modal/navigation.js"></script>
                 <script src="assets/js/component/charts/card-sparklines.js?v=<?= time() ?>"></script>
