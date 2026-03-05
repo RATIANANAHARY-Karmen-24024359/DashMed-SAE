@@ -64,3 +64,11 @@ input:disabled {
     cursor: not-allowed;
     opacity: 0.8;
 }
+
+body:has(.modal.show-modal),
+body:has(.delete-modal-overlay[style*="display: flex"]),
+body:has(#add-consultation-modal:not(.hidden)),
+body:has(.modal-overlay.active),
+body:has(.popup-overlay.active) {
+    overflow: hidden !important;
+}
