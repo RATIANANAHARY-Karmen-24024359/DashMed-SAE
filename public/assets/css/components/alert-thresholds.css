@@ -1,0 +1,331 @@
+.thresholds-card {
+    margin-top: 1.5rem;
+}
+
+.thresholds-card .card-header {
+    display: flex;
+    align-items: baseline;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.thresholds-card .card-subtitle {
+    font-size: 0.85rem;
+    color: var(--text-secondary, #6b7280);
+    font-weight: 400;
+}
+
+.thresholds-container {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    padding: 0.5rem 0;
+}
+
+.threshold-category {
+    border: 1px solid var(--border-color, #e5e7eb);
+    border-radius: 10px;
+    overflow: hidden;
+    transition: box-shadow 0.2s ease;
+}
+
+.threshold-category:hover {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.category-toggle {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.85rem 1.2rem;
+    background: var(--bg-secondary, #f9fafb);
+    border: none;
+    cursor: pointer;
+    font-size: 0.95rem;
+    color: var(--text-primary, #111827);
+    transition: background 0.2s ease;
+}
+
+.category-toggle:hover {
+    background: var(--bg-hover, #f3f4f6);
+}
+
+.category-toggle .category-name {
+    font-weight: 600;
+    flex: 1;
+    text-align: left;
+}
+
+.category-toggle .category-count {
+    font-size: 0.8rem;
+    color: var(--text-secondary, #6b7280);
+    background: var(--bg-accent, #e5e7eb);
+    padding: 0.15rem 0.6rem;
+    border-radius: 20px;
+}
+
+.category-toggle .toggle-icon {
+    transition: transform 0.25s ease;
+    color: var(--text-secondary, #6b7280);
+}
+
+.category-toggle.expanded .toggle-icon {
+    transform: rotate(180deg);
+}
+
+.category-params {
+    border-top: 1px solid var(--border-color, #e5e7eb);
+}
+
+.threshold-param {
+    border-bottom: 1px solid var(--border-light, #f3f4f6);
+}
+
+.threshold-param:last-child {
+    border-bottom: none;
+}
+
+.threshold-param.has-custom {
+    background: linear-gradient(135deg, rgba(59, 130, 246, 0.03) 0%, rgba(59, 130, 246, 0.06) 100%);
+}
+
+.param-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.75rem 1.2rem;
+    cursor: pointer;
+    transition: background 0.15s ease;
+}
+
+.param-header:hover {
+    background: var(--bg-hover, #f9fafb);
+}
+
+.param-info {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+
+.param-name {
+    font-weight: 500;
+    color: var(--text-primary, #111827);
+    font-size: 0.9rem;
+}
+
+.param-unit {
+    font-size: 0.8rem;
+    color: var(--text-secondary, #6b7280);
+}
+
+.badge-custom {
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: #3b82f6;
+    background: rgba(59, 130, 246, 0.1);
+    border: 1px solid rgba(59, 130, 246, 0.2);
+    padding: 0.15rem 0.5rem;
+    border-radius: 4px;
+}
+
+.param-values-preview {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.preview-range {
+    font-size: 0.82rem;
+    color: var(--text-secondary, #6b7280);
+    font-family: 'Courier New', Courier, monospace;
+    font-weight: 500;
+}
+
+.edit-icon {
+    color: var(--text-secondary, #9ca3af);
+    transition: color 0.15s ease;
+}
+
+.param-header:hover .edit-icon {
+    color: #3b82f6;
+}
+
+.param-edit-form {
+    padding: 1rem 1.2rem 1.2rem;
+    background: var(--bg-secondary, #f9fafb);
+    border-top: 1px solid var(--border-light, #e5e7eb);
+    animation: slideDown 0.2s ease;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-8px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.threshold-form {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.threshold-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+}
+
+@media (max-width: 640px) {
+    .threshold-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+.threshold-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.threshold-group h4 {
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin: 0;
+}
+
+.normal-group h4 {
+    color: #059669;
+}
+
+.critical-group h4 {
+    color: #dc2626;
+}
+
+.threshold-inputs {
+    display: flex;
+    gap: 0.75rem;
+}
+
+.input-pair {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.input-pair label {
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: var(--text-secondary, #6b7280);
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+}
+
+.input-pair input[type="number"] {
+    width: 100%;
+    padding: 0.5rem 0.65rem;
+    border: 1px solid var(--border-color, #d1d5db);
+    border-radius: 6px;
+    font-size: 0.88rem;
+    font-family: 'Courier New', Courier, monospace;
+    transition: border-color 0.15s, box-shadow 0.15s;
+    box-sizing: border-box;
+}
+
+.input-pair input[type="number"]:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+}
+
+.normal-group .input-pair input[type="number"]:focus {
+    border-color: #059669;
+    box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.12);
+}
+
+.critical-group .input-pair input[type="number"]:focus {
+    border-color: #dc2626;
+    box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.12);
+}
+
+.defaults-hint {
+    font-size: 0.72rem;
+    color: var(--text-tertiary, #9ca3af);
+    font-style: italic;
+}
+
+.threshold-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.5rem;
+    padding-top: 0.5rem;
+    border-top: 1px solid var(--border-light, #f3f4f6);
+}
+
+.btn-save-threshold,
+.btn-reset-threshold {
+    padding: 0.45rem 1.1rem;
+    border-radius: 6px;
+    border: 1px solid transparent;
+    font-size: 0.82rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.btn-save-threshold {
+    background: #3b82f6;
+    color: #fff;
+}
+
+.btn-save-threshold:hover {
+    background: #2563eb;
+    box-shadow: 0 2px 6px rgba(37, 99, 235, 0.3);
+}
+
+.btn-reset-threshold {
+    background: transparent;
+    color: #6b7280;
+    border-color: #d1d5db;
+}
+
+.btn-reset-threshold:hover {
+    background: #fef2f2;
+    color: #dc2626;
+    border-color: #fca5a5;
+}
+
+@media (max-width: 480px) {
+    .param-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.4rem;
+    }
+
+    .threshold-inputs {
+        flex-direction: column;
+    }
+
+    .threshold-actions {
+        flex-direction: column;
+    }
+
+    .btn-save-threshold,
+    .btn-reset-threshold {
+        width: 100%;
+        text-align: center;
+    }
+}

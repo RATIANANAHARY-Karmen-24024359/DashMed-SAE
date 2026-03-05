@@ -66,10 +66,10 @@ class MonitorRepository extends BaseRepository
             pr.category,
             pr.unit,
             pr.description,
-            pr.normal_min,
-            pr.normal_max,
-            pr.critical_min,
-            pr.critical_max,
+            COALESCE(pat.normal_min, pr.normal_min) as normal_min,
+            COALESCE(pat.normal_max, pr.normal_max) as normal_max,
+            COALESCE(pat.critical_min, pr.critical_min) as critical_min,
+            COALESCE(pat.critical_max, pr.critical_max) as critical_max,
             pr.display_min,
             pr.display_max,
 
@@ -86,17 +86,21 @@ class MonitorRepository extends BaseRepository
                 WHEN pd.value IS NULL THEN 'unknown'
                 WHEN (
                     pd.alert_flag = 1
-                    OR (pr.critical_min IS NOT NULL AND pd.value < pr.critical_min)
-                    OR (pr.critical_max IS NOT NULL AND pd.value > pr.critical_max)
+                    OR (COALESCE(pat.critical_min, pr.critical_min) IS NOT NULL AND pd.value < COALESCE(pat.critical_min, pr.critical_min))
+                    OR (COALESCE(pat.critical_max, pr.critical_max) IS NOT NULL AND pd.value > COALESCE(pat.critical_max, pr.critical_max))
                 ) THEN '" . self::STATUS_CRITICAL . "'
                 WHEN (
-                    (pr.normal_min IS NOT NULL AND pd.value < pr.normal_min)
-                    OR (pr.normal_max IS NOT NULL AND pd.value > pr.normal_max)
+                    (COALESCE(pat.normal_min, pr.normal_min) IS NOT NULL AND pd.value < COALESCE(pat.normal_min, pr.normal_min))
+                    OR (COALESCE(pat.normal_max, pr.normal_max) IS NOT NULL AND pd.value > COALESCE(pat.normal_max, pr.normal_max))
                 ) THEN '" . self::STATUS_WARNING . "'
                 ELSE '" . self::STATUS_NORMAL . "'
                 END AS status
 
         FROM parameter_reference pr
+
+        LEFT JOIN patient_alert_threshold pat
+          ON pat.parameter_id = pr.parameter_id
+         AND pat.id_patient = :id_pat_threshold
 
         -- Last measurement for patient
         LEFT JOIN (
@@ -120,6 +124,7 @@ class MonitorRepository extends BaseRepository
 
             $st = $this->pdo->prepare($sql);
             $st->execute([
+                ':id_pat_threshold' => $patientId,
                 ':id_pat_inner' => $patientId,
                 ':id_pat_outer' => $patientId,
             ]);

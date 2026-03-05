@@ -9,6 +9,7 @@ use assets\includes\Database;
 use modules\models\repositories\ConsultationRepository;
 use modules\models\repositories\PatientRepository;
 use modules\models\repositories\UserRepository;
+use modules\models\repositories\AlertThresholdRepository;
 use modules\models\entities\Consultation;
 use modules\models\repositories\MonitorRepository;
 use modules\models\repositories\MonitorPreferenceRepository;
@@ -58,6 +59,9 @@ class PatientController
     /** @var PatientContextService Context service */
     private PatientContextService $contextService;
 
+    /** @var AlertThresholdRepository Alert threshold repository */
+    private AlertThresholdRepository $thresholdRepo;
+
     /**
      * Constructor
      *
@@ -76,6 +80,7 @@ class PatientController
         $this->prefModel = new MonitorPreferenceRepository($this->pdo);
         $this->monitoringService = new MonitoringService();
         $this->contextService = new PatientContextService($this->patientRepo);
+        $this->thresholdRepo = new AlertThresholdRepository($this->pdo);
     }
 
     /**
@@ -194,7 +199,12 @@ class PatientController
     public function record(): void
     {
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-            $this->recordPost();
+            $action = $_POST['action'] ?? '';
+            if ($action === 'update_thresholds') {
+                $this->handleThresholdUpdate();
+            } else {
+                $this->recordPost();
+            }
         } else {
             $this->recordGet();
         }
@@ -263,12 +273,15 @@ class PatientController
                 return $d;
             }, $doctors);
 
+            $thresholds = $this->thresholdRepo->getThresholdsForPatient($idPatient);
+
             $view = new PatientrecordView(
                 $pastConsultations,
                 $futureConsultations,
                 $patientData,
                 $safeDoctors,
-                $msg
+                $msg,
+                $thresholds
             );
             $view->show();
         } catch (\Throwable $e) {
@@ -596,6 +609,100 @@ class PatientController
             exit();
         }
         return (int) $userId;
+    }
+
+    /**
+     * Handles alert threshold update via POST.
+     *
+     * @return void
+     */
+    private function handleThresholdUpdate(): void
+    {
+        $this->requireAuth();
+
+        $sessionCsrf = isset($_SESSION['csrf_patient']) && is_string($_SESSION['csrf_patient'])
+            ? $_SESSION['csrf_patient']
+            : '';
+        $postCsrf = isset($_POST['csrf']) && is_string($_POST['csrf']) ? $_POST['csrf'] : '';
+        if ($sessionCsrf === '' || $postCsrf === '' || !hash_equals($sessionCsrf, $postCsrf)) {
+            $_SESSION['patient_msg'] = ['type' => 'error', 'text' => 'Session expirée. Veuillez rafraîchir la page.'];
+            header('Location: /?page=dossierpatient');
+            exit;
+        }
+
+        $this->contextService->handleRequest();
+        $idPatient = $this->contextService->getCurrentPatientId();
+
+        if (!$idPatient) {
+            $_SESSION['patient_msg'] = ['type' => 'error', 'text' => 'Patient non identifié.'];
+            header('Location: /?page=dossierpatient');
+            exit;
+        }
+
+        $rawUserId = $_SESSION['user_id'] ?? 0;
+        $userId = is_numeric($rawUserId) ? (int) $rawUserId : null;
+
+        $thresholdAction = $_POST['threshold_action'] ?? 'save';
+        $parameterId = isset($_POST['parameter_id']) && is_string($_POST['parameter_id'])
+            ? trim($_POST['parameter_id'])
+            : '';
+
+        if ($parameterId === '') {
+            $_SESSION['patient_msg'] = ['type' => 'error', 'text' => 'Paramètre non spécifié.'];
+            header('Location: /?page=dossierpatient');
+            exit;
+        }
+
+        if ($thresholdAction === 'reset') {
+            $this->thresholdRepo->resetThreshold($idPatient, $parameterId);
+            $_SESSION['patient_msg'] = ['type' => 'success', 'text' => 'Seuils réinitialisés aux valeurs par défaut.'];
+            header('Location: /?page=dossierpatient');
+            exit;
+        }
+
+        $parseFloat = function (string $key): ?float {
+            $raw = $_POST[$key] ?? '';
+            if (!is_string($raw) || trim($raw) === '') {
+                return null;
+            }
+            $val = str_replace(',', '.', trim($raw));
+            return is_numeric($val) ? (float) $val : null;
+        };
+
+        $normalMin = $parseFloat('normal_min');
+        $normalMax = $parseFloat('normal_max');
+        $criticalMin = $parseFloat('critical_min');
+        $criticalMax = $parseFloat('critical_max');
+
+        if ($normalMin !== null && $normalMax !== null && $normalMin >= $normalMax) {
+            $_SESSION['patient_msg'] = ['type' => 'error', 'text' => 'Le seuil min normal doit être inférieur au seuil max normal.'];
+            header('Location: /?page=dossierpatient');
+            exit;
+        }
+        if ($criticalMin !== null && $criticalMax !== null && $criticalMin >= $criticalMax) {
+            $_SESSION['patient_msg'] = ['type' => 'error', 'text' => 'Le seuil min critique doit être inférieur au seuil max critique.'];
+            header('Location: /?page=dossierpatient');
+            exit;
+        }
+
+        $success = $this->thresholdRepo->saveThreshold(
+            $idPatient,
+            $parameterId,
+            $normalMin,
+            $normalMax,
+            $criticalMin,
+            $criticalMax,
+            $userId
+        );
+
+        if ($success) {
+            $_SESSION['patient_msg'] = ['type' => 'success', 'text' => 'Seuils d\'alerte mis à jour avec succès.'];
+        } else {
+            $_SESSION['patient_msg'] = ['type' => 'error', 'text' => 'Erreur lors de la mise à jour des seuils.'];
+        }
+
+        header('Location: /?page=dossierpatient');
+        exit;
     }
 
     /**
