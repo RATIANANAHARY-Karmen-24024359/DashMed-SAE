@@ -127,7 +127,7 @@ class UserRepository extends BaseRepository
                 ':first_name' => $data['first_name'],
                 ':last_name' => $data['last_name'],
                 ':email' => strtolower(trim(is_string($emailRaw) ? $emailRaw : '')),
-                ':password' => password_hash(is_string($passRaw) ? $passRaw : '', PASSWORD_BCRYPT),
+                ':password' => password_hash(is_string($passRaw) ? $passRaw : '', PASSWORD_DEFAULT),
                 ':admin_status' => is_numeric($data['admin_status'] ?? null) ? (int) $data['admin_status'] : 0,
                 ':id_profession' => $data['id_profession'] ?? null,
                 ':created_at' => date('Y-m-d H:i:s')

@@ -7,6 +7,7 @@ namespace modules\controllers;
 use modules\models\repositories\UserRepository;
 use modules\models\repositories\PatientRepository;
 use modules\models\repositories\RoomRepository;
+use modules\services\PasswordValidator;
 use modules\views\admin\SysadminView;
 use assets\includes\Database;
 use PDO;
@@ -197,7 +198,7 @@ class AdminController
             unset($_SESSION['old_sysadmin']);
             $_SESSION['success'] = "Patient créé avec succès dans la chambre {$room}.";
 
-        } catch (Exception $e) {
+        } catch (\Throwable $e) {
             error_log('[AdminController] Patient creation SQL error: ' . $e->getMessage());
             $_SESSION['error'] = "Échec de la création du patient (email déjà utilisé ou chambre occupée ?).";
         }
@@ -244,8 +245,10 @@ class AdminController
             $this->redirect('/?page=sysadmin');
             $this->terminate();
         }
-        if (strlen($pass) < 8) {
-            $_SESSION['error'] = "Le mot de passe doit contenir au moins 8 caractères.";
+        // A07:2025 - Strong password validation (OWASP compliant)
+        $pwErrors = PasswordValidator::validate($pass);
+        if (!empty($pwErrors)) {
+            $_SESSION['error'] = PasswordValidator::formatErrors($pwErrors);
             $this->redirect('/?page=sysadmin');
             $this->terminate();
         }

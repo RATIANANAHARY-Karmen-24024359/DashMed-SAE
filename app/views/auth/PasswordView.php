@@ -47,6 +47,7 @@ class PasswordView
             <link rel="stylesheet" href="/assets/css/themes/dark.css">
 
             <link rel="stylesheet" href="assets/css/pages/password.css">
+            <link rel="stylesheet" href="assets/css/components/password-strength.css">
 
             <link rel="icon" type="image/svg+xml" href="assets/img/logo.svg">
         </head>
@@ -153,8 +154,9 @@ class PasswordView
                                             .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1
                                             3.1v2z" />
                                     </svg>
-                                    <input type="password" id="password" name="password" minlength="8"
-                                        placeholder="8 caractères minimum" required>
+                                    <input type="password" id="password" name="password" minlength="12"
+                                        placeholder="12 caractères minimum" required
+                                        autocomplete="new-password">
                                     <button type="button" class="password-toggle" data-target="password"
                                         aria-label="Afficher le mot de passe">
                                         <img src="assets/img/icons/eye-open.svg" alt="Afficher"
@@ -176,6 +178,7 @@ class PasswordView
                 </div>
             </div>
 
+            <script src="assets/js/auth/password-strength.js"></script>
             <script src="assets/js/auth/password.js"></script>
             <script src="assets/js/auth/form.js"></script>
             <script src="assets/js/pages/dash.js"></script>

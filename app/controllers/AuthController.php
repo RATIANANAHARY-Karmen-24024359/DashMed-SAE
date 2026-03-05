@@ -7,6 +7,8 @@ namespace modules\controllers;
 use assets\includes\Database;
 use assets\includes\Mailer;
 use modules\models\repositories\UserRepository;
+use modules\services\PasswordValidator;
+use modules\services\SecurityService;
 use modules\views\auth\LoginView;
 use modules\views\auth\SignupView;
 use modules\views\auth\PasswordView;
@@ -85,9 +87,11 @@ class AuthController
      */
     private function loginPost(): void
     {
+        // A01:2025 - CSRF validation
         $sessionCsrf = isset($_SESSION['_csrf']) && is_string($_SESSION['_csrf']) ? $_SESSION['_csrf'] : '';
         $postCsrf = isset($_POST['_csrf']) && is_string($_POST['_csrf']) ? $_POST['_csrf'] : '';
         if ($sessionCsrf !== '' && $postCsrf !== '' && !hash_equals($sessionCsrf, $postCsrf)) {
+            SecurityService::logSecurityEvent('CSRF_MISMATCH', 'Login form CSRF token mismatch');
             $_SESSION['error'] = "Requête invalide. Veuillez réessayer.";
             header('Location: /?page=login');
             exit;
@@ -103,12 +107,36 @@ class AuthController
             exit;
         }
 
-        $user = $this->userRepo->verifyCredentials($email, $password);
-        if (!$user) {
-            $_SESSION['error'] = "Identifiants invalides.";
+        // A07:2025 - Rate limiting: check if account is locked
+        if (!SecurityService::checkLoginRateLimit($email)) {
+            $remaining = SecurityService::getLockoutRemaining($email);
+            $minutes = (int)ceil($remaining / 60);
+            $_SESSION['error'] = "Compte temporairement verrouillé. Réessayez dans {$minutes} minute(s).";
             header('Location: /?page=login');
             exit;
         }
+
+        $user = $this->userRepo->verifyCredentials($email, $password);
+        if (!$user) {
+            // A07:2025 - Record failed attempt
+            $attemptsLeft = SecurityService::recordFailedLogin($email);
+            if ($attemptsLeft > 0) {
+                $_SESSION['error'] = "Identifiants invalides. {$attemptsLeft} tentative(s) restante(s).";
+            } else {
+                $_SESSION['error'] = "Compte verrouillé après trop de tentatives. Réessayez dans 15 minutes.";
+            }
+            header('Location: /?page=login');
+            exit;
+        }
+
+        // A07:2025 - Reset attempts on successful login
+        SecurityService::resetLoginAttempts($email);
+
+        // A07:2025 - Session fixation prevention
+        SecurityService::regenerateSession();
+
+        // A09:2025 - Log successful login
+        SecurityService::logSecurityEvent('LOGIN_SUCCESS', "User {$email} logged in successfully");
 
         $_SESSION['user_id'] = $user->getId();
         $_SESSION['email'] = $user->getEmail();
@@ -216,8 +244,10 @@ class AuthController
             header('Location: /?page=signup');
             exit;
         }
-        if (strlen($pass) < 8) {
-            $_SESSION['error'] = "Le mot de passe doit contenir au moins 8 caractères.";
+        // A07:2025 - Strong password validation (OWASP compliant)
+        $pwErrors = PasswordValidator::validate($pass);
+        if (!empty($pwErrors)) {
+            $_SESSION['error'] = PasswordValidator::formatErrors($pwErrors);
             $keepOld();
             header('Location: /?page=signup');
             exit;
@@ -290,16 +320,13 @@ class AuthController
      */
     public function logout(): void
     {
-        $_SESSION = [];
-        if (ini_get("session.use_cookies")) {
-            $p = session_get_cookie_params();
-            $sessionName = session_name();
-            if ($sessionName !== false) {
-                setcookie($sessionName, '', time() - 42000, $p["path"], $p["domain"], $p["secure"], $p["httponly"]);
-            }
-        }
-        session_destroy();
+        // A09:2025 - Log logout event
+        SecurityService::logSecurityEvent('LOGOUT', 'User logged out');
 
+        // A07:2025 - Secure session destruction
+        SecurityService::destroySession();
+
+        session_start();
         header('Location: /?page=login');
         exit;
     }
@@ -448,8 +475,13 @@ class AuthController
             header('Location: /?page=password');
             return;
         }
-        if (strlen($pass) < 8) {
-            $_SESSION['pw_msg'] = ['type' => 'error', 'text' => 'Mot de passe trop court (min 8).'];
+        // A07:2025 - Strong password validation for reset (OWASP compliant)
+        $pwErrors = PasswordValidator::validate($pass);
+        if (!empty($pwErrors)) {
+            $_SESSION['pw_msg'] = [
+                'type' => 'error',
+                'text' => PasswordValidator::formatErrors($pwErrors)
+            ];
             header('Location: /?page=password&token=' . $token);
             return;
         }

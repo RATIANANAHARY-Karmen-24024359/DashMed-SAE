@@ -54,6 +54,7 @@ class SignupView
             <link rel="stylesheet" href="/assets/css/themes/dark.css">
 
             <link rel="stylesheet" href="assets/css/pages/signup.css">
+            <link rel="stylesheet" href="assets/css/components/password-strength.css">
 
             <link rel="icon" type="image/svg+xml" href="assets/img/logo.svg">
         </head>
@@ -160,8 +161,8 @@ class SignupView
                                         3.1v2z" />
                                 </svg>
                                 <input type="password" id="password" name="password"
-                                       required autocomplete="new-password"
-                                    placeholder="••••••••">
+                                       required autocomplete="new-password" minlength="12"
+                                    placeholder="12 caractères minimum">
                                 <button type="button" class="password-toggle" data-target="password"
                                     aria-label="Afficher le mot de passe">
                                     <img src="assets/img/icons/eye-open.svg" alt="eye"
@@ -204,6 +205,7 @@ class SignupView
                 </div>
             </div>
 
+            <script src="assets/js/auth/password-strength.js"></script>
             <script src="assets/js/auth/form.js"></script>
             <script src="assets/js/pages/dash.js"></script>
         </body>
