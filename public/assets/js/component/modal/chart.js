@@ -340,6 +340,7 @@ function createEChart(type, title, rawData, target, color, thresholds, view, ext
                 axisTick: { show: false },
                 axisLine: { show: false }
             },
+            dataset: { source: [[0, 0]] }, // Dummy dataset just to help some ECharts internal logic if needed
             yAxis: {
                 type: 'value',
                 min: view.min,
@@ -376,7 +377,28 @@ function createEChart(type, title, rawData, target, color, thresholds, view, ext
 
     chartInstance.setOption(options);
 
-    chartInstance.on('dataZoom', function () {
+    chartInstance.on('dataZoom', function (evt) {
+        // If the user interacts (manual zoom or pan), we break the sync
+        const canvas = chartInstance.getDom();
+        if (evt.batch) {
+            // Check if it's a manual interaction (not our programmatic dispatch)
+            // Most manual interactions in ECharts have a batch or are simple events
+            // We'll set isSynced to false if the user moves away from the end
+            const opt = chartInstance.getOption();
+            const dz = opt.dataZoom[0];
+            const end = dz.endValue;
+            const lastData = rawData.length > 0 ? rawData[rawData.length - 1][0] : 0;
+
+            // If the viewed end is significantly before the last data point, it's not synced
+            if (lastData - end > 1000) {
+                canvas.dataset.isSynced = "false";
+                const panel = canvas.closest('.modal-grid');
+                if (panel) {
+                    const syncBtn = panel.querySelector('.sync-realtime-btn');
+                    if (syncBtn) syncBtn.style.display = 'flex';
+                }
+            }
+        }
         canvas.dispatchEvent(new CustomEvent('chartInteract'));
     });
 
@@ -410,24 +432,36 @@ function setupRealtimeSyncButton(panel, chartId, title) {
         syncBtn.onclick = () => {
             const canvas = document.getElementById(chartId);
             if (canvas && canvas.chartInstance) {
-                // Remove zoom restriction
-                canvas.chartInstance.dispatchAction({
+                const chart = canvas.chartInstance;
+                const opt = chart.getOption();
+                const dz = opt.dataZoom[0];
+
+                // Keep the current duration
+                const duration = (dz.endValue || Date.now()) - (dz.startValue || (Date.now() - 120000));
+
+                const lastData = opt.series[0].data;
+                const lastTime = lastData.length > 0 ? lastData[lastData.length - 1][0] : Date.now();
+
+                canvas.dataset.isSynced = "true";
+
+                chart.dispatchAction({
                     type: 'dataZoom',
-                    start: 90,
-                    end: 100
+                    startValue: lastTime - duration,
+                    endValue: lastTime
                 });
+
                 syncBtn.style.display = 'none';
             }
         };
 
         const canvas = document.getElementById(chartId);
         if (canvas) {
+            canvas.dataset.isSynced = "true"; // Start as synced
             canvas.parentElement.appendChild(syncBtn);
-            canvas.addEventListener('chartInteract', () => {
-                syncBtn.style.display = 'block';
-            });
         }
     } else {
+        const canvas = document.getElementById(chartId);
+        if (canvas) canvas.dataset.isSynced = "true";
         syncBtn.style.display = 'none';
     }
 }
@@ -560,7 +594,21 @@ document.addEventListener('change', function (e) {
                         ds.push([time, val]);
                         ds.sort((a, b) => a[0] - b[0]);
 
-                        chart.setOption({ series: [{ data: ds }] });
+                        const updateObj = { series: [{ data: ds }] };
+
+                        // AUTO-SCROLL LOGIC
+                        if (canvas.dataset.isSynced === "true") {
+                            const opt = chart.getOption();
+                            const dz = opt.dataZoom[0];
+                            const duration = dz.endValue - dz.startValue;
+
+                            updateObj.dataZoom = [
+                                { type: 'inside', startValue: time - duration, endValue: time },
+                                { type: 'slider', startValue: time - duration, endValue: time }
+                            ];
+                        }
+
+                        chart.setOption(updateObj);
                     }
                 }
             }
