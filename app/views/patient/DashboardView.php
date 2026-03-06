@@ -142,12 +142,8 @@ class DashboardView
             jsFiles: [
                 'assets/js/consultation-filter.js',
                 'assets/js/pages/dash.js',
-                'https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js',
-                'https://cdn.jsdelivr.net/npm/moment@2.30.1/moment.min.js',
-                'https://cdn.jsdelivr.net/npm/moment@2.30.1/locale/fr.js',
-                'https://cdn.jsdelivr.net/npm/chartjs-adapter-moment@1.0.1/dist/chartjs-adapter-moment.min.js',
-                'https://cdn.jsdelivr.net/npm/hammerjs@2.0.8',
-                'https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1/dist/chartjs-plugin-zoom.min.js',
+                'https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js',
+                'assets/js/service/stream.js?v=' . time(),
                 'assets/js/component/modal/chart.js?v=' . time(),
                 'assets/js/component/modal/navigation.js',
                 'assets/js/component/charts/card-sparklines.js?v=' . time(),
@@ -161,6 +157,7 @@ class DashboardView
             showSidebar: true,
             showAlerts: true
         );
+
 
         $layout->render(function () use ($current, $h) {
             $patientId = $this->patientData['id_patient'] ?? '';
@@ -390,6 +387,7 @@ class DashboardView
                         <div id="modalDetails"></div>
                     </div>
                 </div>
+
 
                 <script>
                     document.addEventListener('DOMContentLoaded', () => {

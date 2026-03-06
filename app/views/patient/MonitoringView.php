@@ -28,12 +28,14 @@ class MonitoringView
     /** @var int|null Context patient ID */
     private ?int $patientId;
 
+
     /**
      * Constructor.
      *
      * @param array<int, \modules\models\entities\Indicator> $patientMetrics Processed metrics
      * @param array<string, string> $chartTypes Available charts
      * @param int|null $patientId Patient ID for search context
+
      */
     public function __construct(array $patientMetrics = [], array $chartTypes = [], ?int $patientId = null)
     {
@@ -62,9 +64,10 @@ class MonitoringView
                 'assets/css/components/alerts-toast.css',
             ],
             jsFiles: [
-                'https://cdn.jsdelivr.net/npm/chart.js',
-                'assets/js/component/modal/chart.js',
-                'assets/js/component/charts/card-sparklines.js',
+                'https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js',
+                'assets/js/service/stream.js?v=' . time(),
+                'assets/js/component/modal/chart.js?v=' . time(),
+                'assets/js/component/charts/card-sparklines.js?v=' . time(),
                 'assets/js/component/modal/navigation.js',
                 'assets/js/component/modal/modal.js',
             ],
@@ -72,8 +75,10 @@ class MonitoringView
             showAlerts: true
         );
 
+
         $layout->render(function () {
             ?>
+
 
             <main class="container">
                 <section class="dashboard-content-container">
@@ -113,18 +118,8 @@ class MonitoringView
                     <div id="modalDetails"></div>
                 </div>
             </div>
-
-            <script>
-                document.addEventListener('DOMContentLoaded', () => {
-                    const hash = window.location.hash;
-                    if (!hash.startsWith('#indicateurs-')) return;
-
-                    const target = document.querySelector(hash);
-                    if (!target) return;
-                });
-            </script>
-
-            <?php
+<?php
         });
+
     }
 }

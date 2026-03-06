@@ -59,7 +59,7 @@ class MonitoringService
             $m->setHistory($hist);
 
             if (($m->getValue() === null) && !empty($hist)) {
-                $latest = $hist[0];
+                $latest = end($hist);
                 $val = $latest['value'];
                 $m->setValue(is_numeric($val) ? (float) $val : null);
                 $m->setTimestamp($latest['timestamp']);
@@ -103,17 +103,30 @@ class MonitoringService
             // which itself falls back to the system-defined default for this metric.
             $userChart = $chartPrefs[$pid]['chart_type'] ?? null;
             $userModalChart = $chartPrefs[$pid]['modal_chart_type'] ?? null;
+            $userDuration = $chartPrefs[$pid]['display_duration'] ?? '0.0333';
+            $userCardDuration = $chartPrefs[$pid]['card_display_duration'] ?? '0.0333';
+            
             $defaultChart = $m->getDefaultChart();
             $m->setChartType($userChart ?: $defaultChart);
             $m->setModalChartType($userModalChart ?: ($userChart ?: $defaultChart));
-
+            
             $order = $orderPrefs[$pid]['display_order'] ?? 9999;
             $m->setDisplayOrder(is_numeric($order) ? (int) $order : 9999);
 
             $viewData = $this->prepareViewData($m);
+            $viewData['display_duration'] = $userDuration;
+            $viewData['card_display_duration'] = $userCardDuration;
+            
+            // Re-generate chart_config to include the card duration
+            $chartConfig = json_decode($viewData['chart_config'], true);
+            $chartConfig['initialZoomMs'] = (float)$userCardDuration * 3600 * 1000;
+            $viewData['chart_config'] = json_encode($chartConfig);
+            
             $m->setViewData($viewData);
 
             $processed[] = $m;
+
+
         }
 
         usort($processed, function (Indicator $a, Indicator $b) {
@@ -206,7 +219,15 @@ class MonitoringService
             return $tsA <=> $tsB;
         });
 
-        $histForHtml = array_slice($histForHtml, -100);
+        /**
+         * Limits the number of points for dashboard sparklines to optimize 
+         * frontend rendering performance while maintaining recent trend visibility.
+         * Detailed modal charts remain unlimited.
+         */
+        $totalPoints = count($histForHtml);
+        if ($totalPoints > 1000) {
+            $histForHtml = array_slice($histForHtml, -1000);
+        }
 
         foreach ($histForHtml as $hItem) {
             $ts = $hItem['timestamp'] ?? null;
