@@ -187,6 +187,7 @@ class AlertThresholdRepository
             $stmt = $this->pdo->prepare($sql);
             $stmt->execute([':patient_id' => $patientId, ':parameter_id' => $parameterId]);
             $row = $stmt->fetch(PDO::FETCH_ASSOC);
+            /** @var array<string, mixed>|false $row */
             return is_array($row) ? $row : null;
         } catch (PDOException $e) {
             error_log('[AlertThresholdRepository] getEffectiveThreshold: ' . $e->getMessage());

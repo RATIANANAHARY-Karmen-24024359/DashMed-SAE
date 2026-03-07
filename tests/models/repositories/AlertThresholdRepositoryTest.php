@@ -9,8 +9,8 @@ use modules\models\repositories\AlertThresholdRepository;
 
 class AlertThresholdRepositoryTest extends TestCase
 {
-    private PDO $pdoMock;
-    private PDOStatement $stmtMock;
+    private PDO&\PHPUnit\Framework\MockObject\MockObject $pdoMock;
+    private PDOStatement&\PHPUnit\Framework\MockObject\MockObject $stmtMock;
     private AlertThresholdRepository $repo;
 
     protected function setUp(): void

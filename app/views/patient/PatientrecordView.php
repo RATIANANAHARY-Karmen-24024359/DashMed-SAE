@@ -308,7 +308,8 @@ class PatientrecordView
                             <?php
                             $groupedModal = [];
                             foreach ($this->thresholds as $t) {
-                                $cat = (string) ($t['category'] ?? 'Autre');
+                                $catVal = $t['category'] ?? 'Autre';
+                                $cat = is_scalar($catVal) ? (string) $catVal : 'Autre';
                                 $groupedModal[$cat][] = $t;
                             }
                             ?>
@@ -332,7 +333,7 @@ class PatientrecordView
                                                     || $param['custom_normal_max'] !== null
                                                     || $param['custom_critical_min'] !== null
                                                     || $param['custom_critical_max'] !== null;
-                                            ?>
+                                                ?>
                                                 <div class="threshold-param <?= $isCustom ? 'has-custom' : '' ?>">
                                                     <div class="param-header" onclick="toggleParamEdit('modal-<?= $pid ?>')">
                                                         <div class="param-info">
@@ -382,9 +383,9 @@ class PatientrecordView
                                                                     </div>
                                                                     <span class="defaults-hint">
                                                                         Défaut :
-                                                                        <?= $param['default_normal_min'] !== null ? $h(number_format((float)$param['default_normal_min'], 1)) : '—' ?>
+                                                                        <?= (isset($param['default_normal_min']) && is_numeric($param['default_normal_min'])) ? $h(number_format((float)$param['default_normal_min'], 1)) : '—' ?>
                                                                         →
-                                                                        <?= $param['default_normal_max'] !== null ? $h(number_format((float)$param['default_normal_max'], 1)) : '—' ?>
+                                                                        <?= (isset($param['default_normal_max']) && is_numeric($param['default_normal_max'])) ? $h(number_format((float)$param['default_normal_max'], 1)) : '—' ?>
                                                                     </span>
                                                                 </div>
                                                                 <div class="threshold-group critical-group">
@@ -405,9 +406,9 @@ class PatientrecordView
                                                                     </div>
                                                                     <span class="defaults-hint">
                                                                         Défaut :
-                                                                        <?= $param['default_critical_min'] !== null ? $h(number_format((float)$param['default_critical_min'], 1)) : '—' ?>
+                                                                        <?= (isset($param['default_critical_min']) && is_numeric($param['default_critical_min'])) ? $h(number_format((float)$param['default_critical_min'], 1)) : '—' ?>
                                                                         →
-                                                                        <?= $param['default_critical_max'] !== null ? $h(number_format((float)$param['default_critical_max'], 1)) : '—' ?>
+                                                                        <?= (isset($param['default_critical_max']) && is_numeric($param['default_critical_max'])) ? $h(number_format((float)$param['default_critical_max'], 1)) : '—' ?>
                                                                     </span>
                                                                 </div>
                                                             </div>

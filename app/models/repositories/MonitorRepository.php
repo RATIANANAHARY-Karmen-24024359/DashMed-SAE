@@ -210,7 +210,7 @@ class MonitorRepository extends BaseRepository
      * @param string $parameterId The target medical parameter (e.g., 'FC', 'SpO2').
      * @param string|null $targetDate Optional target date (YYYY-MM-DD or ISO 8601), limits data up to this exact date/time.
      * @param int $limit Maximum number of records to return. 0 disables the limit but is risky for large sets.
-     * 
+     *
      * @return array<int, array{parameter_id: string, value: float|string|null, timestamp: string, alert_flag: string|int}> Ordered chronologically ASC.
      */
     public function getRawHistoryByParameter(
@@ -284,7 +284,7 @@ class MonitorRepository extends BaseRepository
      * @param string $parameterId The target medical parameter (e.g., 'FC', 'SpO2').
      * @param string|null $targetDate Optional target date (YYYY-MM-DD or ISO 8601), limits data up to this exact date/time.
      * @param int $limit Maximum number of records to stream. 0 means unlimited.
-     * 
+     *
      * @return \Generator<int, array{parameter_id: string, value: string|null, timestamp: string, alert_flag: string|int}> Ordered chronologically ASC.
      */
     public function streamRawHistoryByParameter(
@@ -298,14 +298,14 @@ class MonitorRepository extends BaseRepository
             $isDateTime = false;
             if ($targetDate !== null) {
                 if (
-                    preg_match('/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/', $targetDate) || 
+                    preg_match('/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/', $targetDate) ||
                     preg_match('/^\d{4}-\d{2}-\d{2}$/', $targetDate)
                 ) {
                     $dateCondition = 'AND `timestamp` <= :targetDateEnd';
                     $isDateTime = true;
                 }
             }
-            
+
             $limitSql = $limit > 0 ? 'LIMIT :limit' : '';
 
             $sql = $limit > 0 ? "
@@ -326,10 +326,10 @@ class MonitorRepository extends BaseRepository
             // Configure PDO to use unbuffered queries for this statement
             $this->pdo->setAttribute(\PDO::MYSQL_ATTR_USE_BUFFERED_QUERY, false);
             $st = $this->pdo->prepare($sql);
-            
+
             $st->bindValue(':id', $patientId, \PDO::PARAM_INT);
             $st->bindValue(':paramId', $parameterId, \PDO::PARAM_STR);
-            
+
             if ($isDateTime && $targetDate !== null) {
                 $formattedDate = str_replace('T', ' ', $targetDate);
                 if (strlen($formattedDate) === 10) {
@@ -346,9 +346,8 @@ class MonitorRepository extends BaseRepository
             $st->execute();
 
             while ($row = $st->fetch(\PDO::FETCH_ASSOC)) {
-                yield $row;
+                /** @var array{parameter_id: string, value: string|null, timestamp: string, alert_flag: int|string} $row */ yield $row;
             }
-
         } catch (\PDOException $e) {
             error_log("MonitorRepository::streamRawHistoryByParameter Error: " . $e->getMessage());
         } finally {
@@ -359,7 +358,7 @@ class MonitorRepository extends BaseRepository
 
     /**
      * Streams pre-aggregated history by grouping records into time buckets.
-     * 
+     *
      * This is an optimization for extremely large datasets (e.g. > 50,000 rows).
      * It performs a FIRST pass of reduction in SQL using AVG() and GROUP BY,
      * so PHP only receives a manageable amount of points (e.g. 5,000-10,000).
@@ -399,15 +398,18 @@ class MonitorRepository extends BaseRepository
 
             $this->pdo->setAttribute(\PDO::MYSQL_ATTR_USE_BUFFERED_QUERY, false);
             $st = $this->pdo->prepare($sql);
-            
+
             $st->bindValue(':id', $patientId, \PDO::PARAM_INT);
             $st->bindValue(':paramId', $parameterId, \PDO::PARAM_STR);
             $st->bindValue(':interval', $intervalSeconds, \PDO::PARAM_INT);
-            
+
             if ($dateCondition && $targetDate !== null) {
                 $formattedDate = str_replace('T', ' ', $targetDate);
-                if (strlen($formattedDate) === 10) $formattedDate .= ' 23:59:59';
-                elseif (strlen($formattedDate) === 16) $formattedDate .= ':59';
+                if (strlen($formattedDate) === 10) {
+                    $formattedDate .= ' 23:59:59';
+                } elseif (strlen($formattedDate) === 16) {
+                    $formattedDate .= ':59';
+                }
                 $st->bindValue(':targetDateEnd', $formattedDate, \PDO::PARAM_STR);
             }
 
@@ -416,7 +418,6 @@ class MonitorRepository extends BaseRepository
             while ($row = $st->fetch(\PDO::FETCH_ASSOC)) {
                 yield $row;
             }
-
         } catch (\PDOException $e) {
             error_log("MonitorRepository::streamPreAggregatedHistoryByParameter Error: " . $e->getMessage());
         } finally {
@@ -427,13 +428,13 @@ class MonitorRepository extends BaseRepository
     /**
      * Counts the total number of records available for a specific patient and parameter.
      *
-     * This count is crucial for feeding the mathematically accurate LTTB downsampling 
+     * This count is crucial for feeding the mathematically accurate LTTB downsampling
      * algorithm before an unbuffered stream begins, as streams cannot be counted mid-flight.
      *
      * @param int $patientId The unique ID of the patient.
      * @param string $parameterId The target medical parameter.
      * @param string|null $targetDate Optional target date (YYYY-MM-DD or ISO 8601), limits up to this date/time.
-     * 
+     *
      * @return int The total chronological row count.
      */
     public function countRawHistoryByParameter(
@@ -446,7 +447,7 @@ class MonitorRepository extends BaseRepository
             $isDateTime = false;
             if ($targetDate !== null) {
                 if (
-                    preg_match('/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/', $targetDate) || 
+                    preg_match('/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/', $targetDate) ||
                     preg_match('/^\d{4}-\d{2}-\d{2}$/', $targetDate)
                 ) {
                     $dateCondition = 'AND `timestamp` <= :targetDateEnd';
@@ -462,11 +463,11 @@ class MonitorRepository extends BaseRepository
               AND archived = 0
               $dateCondition
             ";
-            
+
             $st = $this->pdo->prepare($sql);
             $st->bindValue(':id', $patientId, \PDO::PARAM_INT);
             $st->bindValue(':paramId', $parameterId, \PDO::PARAM_STR);
-            
+
             if ($isDateTime && $targetDate !== null) {
                 $formattedDate = str_replace('T', ' ', $targetDate);
                 if (strlen($formattedDate) === 10) {
@@ -479,8 +480,8 @@ class MonitorRepository extends BaseRepository
 
             $st->execute();
             $res = $st->fetch(\PDO::FETCH_ASSOC);
-            return (int) ($res['total'] ?? 0);
-
+            $total = is_array($res) && is_scalar($res['total'] ?? null) ? (int) $res['total'] : 0;
+            return $total;
         } catch (\PDOException $e) {
             error_log("MonitorRepository::countRawHistoryByParameter Error: " . $e->getMessage());
             return 0;
