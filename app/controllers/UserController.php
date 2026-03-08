@@ -411,9 +411,30 @@ class UserController
         $color = (isset($_POST['group_color']) && is_string($_POST['group_color'])) ? trim($_POST['group_color']) : '#3b82f6';
 
         $groupId = $repo->createGroup($userId, $name, $color);
+
+        $x = 0;
+        $y = 0;
+        $layoutItems = [];
+
         foreach ($indicators as $parameterId) {
             $repo->addIndicator($groupId, $parameterId);
+
+            $layoutItems[] = [
+                'id' => $parameterId,
+                'x' => $x,
+                'y' => $y,
+                'w' => 4,
+                'h' => 3
+            ];
+
+            $x += 4;
+            if ($x >= 12) {
+                $x = 0;
+                $y += 3;
+            }
         }
+
+        $repo->saveGroupLayout($groupId, $layoutItems);
 
         $_SESSION['group_msg'] = ['type' => 'success', 'text' => "Groupe \"$name\" créé avec succès."];
         header('Location: /?page=customization&tab=my_groups');

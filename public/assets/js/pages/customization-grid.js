@@ -1,28 +1,40 @@
-document.addEventListener('DOMContentLoaded', () => {
-    'use strict';
+document.addEventListener("DOMContentLoaded", () => {
+  "use strict";
 
-    const GRID_CONFIG = {
-        column: 12,
-        cellHeight: 100,
-        margin: 12,
-        animate: true,
-        float: false,
-        disableOneColumnMode: true,
-        draggable: { handle: '.dm-widget-grip' },
-        resizable: { handles: 'se' },
-        minRow: 1
-    };
+  const GRID_CONFIG = {
+    column: 12,
+    cellHeight: 100,
+    margin: 12,
+    animate: true,
+    float: false,
+    disableOneColumnMode: true,
+    draggable: { handle: ".dm-widget-grip" },
+    resizable: { handles: "se" },
+    minRow: 1,
+  };
 
-    const escapeHtml = (text) => {
-        const div = document.createElement('div');
-        div.textContent = text;
-        return div.innerHTML;
-    };
+  const escapeHtml = (text) => {
+    const div = document.createElement("div");
+    div.textContent = text;
+    return div.innerHTML;
+  };
 
-    const createWidgetContent = (name, category) => {
-        const safeName = escapeHtml(name);
-        const safeCat = category ? `<div class="dm-widget-category">${escapeHtml(category)}</div>` : '';
-        return `<div class="dm-widget">
+  const createWidgetContent = (name, category, isEditGroup = false) => {
+    const safeName = escapeHtml(name);
+    const safeCat = category
+      ? `<div class="dm-widget-category">${escapeHtml(category)}</div>`
+      : "";
+    const removeBtn = isEditGroup
+      ? `
+                    <button type="button" class="dm-widget-remove" title="Supprimer">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="18" y1="6" x2="6" y2="18"></line>
+                            <line x1="6" y1="6" x2="18" y2="18"></line>
+                        </svg>
+                    </button>`
+      : "";
+
+    return `<div class="dm-widget">
             <div class="dm-widget-header">
                 <div><div class="dm-widget-title">${safeName}</div>${safeCat}</div>
                 <div class="dm-widget-controls">
@@ -39,179 +51,248 @@ document.addEventListener('DOMContentLoaded', () => {
                             <line x1="1" y1="1" x2="23" y2="23"/>
                         </svg>
                     </button>
+                    ${removeBtn}
                 </div>
             </div>
             <div class="dm-widget-body"><div class="dm-widget-value">—</div></div>
         </div>`;
+  };
+
+  function initGridManager(
+    gridSelector,
+    layoutInputId,
+    hiddenListId,
+    formId,
+    unsavedBarId,
+    saveButtonId,
+  ) {
+    const gridEl = document.querySelector(gridSelector);
+    const layoutInput = document.getElementById(layoutInputId);
+    const hiddenList = document.getElementById(hiddenListId);
+    const hiddenDetails = hiddenList?.closest("details");
+    const unsavedBar = unsavedBarId
+      ? document.getElementById(unsavedBarId)
+      : null;
+    const form = formId ? document.getElementById(formId) : null;
+
+    if (!gridEl || !layoutInput) return null;
+
+    const grid = GridStack.init(GRID_CONFIG, gridEl);
+
+    const markChanged = () => {
+      if (unsavedBar) unsavedBar.style.display = "flex";
     };
 
-    function initGridManager(gridSelector, layoutInputId, hiddenListId, formId, unsavedBarId, saveButtonId) {
-        const gridEl = document.querySelector(gridSelector);
-        const layoutInput = document.getElementById(layoutInputId);
-        const hiddenList = document.getElementById(hiddenListId);
-        const hiddenDetails = hiddenList?.closest('details');
-        const unsavedBar = unsavedBarId ? document.getElementById(unsavedBarId) : null;
-        const form = formId ? document.getElementById(formId) : null;
-
-        if (!gridEl || !layoutInput) return null;
-
-        const grid = GridStack.init(GRID_CONFIG, gridEl);
-
-        const markChanged = () => {
-            if (unsavedBar) unsavedBar.style.display = 'flex';
-        };
-
-        const serializeLayout = () => {
-            const data = [];
-            grid.getGridItems().forEach((el) => {
-                const node = el.gridstackNode;
-                if (node) {
-                    data.push({
-                        id: el.dataset.widgetId,
-                        x: node.x,
-                        y: node.y,
-                        w: node.w,
-                        h: node.h,
-                        visible: true
-                    });
-                }
-            });
-            hiddenList?.querySelectorAll('.dm-hidden-chip').forEach((chip) => {
-                data.push({
-                    id: chip.dataset.widgetId,
-                    x: 0, y: 0, w: 4, h: 3,
-                    visible: false
-                });
-            });
-            return JSON.stringify(data);
-        };
-
-        const updateLayout = () => {
-            layoutInput.value = serializeLayout();
-        };
-
-        const hideWidget = (item) => {
-            if (!item) return;
-            const id = item.dataset.widgetId;
-            if (!id) return;
-            const name = item.querySelector('.dm-widget-title')?.textContent || id;
-            grid.removeWidget(item, true);
-            if (hiddenList) {
-                const chip = document.createElement('span');
-                chip.className = 'dm-hidden-chip';
-                chip.dataset.widgetId = id;
-                chip.innerHTML = `${escapeHtml(name)} <button type="button" title="Restaurer">+</button>`;
-                chip.querySelector('button').addEventListener('click', () => restoreWidget(id, name));
-                hiddenList.appendChild(chip);
-                if (hiddenDetails) hiddenDetails.style.display = '';
-            }
-            markChanged();
-            updateLayout();
-        };
-
-        const restoreWidget = (id, name, category) => {
-            hiddenList?.querySelector(`[data-widget-id="${id}"]`)?.remove();
-            if (hiddenList?.children.length === 0 && hiddenDetails) {
-                hiddenDetails.style.display = 'none';
-            }
-            const el = grid.addWidget({
-                w: 4, h: 3, minW: 4, minH: 3,
-                content: createWidgetContent(name, category)
-            });
-            if (el) {
-                el.dataset.widgetId = id;
-                el.querySelector('.dm-widget-hide')?.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    hideWidget(el);
-                });
-            }
-            markChanged();
-            updateLayout();
-        };
-
-        grid.on('change added removed', updateLayout);
-        grid.on('change', markChanged);
-
-        gridEl.querySelectorAll('.dm-widget-hide').forEach((btn) => {
-            btn.addEventListener('click', (e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                hideWidget(btn.closest('.grid-stack-item'));
-            });
-        });
-
-        hiddenList?.querySelectorAll('.dm-hidden-chip button').forEach((btn) => {
-            btn.addEventListener('click', () => {
-                const chip = btn.closest('.dm-hidden-chip');
-                const name = chip.textContent.trim().replace(/\s*\+$/, '');
-                restoreWidget(chip.dataset.widgetId, name);
-            });
-        });
-
-        if (saveButtonId) {
-            document.getElementById(saveButtonId)?.addEventListener('click', (e) => {
-                e.preventDefault();
-                updateLayout();
-                form?.submit();
-            });
+    const serializeLayout = () => {
+      const data = [];
+      grid.getGridItems().forEach((el) => {
+        const node = el.gridstackNode;
+        if (node) {
+          data.push({
+            id: el.dataset.widgetId,
+            x: node.x,
+            y: node.y,
+            w: node.w,
+            h: node.h,
+            visible: true,
+          });
         }
+      });
+      hiddenList?.querySelectorAll(".dm-hidden-chip").forEach((chip) => {
+        data.push({
+          id: chip.dataset.widgetId,
+          x: 0,
+          y: 0,
+          w: 4,
+          h: 3,
+          visible: false,
+        });
+      });
+      return JSON.stringify(data);
+    };
 
-        form?.addEventListener('submit', updateLayout);
+    const updateLayout = () => {
+      layoutInput.value = serializeLayout();
+    };
+
+    const isEditGroup = gridSelector === "#edit-group-grid";
+
+    const removeWidgetCompletely = (item) => {
+      if (!item) return;
+      const id = item.dataset.widgetId || item.getAttribute("data-widget-id");
+      grid.removeWidget(item, true);
+
+      if (window.removeIndicatorFromGroup && id) {
+        window.removeIndicatorFromGroup(id);
+      }
+
+      markChanged();
+      updateLayout();
+    };
+
+    const hideWidget = (item) => {
+      if (!item) return;
+      const id = item.dataset.widgetId;
+      if (!id) return;
+      const name = item.querySelector(".dm-widget-title")?.textContent || id;
+      grid.removeWidget(item, true);
+      if (hiddenList) {
+        const chip = document.createElement("span");
+        chip.className = "dm-hidden-chip";
+        chip.dataset.widgetId = id;
+        chip.innerHTML = `${escapeHtml(name)} <button type="button" title="Restaurer">+</button>`;
+        chip
+          .querySelector("button")
+          .addEventListener("click", () => restoreWidget(id, name));
+        hiddenList.appendChild(chip);
+        if (hiddenDetails) hiddenDetails.style.display = "";
+      }
+      markChanged();
+      updateLayout();
+    };
+
+    const restoreWidget = (id, name, category) => {
+      hiddenList?.querySelector(`[data-widget-id="${id}"]`)?.remove();
+      if (hiddenList?.children.length === 0 && hiddenDetails) {
+        hiddenDetails.style.display = "none";
+      }
+      const el = grid.addWidget({
+        w: 4,
+        h: 3,
+        minW: 4,
+        minH: 3,
+        content: createWidgetContent(name, category, isEditGroup),
+      });
+      if (el) {
+        el.dataset.widgetId = id;
+        el.querySelector(".dm-widget-hide")?.addEventListener("click", (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          hideWidget(el);
+        });
+        el.querySelector(".dm-widget-remove")?.addEventListener(
+          "click",
+          (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            removeWidgetCompletely(el);
+          },
+        );
+      }
+      markChanged();
+      updateLayout();
+    };
+
+    grid.on("change added removed", updateLayout);
+    grid.on("change", markChanged);
+
+    gridEl.querySelectorAll(".dm-widget-hide").forEach((btn) => {
+      btn.addEventListener("click", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        hideWidget(btn.closest(".grid-stack-item"));
+      });
+    });
+
+    gridEl.querySelectorAll(".dm-widget-remove").forEach((btn) => {
+      btn.addEventListener("click", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        removeWidgetCompletely(btn.closest(".grid-stack-item"));
+      });
+    });
+
+    hiddenList?.querySelectorAll(".dm-hidden-chip button").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const chip = btn.closest(".dm-hidden-chip");
+        const name = chip.textContent.trim().replace(/\s*\+$/, "");
+        restoreWidget(chip.dataset.widgetId, name);
+      });
+    });
+
+    if (saveButtonId) {
+      document.getElementById(saveButtonId)?.addEventListener("click", (e) => {
+        e.preventDefault();
         updateLayout();
-
-        return {
-            grid, updateLayout, markChanged, hideWidget, restoreWidget, addWidget: (opts) => {
-                const el = grid.addWidget(opts);
-                if (el) {
-                    el.querySelectorAll('.dm-widget-hide').forEach((btn) => {
-                        btn.addEventListener('click', (e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            hideWidget(el);
-                        });
-                    });
-                }
-                return el;
-            }
-        };
+        form?.submit();
+      });
     }
 
-    const mainManager = initGridManager(
-        '#tab-layout .dm-grid',
-        'layout-data',
-        'hidden-widgets-list',
-        'customize-form',
-        'unsaved-bar',
-        null
+    form?.addEventListener("submit", updateLayout);
+    updateLayout();
+
+    return {
+      grid,
+      updateLayout,
+      markChanged,
+      hideWidget,
+      restoreWidget,
+      removeWidgetCompletely,
+      addWidget: (opts) => {
+        const el = grid.addWidget(opts);
+        if (el) {
+          el.querySelectorAll(".dm-widget-hide").forEach((btn) => {
+            btn.addEventListener("click", (e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              hideWidget(el);
+            });
+          });
+          el.querySelectorAll(".dm-widget-remove").forEach((btn) => {
+            btn.addEventListener("click", (e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              removeWidgetCompletely(el);
+            });
+          });
+        }
+        return el;
+      },
+    };
+  }
+
+  const mainManager = initGridManager(
+    "#tab-layout .dm-grid",
+    "layout-data",
+    "hidden-widgets-list",
+    "customize-form",
+    "unsaved-bar",
+    null,
+  );
+
+  if (mainManager) {
+    window._mainGridManager = mainManager;
+    document
+      .getElementById("reset-layout-btn")
+      ?.addEventListener("click", (e) => {
+        e.preventDefault();
+        if (confirm("Réinitialiser la disposition par défaut ?")) {
+          document.getElementById("reset-layout").value = "1";
+          document.getElementById("customize-form")?.submit();
+        }
+      });
+  }
+
+  const editGridEl = document.getElementById("edit-group-grid");
+  if (editGridEl) {
+    const editManager = initGridManager(
+      "#edit-group-grid",
+      "edit-layout-data",
+      "edit-hidden-widgets-list",
+      "edit-group-form",
+      "unsaved-bar",
+      null,
     );
 
-    if (mainManager) {
-        window._mainGridManager = mainManager;
-        document.getElementById('reset-layout-btn')?.addEventListener('click', (e) => {
-            e.preventDefault();
-            if (confirm('Réinitialiser la disposition par défaut ?')) {
-                document.getElementById('reset-layout').value = '1';
-                document.getElementById('customize-form')?.submit();
-            }
-        });
+    if (editManager) {
+      window._editGridManager = editManager;
     }
+  }
 
-    const editGridEl = document.getElementById('edit-group-grid');
-    if (editGridEl) {
-        const editManager = initGridManager(
-            '#edit-group-grid',
-            'edit-layout-data',
-            'edit-hidden-widgets-list',
-            'edit-group-form',
-            'unsaved-bar',
-            null
-        );
-
-        if (editManager) {
-            window._editGridManager = editManager;
-        }
-    }
-
-    window.DmGrid = { GRID_CONFIG, escapeHtml, createWidgetContent, initGridManager };
+  window.DmGrid = {
+    GRID_CONFIG,
+    escapeHtml,
+    createWidgetContent,
+    initGridManager,
+  };
 });
