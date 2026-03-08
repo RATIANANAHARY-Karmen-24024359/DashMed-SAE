@@ -205,7 +205,6 @@ final class CustomizationView
                             </form>
                         </div>
 
-                        <!-- ── Onglet Ajouter un groupe ── -->
                         <div id="tab-add_group" class="dm-tab-content" <?= $activeTab !== 'add_group' ? 'style="display:none;"' : '' ?>>
                             <div class="dm-group-form-wrap">
                                 <form method="POST" action="/?page=custom_group" id="create-group-form" class="dm-form-card"
@@ -275,7 +274,6 @@ final class CustomizationView
                             </div>
                         </div>
 
-                        <!-- ── Onglet Mes groupes ── -->
                         <div id="tab-my_groups" class="dm-tab-content" <?= $activeTab !== 'my_groups' ? 'style="display:none;"' : '' ?>>
                             <div class="dm-groups-list-wrap">
                                 <?php if (empty($existingGroups)) : ?>
@@ -334,8 +332,6 @@ final class CustomizationView
                                 <?php endif; ?>
                             </div>
                         </div>
-
-                        <!-- ── Onglet Modifier un groupe ── -->
                         <?php if ($editGroupData !== null) :
                             $eg = $editGroupData['group'];
                             $egInds = $editGroupData['indicators'];

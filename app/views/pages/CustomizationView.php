@@ -65,8 +65,8 @@ final class CustomizationView
                     <section class="dm-customize">
                         <div class="dm-customize-header">
                             <div>
-                                <h1>Personnaliser le tableau de bord<   /h1>
-                                <p>Déplacez, redimensionnez et masquez les widgets.</p>
+                                <h1>Personnaliser le tableau de bord< /h1>
+                                        <p>Déplacez, redimensionnez et masquez les widgets.</p>
                             </div>
                             <div class="dm-customize-actions">
                                 <button type="button" id="reset-layout-btn"
@@ -102,8 +102,7 @@ final class CustomizationView
                             <div class="grid-stack dm-grid">
                                 <?php foreach ($widgets as $w) : ?>
                                     <div class="grid-stack-item" gs-x="<?= (int) $w['x'] ?>" gs-y="<?= (int) $w['y'] ?>"
-                                        gs-w="<?= max(4, (int) $w['w']) ?>"
-                                        gs-h="<?= max(3, (int) $w['h']) ?>" gs-min-w="4"
+                                        gs-w="<?= max(4, (int) $w['w']) ?>" gs-h="<?= max(3, (int) $w['h']) ?>" gs-min-w="4"
                                         gs-min-h="3" data-widget-id="<?= $h($w['id']) ?>">
                                         <div class="grid-stack-item-content">
                                             <div class="dm-widget">
@@ -114,8 +113,8 @@ final class CustomizationView
                                                     </div>
                                                     <div class="dm-widget-controls">
                                                         <span class="dm-widget-grip" title="Déplacer"><svg viewBox="0
-                                                                0 24 24"
-                                                                fill="none" stroke="currentColor" stroke-width="2">
+                                                                0 24 24" fill="none" stroke="currentColor"
+                                                                stroke-width="2">
                                                                 <circle cx="9" cy="5" r="1" />
                                                                 <circle cx="15" cy="5" r="1" />
                                                                 <circle cx="9" cy="12" r="1" />
@@ -124,11 +123,9 @@ final class CustomizationView
                                                                 <circle cx="15" cy="19" r="1" />
                                                             </svg></span>
                                                         <button type="button" class="dm-widget-hide" title="Masquer">
-                                                            <svg
-                                                                viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
                                                                 stroke-width="2">
-                                                                <path
-                                                                    d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7
+                                                                <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7
                                                                     0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9
                                                                     4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5
                                                                     18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1
