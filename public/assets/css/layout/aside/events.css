@@ -220,18 +220,19 @@
 }
 
 .has-tooltip {
-    cursor: help;
+    cursor: pointer;
 }
 
 .has-tooltip::before {
     content: attr(data-tooltip);
     position: absolute;
-    bottom: 100%;
-    left: 50%;
-    transform: translateX(-50%) translateY(-5px);
+    top: 100%;
+    bottom: auto;
+    left: 0;
+    transform: translateY(5px);
     padding: 6px 10px;
-    background: var(--slate-800);
-    color: var(--text-inverse);
+    background: #212529;
+    color: #ffffff;
     font-size: 11px;
     border-radius: 6px;
     white-space: nowrap;
@@ -240,7 +241,6 @@
     transition: opacity 0.2s, transform 0.2s;
     pointer-events: none;
     z-index: 1000;
-    backdrop-filter: blur(4px);
     font-weight: 500;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
 }
@@ -248,27 +248,28 @@
 .has-tooltip::after {
     content: '';
     position: absolute;
-    bottom: 100%;
-    left: 50%;
-    transform: translateX(-50%) translateY(0);
+    top: 100%;
+    bottom: auto;
+    left: 20px;
+    transform: translateY(0);
     border: 5px solid transparent;
-    border-top-color: var(--slate-800);
+    border-bottom-color: #212529;
     opacity: 0;
     visibility: hidden;
     transition: opacity 0.2s, transform 0.2s;
     pointer-events: none;
     z-index: 1000;
-    margin-bottom: -10px;
+    margin-top: -10px;
 }
 
 .has-tooltip:hover::before {
     opacity: 1;
     visibility: visible;
-    transform: translateX(-50%) translateY(-10px);
+    transform: translateY(10px);
 }
 
 .has-tooltip:hover::after {
     opacity: 1;
     visibility: visible;
-    transform: translateX(-50%) translateY(-5px);
+    transform: translateY(5px);
 }

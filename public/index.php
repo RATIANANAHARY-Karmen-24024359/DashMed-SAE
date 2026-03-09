@@ -53,7 +53,7 @@ Dev::init();
 if (isset($_SESSION['user_id'])) {
     try {
         $pdo = Database::getInstance();
-        $userModel = new \modules\models\Repositories\UserRepository($pdo);
+        $userModel = new \modules\models\repositories\UserRepository($pdo);
         $user = $userModel->getById((int) $_SESSION['user_id']);
 
         if (!$user) {
@@ -131,6 +131,8 @@ function resolveRoute(string $path): array
         return ['modules\\controllers\\PatientController', 'apiHistory'];
     if ($segments[0] === 'api_live_metrics')
         return ['modules\\controllers\\PatientController', 'apiLiveMetrics'];
+    if ($segments[0] === 'api_stream')
+        return ['modules\\controllers\\PatientController', 'apiStream'];
 
     return ['RouteNotFound', null];
 }

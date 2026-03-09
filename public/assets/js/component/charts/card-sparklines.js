@@ -1,16 +1,23 @@
 (function () {
-    if (!window.Chart || typeof createChart !== "function") return;
+    if (!window.echarts) return;
 
     const cards = document.querySelectorAll("article.card");
     if (!cards.length) return;
 
-    /**
-     * Extracts historical data and thresholds from a dashboard card
-     * and generates a miniaturized Sparkline chart preview via Chart.js.
-     * 
-     * @param {HTMLElement} card - The HTML <article> element of the indicator card.
-     * @returns {void}
-     */
+    const getCssVar = (name) => {
+        let val = getComputedStyle(document.body || document.documentElement).getPropertyValue(name).trim();
+        if (!val) return name;
+        return val;
+    };
+
+    const resolveColor = (color) => {
+        if (typeof color === 'string' && color.startsWith('var(')) {
+            const match = color.match(/var\((--[^)]+)\)/);
+            return match ? getCssVar(match[1]) : color;
+        }
+        return color;
+    };
+
     window.renderSparkline = function (card) {
         const slug = card.dataset.slug;
         if (!slug) return;
@@ -20,17 +27,15 @@
         const valueOnlyContainer = card.querySelector('.card-value-only-container');
         const sparkContainer = card.querySelector('.card-spark');
         const headerValue = card.querySelector('.card-header .value');
+        const chartLoader = card.querySelector('.card-chart-loader');
 
-        /**
-         * CSS Layout Toggling:
-         * To avoid DOM manipulation issues when dynamically changing chart types, 
-         * both the text-only layout and the canvas layout are pre-rendered into the DOM.
-         * We isolate their visibility here instead of destroying/creating elements.
-         */
+        const hideLoader = () => { if (chartLoader) chartLoader.classList.add('hidden'); };
+
         if (type === 'value') {
             if (valueOnlyContainer) valueOnlyContainer.style.display = 'flex';
             if (sparkContainer) sparkContainer.style.display = 'none';
             if (headerValue) headerValue.style.display = 'none';
+            hideLoader();
             return;
         } else {
             if (valueOnlyContainer) valueOnlyContainer.style.display = 'none';
@@ -39,11 +44,9 @@
         }
 
         const dataList = card.querySelector("ul[data-spark]");
-        const canvas = card.querySelector("canvas.card-spark-canvas");
+        const canvas = card.querySelector(".card-spark-canvas");
 
-        if (!canvas || !dataList) return;
-
-        const canvasId = canvas.id;
+        if (!canvas || !dataList) { hideLoader(); return; }
 
         const items = dataList.querySelectorAll("li");
         const noDataPlaceholder = card.querySelector(".no-data-placeholder");
@@ -51,6 +54,7 @@
         if (!items.length) {
             if (canvas) canvas.style.display = 'none';
             if (noDataPlaceholder) noDataPlaceholder.style.display = 'flex';
+            hideLoader();
             return;
         }
 
@@ -65,187 +69,224 @@
             const d = new Date(time);
             if (isNaN(d.getTime())) return;
 
-            rawData.push({ time: d, value: val });
+            rawData.push([d.getTime(), val]);
         });
 
         if (!rawData.length) {
             if (canvas) canvas.style.display = 'none';
             if (noDataPlaceholder) noDataPlaceholder.style.display = 'flex';
+            hideLoader();
             return;
         }
 
-        rawData.sort((a, b) => a.time.getTime() - b.time.getTime());
-
-        const data = rawData.map(d => ({ x: d.time.getTime(), y: d.value }));
-        const labels = [];
+        rawData.sort((a, b) => a[0] - b[0]);
 
         if (canvas) canvas.style.display = 'block';
         if (noDataPlaceholder) noDataPlaceholder.style.display = 'none';
 
-        const title = card.dataset.display || "";
+        const chartColor = resolveColor("var(--chart-color)") || '#275afe';
+        const gridColor = resolveColor("var(--chart-grid-color)") || '#e5e7eb';
+        const tickColor = resolveColor("var(--chart-tick-color)") || '#6b7280';
+        const tooltipBg = resolveColor("var(--chart-tooltip-bg)") || '#ffffff';
+        const tooltipText = resolveColor("var(--chart-tooltip-text)") || '#111827';
+        const tooltipBorder = resolveColor("var(--chart-tooltip-border)") || '#e5e7eb';
 
         const parseDatasetNumber = (val) => (val !== undefined && val !== null && val !== '') ? Number(val) : NaN;
-        const nmin = parseDatasetNumber(card.dataset.nmin);
-        const nmax = parseDatasetNumber(card.dataset.nmax);
-        const cmin = parseDatasetNumber(card.dataset.cmin);
-        const cmax = parseDatasetNumber(card.dataset.cmax);
-        const dmin = parseDatasetNumber(card.dataset.dmin);
-        const dmax = parseDatasetNumber(card.dataset.dmax);
-
         const thresholds = {
-            nmin: Number.isFinite(nmin) ? nmin : null,
-            nmax: Number.isFinite(nmax) ? nmax : null,
-            cmin: Number.isFinite(cmin) ? cmin : null,
-            cmax: Number.isFinite(cmax) ? cmax : null
+            nmin: parseDatasetNumber(card.dataset.nmin),
+            nmax: parseDatasetNumber(card.dataset.nmax),
+            cmin: parseDatasetNumber(card.dataset.cmin),
+            cmax: parseDatasetNumber(card.dataset.cmax)
         };
-
         const view = {
-            min: Number.isFinite(dmin) ? dmin : null,
-            max: Number.isFinite(dmax) ? dmax : null
+            min: parseDatasetNumber(card.dataset.dmin),
+            max: parseDatasetNumber(card.dataset.dmax)
         };
 
-        const gridColor = 'var(--chart-grid-color)';
-        const tickColor = 'var(--chart-tick-color)';
+        if (canvas.chartInstance) {
+            canvas.chartInstance.dispose();
+        }
 
-        const extra = {
-            options: {
-                maintainAspectRatio: false,
-                responsive: true,
-                interaction: {
-                    mode: 'index',
-                    intersect: false,
-                },
-                plugins: {
-                    legend: { display: false },
-                    tooltip: {
-                        enabled: true,
-                        backgroundColor: 'var(--chart-tooltip-bg)',
-                        titleColor: 'var(--chart-tooltip-text)',
-                        bodyColor: 'var(--chart-tooltip-text)',
-                        borderColor: 'var(--chart-tooltip-border)',
-                        borderWidth: 1,
-                        filter: function (item) {
-                            return !item.dataset.label || !item.dataset.label.startsWith('_');
-                        },
-                        callbacks: {
-                            title: function (context) {
-                                if (!context.length) return '';
-                                const raw = context[0].parsed.x;
-                                if (!raw) return context[0].label || '';
-                                const d = new Date(raw);
-                                return d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
-                            }
-                        }
-                    },
-                    title: { display: false }
-                },
-                scales: {
-                    x: {
-                        type: 'time',
-                        display: true,
-                        grid: { display: true, color: gridColor },
-                        time: {
-                            tooltipFormat: 'HH:mm:ss',
-                            displayFormats: {
-                                millisecond: 'HH:mm:ss',
-                                second: 'HH:mm:ss',
-                                minute: 'HH:mm:ss',
-                                hour: 'HH:mm:ss'
-                            }
-                        },
-                        ticks: {
-                            display: true,
-                            color: tickColor,
-                            font: { size: 12, weight: '600' },
-                            callback: function (value) {
-                                const d = new Date(value);
-                                return d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
-                            }
-                        }
-                    },
-                    y: {
-                        display: true,
-                        position: 'left',
-                        grid: {
-                            color: gridColor,
-                            drawBorder: false,
-                        },
-                        ticks: {
-                            color: tickColor,
-                            font: { size: 15, weight: '600' },
-                            maxTicksLimit: 4,
-                            padding: 5
-                        },
-                        border: { display: false }
-                    }
-                },
-                layout: { padding: { left: 10, right: 10, top: 10, bottom: 5 } }
-            }
-        };
+        const chartInstance = echarts.init(canvas, null, {
+            renderer: 'canvas',
+            devicePixelRatio: window.devicePixelRatio
+        });
+        canvas.chartInstance = chartInstance;
+
+        let options = {};
 
         if (type === 'pie' || type === 'doughnut') {
-            const currentVal = data[0];
+            const currentVal = rawData[0][1];
             const max = parseFloat(card.dataset.max) || 100;
             const remaining = Math.max(0, max - currentVal);
+            const radius = type === 'doughnut' ? ['50%', '90%'] : '90%';
 
-            createChart(
-                type,
-                title,
-                [],
-                [currentVal],
-                canvasId,
-                "var(--chart-color)",
-                {},
-                {},
-                {
-                    mode: 'singlePercent',
-                    max: max,
-                    labels: ['Mesure', 'Reste'],
-                    colors: ['var(--chart-color)', 'rgba(0,0,0,0.1)'],
-                    options: {
-                        maintainAspectRatio: false,
-                        cutout: type === 'doughnut' ? '75%' : '0%',
-                        layout: { padding: 5 },
-                        plugins: {
-                            legend: { display: true, position: 'bottom', labels: { boxWidth: 10, padding: 10, color: tickColor } },
-                            tooltip: {
-                                enabled: true,
-                                backgroundColor: 'var(--chart-tooltip-bg)',
-                                titleColor: 'var(--chart-tooltip-text)',
-                                bodyColor: 'var(--chart-tooltip-text)',
-                                borderColor: 'var(--chart-tooltip-border)',
-                                borderWidth: 1
-                            }
-                        }
+            options = {
+                tooltip: {
+                    trigger: 'item',
+                    backgroundColor: tooltipBg,
+                    textStyle: { color: tooltipText },
+                    borderColor: tooltipBorder,
+                },
+                series: [
+                    {
+                        type: 'pie',
+                        radius: radius,
+                        center: ['50%', '50%'],
+                        data: [
+                            { value: currentVal, name: 'Mesure', itemStyle: { color: chartColor } },
+                            { value: remaining, name: 'Reste', itemStyle: { color: 'rgba(0,0,0,0.1)' } }
+                        ],
+                        label: { show: false },
+                        silent: false
                     }
-                }
-            );
+                ]
+            };
         } else {
-            if (type === 'line') {
-                extra.options.elements = {
-                    point: { radius: 0, hoverRadius: 4, hitRadius: 10 },
-                    line: {
-                        borderWidth: 2,
-                        tension: 0.3,
-                        fill: false,
-                        backgroundColor: 'var(--bg-primary-subtle)',
-                        borderColor: 'var(--chart-color)'
-                    }
-                };
-            } else if (type === 'scatter') {
-                extra.options.elements = {
-                    point: { radius: 4, hoverRadius: 6, hitRadius: 10, backgroundColor: 'var(--chart-color)' },
-                    line: {
-                        borderWidth: 0,
-                        tension: 0,
-                        fill: false,
-                        borderColor: 'var(--chart-color)'
-                    }
-                };
+            const eType = type === 'line' ? 'line' : (type === 'bar' ? 'bar' : 'scatter');
+
+            const markArea = [];
+            const nmin = thresholds.nmin;
+            const nmax = thresholds.nmax;
+            const cmin = thresholds.cmin;
+            const cmax = thresholds.cmax;
+            const c_red = resolveColor('var(--chart-band-red)');
+            const c_yellow = resolveColor('var(--chart-band-yellow)');
+            const c_green = resolveColor('var(--chart-band-green)');
+
+            const bMin = view.min !== undefined && view.min !== null && !isNaN(view.min) ? view.min : 0;
+            const bMax = view.max !== undefined && view.max !== null && !isNaN(view.max) ? view.max : 250; // fallback max
+
+            if (Number.isFinite(cmax) && Number.isFinite(nmin) && cmax <= nmin) {
+                // Inverted scale (e.g. Glasgow)
+                markArea.push([{ yAxis: cmax, itemStyle: { color: c_red } }, { yAxis: bMin }]);
+                markArea.push([{ yAxis: nmin, itemStyle: { color: c_yellow } }, { yAxis: cmax }]);
+                const greenTop = Number.isFinite(nmax) ? nmax : bMax;
+                if (greenTop > nmin) markArea.push([{ yAxis: greenTop, itemStyle: { color: c_green } }, { yAxis: nmin }]);
+                if (Number.isFinite(nmax) && bMax > nmax) markArea.push([{ yAxis: bMax, itemStyle: { color: c_yellow } }, { yAxis: nmax }]);
+            } else if (Number.isFinite(nmax) && Number.isFinite(cmin) && nmax <= cmin) {
+                // Inverted scale 2
+                const greenBottom = Number.isFinite(nmin) ? nmin : bMin;
+                if (Number.isFinite(nmin) && greenBottom > bMin) markArea.push([{ yAxis: greenBottom, itemStyle: { color: c_yellow } }, { yAxis: bMin }]);
+                if (nmax > greenBottom) markArea.push([{ yAxis: nmax, itemStyle: { color: c_green } }, { yAxis: greenBottom }]);
+                markArea.push([{ yAxis: cmin, itemStyle: { color: c_yellow } }, { yAxis: nmax }]);
+                markArea.push([{ yAxis: bMax, itemStyle: { color: c_red } }, { yAxis: cmin }]);
+            } else {
+                // Standard scale
+                if (Number.isFinite(cmin)) markArea.push([{ yAxis: cmin, itemStyle: { color: c_red } }, { yAxis: bMin }]);
+
+                let greenBottom = bMin;
+                if (Number.isFinite(nmin)) {
+                    let bottomEdge = Number.isFinite(cmin) ? cmin : bMin;
+                    greenBottom = nmin;
+                    if (nmin > bottomEdge) markArea.push([{ yAxis: nmin, itemStyle: { color: c_yellow } }, { yAxis: bottomEdge }]);
+                }
+
+                let greenTop = bMax;
+                if (Number.isFinite(nmax)) {
+                    let topEdge = Number.isFinite(cmax) ? cmax : bMax;
+                    greenTop = nmax;
+                    if (topEdge > nmax) markArea.push([{ yAxis: topEdge, itemStyle: { color: c_yellow } }, { yAxis: nmax }]);
+                }
+
+                if (greenTop > greenBottom) {
+                    markArea.push([{ yAxis: greenTop, itemStyle: { color: c_green } }, { yAxis: greenBottom }]);
+                }
+
+                if (Number.isFinite(cmax)) {
+                    markArea.push([{ yAxis: bMax, itemStyle: { color: c_red } }, { yAxis: cmax }]);
+                }
             }
 
-            createChart(type, title, labels, data, canvasId, "var(--chart-color)", thresholds, view, extra);
+            options = {
+                grid: {
+                    top: 10,
+                    bottom: 0,
+                    left: 0,
+                    right: 15,
+                    containLabel: true
+                },
+                tooltip: {
+                    trigger: 'axis',
+                    backgroundColor: tooltipBg,
+                    textStyle: { color: tooltipText },
+                    borderColor: tooltipBorder,
+                    formatter: function (params) {
+                        const date = new Date(parseInt(params[0].value[0]));
+                        if (isNaN(date.getTime())) return '';
+                        const dateStr = date.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+                        const timeStr = date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
+                        const val = params[0].value[1];
+                        return `${dateStr} ${timeStr}<br/><b>${val}</b>`;
+                    }
+                },
+                xAxis: {
+                    type: 'time', // Fix: Use 'time' instead of 'category' for proper zoom
+                    boundaryGap: false,
+                    show: true,
+                    z: 5,
+                    splitLine: { show: true, lineStyle: { color: gridColor, type: 'solid' } },
+                    axisLabel: {
+                        show: true,
+                        color: tickColor,
+                        formatter: '{HH}:{mm}',
+                        interval: 'auto',
+                        hideOverlap: true
+                    },
+                    axisTick: { show: false },
+                    axisLine: { show: false }
+                },
+                yAxis: {
+                    type: 'value',
+                    min: view.min,
+                    max: view.max,
+                    show: true,
+                    z: 5,
+                    splitLine: { show: true, lineStyle: { color: gridColor, type: 'solid' } },
+                    axisLabel: { show: true, color: tickColor },
+                    axisTick: { show: false },
+                    axisLine: { show: false }
+                },
+                series: [{
+                    data: rawData,
+                    type: eType,
+                    showSymbol: type === 'scatter',
+                    symbolSize: type === 'scatter' ? 4 : 0,
+                    smooth: true,
+                    itemStyle: { color: chartColor },
+                    lineStyle: { color: chartColor, width: 2 },
+                    markArea: {
+                        silent: true,
+                        data: markArea
+                    }
+                }]
+            };
+
+            const durationVal = card.dataset.displayDuration;
+            if (durationVal && durationVal !== 'all' && rawData.length > 0) {
+                const hours = parseFloat(durationVal);
+                if (!isNaN(hours)) {
+                    const lastTime = rawData[rawData.length - 1][0];
+                    const minTime = lastTime - (hours * 3600 * 1000);
+                    options.dataZoom = [
+                        { type: 'inside', startValue: minTime, endValue: lastTime }
+                    ];
+                }
+            } else if (durationVal === 'all') {
+                options.dataZoom = [
+                    { type: 'inside', start: 0, end: 100 }
+                ];
+            }
         }
+
+        chartInstance.setOption(options);
+
+        // Resize observer instead of resize window
+        const ro = new ResizeObserver(() => {
+            chartInstance.resize();
+        });
+        ro.observe(canvas.parentElement);
+
     };
 
     cards.forEach((card) => {
@@ -261,12 +302,60 @@
         });
     });
 
-    setInterval(async function () {
+    document.addEventListener('change', function (e) {
+        if (e.target.classList.contains('card-interval-select')) {
+            const select = e.target;
+            const card = select.closest('article.card');
+            if (!card) return;
+
+            const val = select.value;
+            const slug = card.dataset.slug;
+
+            // Update local value
+            card.dataset.cardDisplayDuration = val;
+
+            // Persist preference for this specific card
+            const formData = new FormData();
+            formData.append('parameter_id', slug);
+            formData.append('chart_type', val);
+            formData.append('chart_pref_submit', '1');
+            formData.append('preference_type', 'card_duration');
+            fetch(window.location.href, { method: 'POST', body: formData }).catch(console.error);
+
+            // Update chart zoom
+            const canvas = card.querySelector(".card-spark-canvas");
+            if (canvas && canvas.chartInstance) {
+                const chart = canvas.chartInstance;
+                if (val === 'all') {
+                    chart.dispatchAction({ type: 'dataZoom', start: 0, end: 100 });
+                } else {
+                    const hours = parseFloat(val);
+                    if (!isNaN(hours)) {
+                        const opt = chart.getOption();
+                        const data = opt.series[0].data;
+                        if (data && data.length > 0) {
+                            const lastTime = data[data.length - 1][0];
+                            const minTime = lastTime - (hours * 3600 * 1000);
+                            chart.dispatchAction({ type: 'dataZoom', startValue: minTime, endValue: lastTime });
+                        }
+                    }
+                }
+            }
+        }
+    });
+
+    window.addEventListener('DashMedDurationChange', function (e) {
+        // This event comes from the MODAL select.
+        // User says: 'quand je change le temps de la modale ça... change aussi celui de la card mais lui ça le mémorise'
+        // Actually, if we want them independent, the modal change SHOULD NOT affect the card.
+        // I'll comment this out or make it only update open modals.
+    });
+
+
+    window.addEventListener('DashMedMetricsUpdate', function (event) {
         if (!document.querySelector("article.card")) return;
         try {
-            const res = await fetch('/api_live_metrics');
-            if (!res.ok) return;
-            const metrics = await res.json();
+            const metrics = event.detail;
             if (metrics.error) return;
 
             metrics.forEach(metric => {
@@ -301,14 +390,22 @@
                     card.classList.remove('card--alert', 'card--warn');
                 }
 
-                const canvas = card.querySelector("canvas.card-spark-canvas");
+                const canvas = card.querySelector(".card-spark-canvas");
                 if (metric.chart_type === 'pie' || metric.chart_type === 'doughnut') {
                     if (canvas && canvas.chartInstance && metric.value !== '') {
                         const chart = canvas.chartInstance;
                         const currentVal = Number(metric.value);
                         const max = parseFloat(card.dataset.max) || 100;
-                        chart.data.datasets[0].data = [currentVal, Math.max(0, max - currentVal)];
-                        chart.update('none');
+                        const remaining = Math.max(0, max - currentVal);
+
+                        chart.setOption({
+                            series: [{
+                                data: [
+                                    { value: currentVal, name: 'Mesure', itemStyle: { color: resolveColor("var(--chart-color)") } },
+                                    { value: remaining, name: 'Reste', itemStyle: { color: 'rgba(0,0,0,0.1)' } }
+                                ]
+                            }]
+                        });
                     }
                 } else {
                     const dataList = card.querySelector("ul[data-spark]");
@@ -320,30 +417,39 @@
                             li.dataset.value = metric.value;
                             li.dataset.flag = metric.is_crit_flag ? '1' : '0';
 
+                            /**
+                             * Append new data point to the DOM for synchronization.
+                             * Maintaining full history as per user requirements.
+                             */
                             dataList.appendChild(li);
-                            while (dataList.children.length > 50) {
-                                dataList.removeChild(dataList.firstElementChild);
-                            }
 
-                            const canvas = card.querySelector("canvas.card-spark-canvas");
-                            if (canvas && canvas.chartInstance && canvas.chartInstance.data.datasets.length > 0) {
+                            if (canvas && canvas.chartInstance) {
                                 const chart = canvas.chartInstance;
                                 const timeMs = new Date(metric.time_iso).getTime();
                                 const val = Number(metric.value);
 
                                 if (isNaN(timeMs)) return;
 
-                                const ds = chart.data.datasets[0];
-                                if (!ds || !ds.data) return;
+                                const option = chart.getOption();
+                                if (option.series && option.series.length > 0) {
+                                    const ds = option.series[0].data || [];
+                                    const exists = ds.some(p => p[0] === timeMs);
+                                    if (!exists) {
+                                        ds.push([timeMs, val]);
+                                        ds.sort((a, b) => a[0] - b[0]);
+                                        if (ds.length > 100) ds.shift();
 
-                                const exists = ds.data.some(p => p.x === timeMs);
-                                if (!exists) {
-                                    ds.data.push({ x: timeMs, y: val });
-                                    ds.data.sort((a, b) => a.x - b.x);
+                                        const updateObj = { series: [{ data: ds }] };
 
-                                    if (ds.data.length > 100) ds.data.shift();
+                                        const durationVal = card.dataset.displayDuration;
+                                        if (durationVal && durationVal !== 'all') {
+                                            const hours = parseFloat(durationVal);
+                                            const minTime = timeMs - (hours * 3600 * 1000);
+                                            updateObj.dataZoom = [{ type: 'inside', startValue: minTime, endValue: timeMs }];
+                                        }
 
-                                    chart.update('none');
+                                        chart.setOption(updateObj);
+                                    }
                                 }
                             } else {
                                 window.renderSparkline(card);
@@ -353,7 +459,9 @@
                 }
             });
         } catch (e) {
-            console.error('Live metrics fetch error:', e);
+            console.error('SSE metrics fetch error:', e);
         }
-    }, 1000);
+    });
+
 })();
+
