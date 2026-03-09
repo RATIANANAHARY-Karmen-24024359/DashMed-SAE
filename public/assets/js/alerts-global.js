@@ -156,7 +156,7 @@ const DashMedGlobalAlerts = (function () {
 
     function showWarningToast(a) {
         const timeout = getNotificationTimeout();
-        iziToast.warning({
+        iziToast.show({
             ...baseToastOpts(buildToastHTML(a, 'warning', timeout), timeout),
             onOpening: (_, t) => {
                 t.querySelector('[data-close]')?.addEventListener('click', () => iziToast.hide({}, t));
@@ -171,7 +171,7 @@ const DashMedGlobalAlerts = (function () {
 
     function showInfoToast(a) {
         const timeout = getNotificationTimeout();
-        iziToast.info({ ...baseToastOpts(buildInfoToastHTML(a, timeout), timeout) });
+        iziToast.show({ ...baseToastOpts(buildInfoToastHTML(a, timeout), timeout) });
     }
 
     function showCriticalToast(a) {
@@ -198,7 +198,7 @@ const DashMedGlobalAlerts = (function () {
             }
         };
 
-        iziToast.error(opts);
+        iziToast.show(opts);
     }
 
     function dismissCriticalToast(parameterId) {
