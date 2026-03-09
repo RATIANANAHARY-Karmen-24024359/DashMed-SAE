@@ -111,9 +111,33 @@ class PatientrecordView
                                      ENT_QUOTES, 'UTF-8'
                              ) ?>
 
-                        </span>
+    </span>
                         <?php include dirname(__DIR__) . '/partials/_searchbar.php'; ?>
+                        <div class="live-clock" id="live-clock">
+                            <span class="live-clock__time" id="live-clock-time"></span>
+                            <span class="live-clock__date" id="live-clock-date"></span>
+                        </div>
                     </div>
+                    <script>
+                        (function () {
+                            const timeEl = document.getElementById('live-clock-time');
+                            const dateEl = document.getElementById('live-clock-date');
+                            const days = ['Dimanche','Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi'];
+                            const months = ['jan.','fév.','mars','avr.','mai','juin','juil.','août','sept.','oct.','nov.','déc.'];
+
+                            function tick() {
+                                const now = new Date();
+                                const h = String(now.getHours()).padStart(2, '0');
+                                const m = String(now.getMinutes()).padStart(2, '0');
+                                const s = String(now.getSeconds()).padStart(2, '0');
+                                timeEl.textContent = h + ':' + m + ':' + s;
+                                dateEl.textContent = days[now.getDay()] + ' ' + now.getDate() + ' ' + months[now.getMonth()];
+                            }
+
+                            tick();
+                            setInterval(tick, 1000);
+                        })();
+                    </script>
 
                     <input type="hidden" id="context-patient-id" value="<?= $h($this->patientData['id_patient'] ?? '') ?>">
 

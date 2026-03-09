@@ -57,13 +57,13 @@ class DashboardView
      * @param array<string, mixed> $userLayout Layout prefs
      */
     public function __construct(
-        array $consultationsPassees = [],
-        array $consultationsFutures = [],
-        array $rooms = [],
-        array $patientMetrics = [],
-        array $patientData = [],
-        array $chartTypes = [],
-        array $userLayout = []
+            array $consultationsPassees = [],
+            array $consultationsFutures = [],
+            array $rooms = [],
+            array $patientMetrics = [],
+            array $patientData = [],
+            array $chartTypes = [],
+            array $userLayout = []
     ) {
         $this->consultationsPassees = $consultationsPassees;
         $this->consultationsFutures = $consultationsFutures;
@@ -125,37 +125,37 @@ class DashboardView
         };
 
         $layout = new \modules\views\layout\Layout(
-            title: 'Dashboard',
-            cssFiles: [
-                'assets/css/pages/dashboard.css?v=' . time(),
-                'assets/css/pages/monitoring.css',
-                'assets/css/components/searchbar/searchbar.css',
-                'assets/css/components/card.css',
-                'assets/css/components/popup.css',
-                'assets/css/components/modal.css?v=' . time(),
-                'assets/css/layout/aside/calendar.css',
-                'assets/css/layout/aside/patient-info.css',
-                'assets/css/layout/aside/events.css',
-                'assets/css/layout/aside/doctor-list.css',
-                'assets/css/layout/aside/aside.css',
-            ],
-            jsFiles: [
-                'assets/js/consultation-filter.js',
-                'assets/js/pages/dash.js',
-                'https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js',
-                'assets/js/service/stream.js?v=' . time(),
-                'assets/js/component/modal/chart.js?v=' . time(),
-                'assets/js/component/modal/navigation.js',
-                'assets/js/component/charts/card-sparklines.js?v=' . time(),
-                'assets/js/component/modal/modal.js',
-            ],
-            inlineStyles: '.evenement-content {
+                title: 'Dashboard',
+                cssFiles: [
+                        'assets/css/pages/dashboard.css?v=' . time(),
+                        'assets/css/pages/monitoring.css',
+                        'assets/css/components/searchbar/searchbar.css',
+                        'assets/css/components/card.css',
+                        'assets/css/components/popup.css',
+                        'assets/css/components/modal.css?v=' . time(),
+                        'assets/css/layout/aside/calendar.css',
+                        'assets/css/layout/aside/patient-info.css',
+                        'assets/css/layout/aside/events.css',
+                        'assets/css/layout/aside/doctor-list.css',
+                        'assets/css/layout/aside/aside.css',
+                ],
+                jsFiles: [
+                        'assets/js/consultation-filter.js',
+                        'assets/js/pages/dash.js',
+                        'https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js',
+                        'assets/js/service/stream.js?v=' . time(),
+                        'assets/js/component/modal/chart.js?v=' . time(),
+                        'assets/js/component/modal/navigation.js',
+                        'assets/js/component/charts/card-sparklines.js?v=' . time(),
+                        'assets/js/component/modal/modal.js',
+                ],
+                inlineStyles: '.evenement-content {
                     display: flex;
                     align-items: center;
                     gap: 15px;
                 }',
-            showSidebar: true,
-            showAlerts: true
+                showSidebar: true,
+                showAlerts: true
         );
 
 
@@ -176,22 +176,46 @@ class DashboardView
                     <div class="searchbar-with-patient">
                         <span class="patient-name-label">
                              <?= htmlspecialchars(
-                                   trim(
-                                 (is_scalar($v = $this->patientData['first_name'] ?? '') ? (string)$v : '') . ' ' .
-                                        (is_scalar($v = $this->patientData['last_name'] ?? '') ? (string)$v : '')
-                                   ),
-                ENT_QUOTES, 'UTF-8'
-        ) ?>
+                                     trim(
+                                             (is_scalar($v = $this->patientData['first_name'] ?? '') ? (string)$v : '') . ' ' .
+                                             (is_scalar($v = $this->patientData['last_name'] ?? '') ? (string)$v : '')
+                                     ),
+                                     ENT_QUOTES, 'UTF-8'
+                             ) ?>
 
     </span>
                         <?php include dirname(__DIR__) . '/partials/_searchbar.php'; ?>
+                        <div class="live-clock" id="live-clock">
+                            <span class="live-clock__time" id="live-clock-time"></span>
+                            <span class="live-clock__date" id="live-clock-date"></span>
+                        </div>
                     </div>
+                    <script>
+                        (function () {
+                            const timeEl = document.getElementById('live-clock-time');
+                            const dateEl = document.getElementById('live-clock-date');
+                            const days = ['Dimanche','Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi'];
+                            const months = ['jan.','fév.','mars','avr.','mai','juin','juil.','août','sept.','oct.','nov.','déc.'];
+
+                            function tick() {
+                                const now = new Date();
+                                const h = String(now.getHours()).padStart(2, '0');
+                                const m = String(now.getMinutes()).padStart(2, '0');
+                                const s = String(now.getSeconds()).padStart(2, '0');
+                                timeEl.textContent = h + ':' + m + ':' + s;
+                                dateEl.textContent = days[now.getDay()] + ' ' + now.getDate() + ' ' + months[now.getMonth()];
+                            }
+
+                            tick();
+                            setInterval(tick, 1000);
+                        })();
+                    </script>
 
                     <input type="hidden" id="context-patient-id" value="<?= $patientIdAttr ?>">
 
 
                     <section class="skeleton-wrapper skeleton-monitoring-grid" id="skeleton-cards" data-skeleton-for="real-cards"
-                        data-skeleton-auto data-skeleton-delay="400">
+                             data-skeleton-auto data-skeleton-delay="400">
                         <?php for ($i = 0; $i < 6; $i++): ?>
                             <div class="skeleton-card">
                                 <div class="skeleton-card-header">
@@ -227,7 +251,7 @@ class DashboardView
                 <button id="aside-show-btn" onclick="toggleAside()">☰</button>
                 <aside id="aside">
                     <div class="skeleton-wrapper skeleton-aside-section" id="skeleton-aside" data-skeleton-for="real-aside"
-                        data-skeleton-auto data-skeleton-delay="350">
+                         data-skeleton-auto data-skeleton-delay="350">
                         <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 8px;">
                             <div class="skeleton skeleton-circle" style="width: 48px; height: 48px;"></div>
                             <div style="flex: 1; display: flex; flex-direction: column; gap: 6px;">
@@ -253,10 +277,10 @@ class DashboardView
                         <section class="patient-infos">
                             <?php
                             $firstName = htmlspecialchars(
-                                is_scalar($v = $this->patientData['first_name']) ? (string) $v : 'Patient'
+                                    is_scalar($v = $this->patientData['first_name']) ? (string) $v : 'Patient'
                             );
                             $lastName = htmlspecialchars(
-                                is_scalar($v = $this->patientData['last_name']) ? (string) $v : 'Inconnu'
+                                    is_scalar($v = $this->patientData['last_name']) ? (string) $v : 'Inconnu'
                             );
                             $birthDateStr = is_scalar($v = $this->patientData['birth_date']) ? (string) $v : '';
                             $age = 'Âge inconnu';
@@ -268,10 +292,10 @@ class DashboardView
                                 }
                             }
                             $admissionCause = htmlspecialchars(
-                                is_scalar(
-                                    $v = $this->patientData['admission_cause']
-                                ) ?
-                                (string) $v : 'Aucun motif renseigné'
+                                    is_scalar(
+                                            $v = $this->patientData['admission_cause']
+                                    ) ?
+                                            (string) $v : 'Aucun motif renseigné'
                             );
                             ?>
                             <div class="pi-header">
@@ -281,7 +305,7 @@ class DashboardView
                             <p class="pi-cause"><?= $admissionCause ?></p>
 
                             <select id="id_rooms" name="room" onchange="location.href='/?page=dashboard&room=' + this.value"
-                                style="margin-top: 15px; width: 100%; padding: 8px;">
+                                    style="margin-top: 15px; width: 100%; padding: 8px;">
                                 <option value="" <?= $current === null ? 'selected' : '' ?>>
                                     -- Sélectionnez une chambre --
                                 </option>
@@ -323,8 +347,8 @@ class DashboardView
 
                             <?php
                             $toutesConsultations = array_merge(
-                                $this->consultationsPassees,
-                                $this->consultationsFutures
+                                    $this->consultationsPassees,
+                                    $this->consultationsFutures
                             );
 
                             if (!empty($toutesConsultations)):
@@ -359,13 +383,13 @@ class DashboardView
                                         <a href="/?page=medicalprocedure&id_patient=
                                     <?php echo urlencode((string) $patientId); ?>
                                     #<?php echo $this->getConsultationId($consultation); ?>" class="consultation-link"
-                                            data-date="<?php echo $isoDate; ?>">
+                                           data-date="<?php echo $isoDate; ?>">
                                             <div class="evenement-content">
                                                 <div class="date-container <?php if ($isPast) {
                                                     echo 'has-tooltip';
                                                 } ?>" <?php if ($isPast) {
-                                                     echo 'data-tooltip="Consultation déjà effectuée"';
-                                                 } ?>>
+                                                    echo 'data-tooltip="Consultation déjà effectuée"';
+                                                } ?>>
                                                     <span class="date">
                                                         <?php echo htmlspecialchars($this->formatDate($dateStr)); ?></span>
                                                     <?php if ($isPast):
@@ -385,7 +409,7 @@ class DashboardView
 
 
                             <a href="/?page=medicalprocedure&id_patient=<?php echo urlencode((string) $patientId); ?>"
-                                style="text-decoration: none; color: inherit;">
+                               style="text-decoration: none; color: inherit;">
                                 <p class="bouton-consultations">Afficher plus de contenu</p>
                             </a>
                             <br>
@@ -496,7 +520,7 @@ class DashboardView
                                 const card = entry.target;
                                 const state = cardStates.get(card);
                                 if (!state || !state.isCountingDown || state.hidden) continue;
-                                
+
                                 state.svgAnim = buildSVG(card, state.lastAlertColor || 'var(--text-muted, #999)', state.remaining);
                                 if (state.svgAnim && state.isHovered) {
                                     state.svgAnim.pause();
@@ -538,15 +562,15 @@ class DashboardView
                             state.remaining = HIDE_DELAY;
                             state.lastTick = Date.now();
                             state.isPaused = false;
-                            
+
                             state.svgAnim = buildSVG(card, color, state.remaining);
-                            
+
                             const isModalOpened = (activeModalCard === card && document.body.classList.contains('modal-open'));
                             if (state.isHovered || isModalOpened) {
                                 state.isPaused = true;
                                 if (state.svgAnim) state.svgAnim.pause();
                             }
-                            
+
                             resizeObserver.observe(card);
                         }
 
@@ -575,7 +599,7 @@ class DashboardView
                                 const state = cardStates.get(card);
                                 if (state) state.isHovered = true;
                             });
-                            
+
                             card.addEventListener('mouseleave', () => {
                                 const state = cardStates.get(card);
                                 if (state) state.isHovered = false;
@@ -616,7 +640,7 @@ class DashboardView
                                     } else {
                                         const isModalOpened = (activeModalCard === card && isModalGloballyOpen);
                                         const shouldBePaused = state.isHovered || isModalOpened;
-                                        
+
                                         if (shouldBePaused && !state.isPaused) {
                                             state.isPaused = true;
                                             if (state.svgAnim) state.svgAnim.pause();
@@ -633,7 +657,7 @@ class DashboardView
                                         if (state.remaining <= 0) {
                                             state.isCountingDown = false;
                                             resizeObserver.unobserve(card);
-                                            
+
                                             state.animating = true;
                                             const prog = card.querySelector('.hide-progress');
                                             if (prog) prog.remove();
