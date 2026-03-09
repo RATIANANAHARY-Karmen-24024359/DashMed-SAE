@@ -62,6 +62,9 @@ CREATE TABLE `users` (
                          `reset_expires` DATETIME DEFAULT NULL,
                          `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
                          `updated_at` DATETIME NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+                         `alert_volume` DECIMAL(3,2) NOT NULL DEFAULT 0.50,
+                         `alert_duration` INT NOT NULL DEFAULT 20000,
+                         `alert_dnd` TINYINT(1) NOT NULL DEFAULT 0,
 
                          PRIMARY KEY (`id_user`),
                          UNIQUE KEY `ux_users_email` (`email`),

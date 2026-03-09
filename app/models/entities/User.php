@@ -25,6 +25,9 @@ class User implements EntityInterface
     private int $adminStatus;
     private ?int $idProfession;
     private ?string $professionLabel;
+    private float $alertVolume;
+    private int $alertDuration;
+    private bool $alertDnd;
 
     public function __construct(
         int $id,
@@ -34,7 +37,10 @@ class User implements EntityInterface
         int $adminStatus = 0,
         ?string $password = null,
         ?int $idProfession = null,
-        ?string $professionLabel = null
+        ?string $professionLabel = null,
+        float $alertVolume = 0.50,
+        int $alertDuration = 20000,
+        bool $alertDnd = false
     ) {
         $this->id = $id;
         $this->firstName = $firstName;
@@ -44,6 +50,9 @@ class User implements EntityInterface
         $this->password = $password;
         $this->idProfession = $idProfession;
         $this->professionLabel = $professionLabel;
+        $this->alertVolume = $alertVolume;
+        $this->alertDuration = $alertDuration;
+        $this->alertDnd = $alertDnd;
     }
 
     public function getId(): int
@@ -78,6 +87,18 @@ class User implements EntityInterface
     {
         return $this->professionLabel;
     }
+    public function getAlertVolume(): float
+    {
+        return $this->alertVolume;
+    }
+    public function getAlertDuration(): int
+    {
+        return $this->alertDuration;
+    }
+    public function getAlertDnd(): bool
+    {
+        return $this->alertDnd;
+    }
 
     public function isAdmin(): bool
     {
@@ -111,6 +132,9 @@ class User implements EntityInterface
             'admin_status' => $this->adminStatus,
             'id_profession' => $this->idProfession,
             'profession_label' => $this->professionLabel,
+            'alert_volume' => $this->alertVolume,
+            'alert_duration' => $this->alertDuration,
+            'alert_dnd' => $this->alertDnd,
         ];
     }
 }

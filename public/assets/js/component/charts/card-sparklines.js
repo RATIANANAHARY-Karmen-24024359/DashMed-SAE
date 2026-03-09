@@ -436,12 +436,19 @@
                 const criticalIcon = card.querySelector('.status-critical');
                 const warningIcon = card.querySelector('.status-warning');
 
+                let oldState = 'normal';
+                if (card.classList.contains('card--alert')) oldState = 'alert';
+                else if (card.classList.contains('card--warn')) oldState = 'warn';
+                let newState = 'normal';
+
                 if (metric.state_class && metric.state_class.includes('card--alert')) {
+                    newState = 'alert';
                     if (criticalIcon) criticalIcon.style.display = 'flex';
                     if (warningIcon) warningIcon.style.display = 'none';
                     card.classList.add('card--alert');
                     card.classList.remove('card--warn');
                 } else if (metric.state_class && metric.state_class.includes('card--warn')) {
+                    newState = 'warn';
                     if (criticalIcon) criticalIcon.style.display = 'none';
                     if (warningIcon) warningIcon.style.display = 'flex';
                     card.classList.add('card--warn');
@@ -450,6 +457,12 @@
                     if (criticalIcon) criticalIcon.style.display = 'none';
                     if (warningIcon) warningIcon.style.display = 'none';
                     card.classList.remove('card--alert', 'card--warn');
+                }
+
+                if (oldState !== newState && newState !== 'normal') {
+                    if (typeof DashMedGlobalAlerts !== 'undefined' && typeof DashMedGlobalAlerts.checkNow === 'function') {
+                        DashMedGlobalAlerts.checkNow();
+                    }
                 }
 
                 const canvas = card.querySelector(".card-spark-canvas");
