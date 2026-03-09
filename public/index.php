@@ -91,6 +91,8 @@ function resolveRoute(string $path): array
         return ['modules\\controllers\\PatientController', 'record'];
     if (in_array($segments[0], ['medicalprocedure', 'consultations']))
         return ['modules\\controllers\\PatientController', 'consultations'];
+    if ($segments[0] === 'explorer')
+        return ['modules\\controllers\\PatientController', 'explorer'];
 
     if ($segments[0] === 'profile')
         return ['modules\\controllers\\UserController', 'profile'];

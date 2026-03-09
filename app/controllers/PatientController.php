@@ -18,6 +18,7 @@ use modules\views\patient\DashboardView;
 use modules\views\patient\MedicalprocedureView;
 use modules\views\patient\PatientrecordView;
 use modules\views\patient\MonitoringView;
+use modules\views\patient\ExplorerView;
 use PDO;
 
 /**
@@ -76,6 +77,24 @@ class PatientController
         $this->prefModel = new MonitorPreferenceRepository($this->pdo);
         $this->monitoringService = new MonitoringService();
         $this->contextService = new PatientContextService($this->patientRepo);
+    }
+
+    /**
+     * Explorer entry point.
+     *
+     * @return void
+     */
+    public function explorer(): void
+    {
+        $patientId = $this->contextService->getCurrentPatientId();
+        $patientData = $this->patientRepo->findById($patientId);
+
+        if (!$patientData) {
+            header('Location: /?page=dashboard');
+            exit;
+        }
+
+        (new ExplorerView($patientData))->show();
     }
 
     /**
