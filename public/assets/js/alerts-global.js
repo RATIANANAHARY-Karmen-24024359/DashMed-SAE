@@ -676,7 +676,7 @@ const NotifHistory = (function () {
         }
     }
 
-    return { init, add: addToHistory, isInHistory };
+    return { init, add: addToHistory };
 })();
 
 if (document.readyState === 'loading') {
