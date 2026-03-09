@@ -100,7 +100,21 @@ class PatientrecordView
 
             <main class="container nav-space">
                 <div class="dashboard-content-container">
-                    <?php include dirname(__DIR__) . '/partials/_searchbar.php'; ?>
+
+                    <div class="searchbar-with-patient">
+                        <span class="patient-name-label">
+                             <?= htmlspecialchars(
+                                     trim(
+                                             (is_scalar($v = $this->patientData['first_name'] ?? '') ? (string)$v : '') . ' ' .
+                                             (is_scalar($v = $this->patientData['last_name'] ?? '') ? (string)$v : '')
+                                     ),
+                                     ENT_QUOTES, 'UTF-8'
+                             ) ?>
+
+                        </span>
+                        <?php include dirname(__DIR__) . '/partials/_searchbar.php'; ?>
+                    </div>
+
                     <input type="hidden" id="context-patient-id" value="<?= $h($this->patientData['id_patient'] ?? '') ?>">
 
                     <?php

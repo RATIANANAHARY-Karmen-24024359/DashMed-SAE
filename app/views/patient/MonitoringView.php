@@ -28,6 +28,9 @@ class MonitoringView
     /** @var int|null Context patient ID */
     private ?int $patientId;
 
+    /** @var array<string, mixed> Selected patient data */
+    private array $patientData;
+
 
     /**
      * Constructor.
@@ -35,13 +38,18 @@ class MonitoringView
      * @param array<int, \modules\models\entities\Indicator> $patientMetrics Processed metrics
      * @param array<string, string> $chartTypes Available charts
      * @param int|null $patientId Patient ID for search context
-
+     * @param array<string, mixed> $patientData Patient info
      */
-    public function __construct(array $patientMetrics = [], array $chartTypes = [], ?int $patientId = null)
-    {
+    public function __construct(
+            array $patientMetrics = [],
+            array $chartTypes = [],
+            ?int $patientId = null,
+            array $patientData = []
+    ) {
         $this->patientMetrics = $patientMetrics;
         $this->chartTypes = $chartTypes;
         $this->patientId = $patientId;
+        $this->patientData = $patientData;
     }
 
     /**
@@ -52,27 +60,27 @@ class MonitoringView
     public function show(): void
     {
         $layout = new \modules\views\layout\Layout(
-            title: 'Monitoring',
-            cssFiles: [
-                'https://cdn.jsdelivr.net/npm/izitoast@1.4.0/dist/css/iziToast.min.css',
-                'assets/css/pages/monitoring.css',
-                'assets/css/components/card.css',
-                'assets/css/components/popup.css',
-                'assets/css/layout/aside/patient-info.css',
-                'assets/css/layout/aside/doctor-list.css',
-                'assets/css/components/modal.css',
-                'assets/css/components/alerts-toast.css',
-            ],
-            jsFiles: [
-                'https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js',
-                'assets/js/service/stream.js?v=' . time(),
-                'assets/js/component/modal/chart.js?v=' . time(),
-                'assets/js/component/charts/card-sparklines.js?v=' . time(),
-                'assets/js/component/modal/navigation.js',
-                'assets/js/component/modal/modal.js',
-            ],
-            showSidebar: true,
-            showAlerts: true
+                title: 'Monitoring',
+                cssFiles: [
+                        'https://cdn.jsdelivr.net/npm/izitoast@1.4.0/dist/css/iziToast.min.css',
+                        'assets/css/pages/monitoring.css',
+                        'assets/css/components/card.css',
+                        'assets/css/components/popup.css',
+                        'assets/css/layout/aside/patient-info.css',
+                        'assets/css/layout/aside/doctor-list.css',
+                        'assets/css/components/modal.css',
+                        'assets/css/components/alerts-toast.css',
+                ],
+                jsFiles: [
+                        'https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js',
+                        'assets/js/service/stream.js?v=' . time(),
+                        'assets/js/component/modal/chart.js?v=' . time(),
+                        'assets/js/component/charts/card-sparklines.js?v=' . time(),
+                        'assets/js/component/modal/navigation.js',
+                        'assets/js/component/modal/modal.js',
+                ],
+                showSidebar: true,
+                showAlerts: true
         );
 
 
@@ -83,12 +91,24 @@ class MonitoringView
             <main class="container">
                 <section class="dashboard-content-container">
 
-                    <?php include dirname(__DIR__) . '/partials/_searchbar.php'; ?>
+                    <div class="searchbar-with-patient">
+                        <span class="patient-name-label">
+                            <?= htmlspecialchars(
+                                    trim(
+                                            (is_scalar($v = $this->patientData['first_name'] ?? '') ? (string)$v : '') . ' ' .
+                                            (is_scalar($v = $this->patientData['last_name'] ?? '') ? (string)$v : '')
+                                    ),
+                                    ENT_QUOTES, 'UTF-8'
+                            ) ?>
+                        </span>
+                        <?php include dirname(__DIR__) . '/partials/_searchbar.php'; ?>
+                    </div>
+
 
                     <input type="hidden" id="context-patient-id" value="<?= htmlspecialchars((string) $this->patientId) ?>">
 
                     <section class="skeleton-wrapper skeleton-monitoring-grid" id="skeleton-monitoring"
-                        data-skeleton-for="real-monitoring" data-skeleton-auto data-skeleton-delay="400">
+                             data-skeleton-for="real-monitoring" data-skeleton-auto data-skeleton-delay="400">
                         <?php for ($i = 0; $i < 6; $i++): ?>
                             <div class="skeleton-card">
                                 <div class="skeleton-card-header">
@@ -118,7 +138,7 @@ class MonitoringView
                     <div id="modalDetails"></div>
                 </div>
             </div>
-<?php
+            <?php
         });
 
     }

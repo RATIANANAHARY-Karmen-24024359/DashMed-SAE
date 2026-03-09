@@ -234,3 +234,27 @@
     color: var(--text-muted);
     font-size: 0.9rem;
 }
+
+
+.searchbar-with-patient {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+}
+
+.patient-name-label {
+    font-size: 1.5rem;
+    font-weight: 600;
+    white-space: nowrap;
+    color: var(--text-main, #1a1a1a);
+    padding-bottom: 15px;
+}
+
+.searchbar-with-patient .searchbar,
+.searchbar-with-patient form,
+.searchbar-with-patient input[type="search"],
+.searchbar-with-patient input[type="text"] {
+    flex: 1;
+    min-width: 0;
+}

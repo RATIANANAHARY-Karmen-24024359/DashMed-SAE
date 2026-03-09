@@ -174,7 +174,8 @@ class PatientController
 
             $chartTypes = $this->monitorModel->getAllChartTypes();
 
-            $view = new MonitoringView($processedMetrics, $chartTypes, $patientId);
+            $patientData = $this->loadPatientData($patientId);
+            $view = new MonitoringView($processedMetrics, $chartTypes, $patientId, $patientData);
             $view->show();
         } catch (\Exception $e) {
             error_log("PatientController::monitoring Error: " . $e->getMessage());
@@ -414,7 +415,8 @@ class PatientController
             : 0;
         $isAdmin = $this->isAdminUser($currentUserId);
 
-        $view = new MedicalprocedureView($consultations, $doctors, $isAdmin, $currentUserId, $patientId);
+        $patientData = $this->loadPatientData($patientId);
+        $view = new MedicalprocedureView($consultations, $doctors, $isAdmin, $currentUserId, $patientId, $patientData);
         $view->show();
     }
 
@@ -631,7 +633,7 @@ class PatientController
 
             if (is_numeric($userId) && $parameterId !== '' && $chartType !== '') {
                 $this->prefModel->saveUserChartPreference((int) $userId, $parameterId, $chartType, $prefType);
-                
+
                 if ($isModal || $prefType === 'duration') {
                     header('Content-Type: application/json');
                     echo json_encode(['success' => true]);
@@ -649,7 +651,7 @@ class PatientController
 
     /**
      * Retrieves historical data for a specific medical parameter.
-     * 
+     *
      * Uses query parameters to determine the scope and applies Largest Triangle Three Buckets (LTTB)
      * downsampling if the dataset exceeds 5000 points to optimize client-side rendering performance.
      * Unbuffered streaming is used for large requests to maintain a low memory footprint.
@@ -667,7 +669,6 @@ class PatientController
                 return;
             }
 
-            // Release session lock to allow concurrent requests
             session_write_close();
 
             $roomId = $this->getRoomId();
@@ -701,18 +702,13 @@ class PatientController
             $isRaw = isset($_GET['raw']) && $_GET['raw'] === '1';
             $isCsv = isset($_GET['format']) && $_GET['format'] === 'csv';
 
-            /**
-             * TOTAL VISIBILITY MODE (?raw=1)
-             * Uses Streaming to push millions of rows directly to the browser 
-             * with ZERO memory overhead on the server.
-             */
             if ($isRaw) {
                 if ($isCsv) {
                     header('Content-Type: text/csv');
                     header('Content-Disposition: attachment; filename="history_' . $parameterId . '.csv"');
                     $out = fopen('php://output', 'w');
                     fputcsv($out, ['timestamp', 'value', 'alert_flag']);
-                    
+
                     $stream = $this->monitorModel->streamRawHistoryByParameter($patientId, $parameterId, $targetDate, 0);
                     foreach ($stream as $row) {
                         fputcsv($out, [$row['timestamp'], $row['value'], $row['alert_flag']]);
@@ -736,37 +732,28 @@ class PatientController
                 }
                 return;
             }
-
-            // --- PERFORMANCE MODE (CHARTING) ---
-            header('Content-Type: application/json');
             
-            // Server-side cache (30s)
+            header('Content-Type: application/json');
+
             $cacheKey = md5("history_v2_{$patientId}_{$parameterId}_{$targetDate}");
             $cacheFile = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'dashmed_cache' . DIRECTORY_SEPARATOR . $cacheKey . '.json';
-            
+
             if (file_exists($cacheFile) && (time() - filemtime($cacheFile) < 30)) {
                 echo file_get_contents($cacheFile);
                 return;
             }
 
-            /**
-             * INTELLIGENT DOWNSAMPLING (LTTB)
-             * If the dataset is large (> 5000 points), we downsample it on the server
-             * to 5000 points. This preserves ALL peaks/valleys visually while 
-             * keeping the JSON payload small and the ECharts rendering fast.
-             */
             $count = $this->monitorModel->countRawHistoryByParameter($patientId, $parameterId, $targetDate);
             $threshold = 5000;
 
             if ($count > $threshold) {
-                $monitorModel = $this->monitorModel; // Local ref for closure
+                $monitorModel = $this->monitorModel;
                 $stream = $monitorModel->streamRawHistoryByParameter($patientId, $parameterId, $targetDate, 0);
                 $downsampling = new \modules\services\DownsamplingService();
-                
-                // Optimized Generator for memory-efficient processing
+
                 $formattedStream = function() use ($stream) {
                     foreach ($stream as $row) {
-                        $rawTs = (strpos($row['timestamp'], '+') === false && strpos($row['timestamp'], 'Z') === false) 
+                        $rawTs = (strpos($row['timestamp'], '+') === false && strpos($row['timestamp'], 'Z') === false)
                             ? $row['timestamp'] . ' UTC' : $row['timestamp'];
                         yield [
                             'time_iso' => date('c', (int)strtotime($rawTs)),
@@ -776,7 +763,6 @@ class PatientController
                     }
                 };
 
-                // Use the streaming version of LTTB (O(k) memory)
                 $generator = $formattedStream();
                 $formatted = $downsampling->downsampleLTTBStream(new \IteratorIterator($generator), $count, $threshold);
             } else {
@@ -794,11 +780,10 @@ class PatientController
             }
 
             $jsonResult = json_encode($formatted);
-            
-            // Ensure cache directory exists
+
             if (!is_dir(dirname($cacheFile))) mkdir(dirname($cacheFile), 0777, true);
             file_put_contents($cacheFile, $jsonResult);
-            
+
             echo $jsonResult;
 
         } catch (\Exception $e) {
@@ -809,11 +794,6 @@ class PatientController
 
     /**
      * Retrieves the latest real-time metrics for the current patient.
-     * 
-     * Identifies the patient context, fetches the most recent metric values,
-     * processes them through the MonitoringService to apply user preferences,
-     * and rigorously formats timestamps into UTC ISO-8601 for frontend synchronization.
-     * Outputs a JSON array of processed metrics.
      *
      * @return void
      */
@@ -828,7 +808,6 @@ class PatientController
                 return;
             }
 
-            // Release session lock to allow concurrent requests (prevents UI freezing)
             session_write_close();
 
             $roomId = $this->getRoomId();
@@ -848,16 +827,15 @@ class PatientController
             }
 
             $metrics = $this->monitorModel->getLatestMetrics($patientId);
-            
+
             $rawUserId = $_SESSION['user_id'] ?? 0;
             $prefs = $this->prefModel->getUserPreferences(is_numeric($rawUserId) ? (int) $rawUserId : 0);
-            
-            // Only need a lightweight history or just empty if we only care about the latest value
+
             $rawHistory = $this->monitorModel->getRawHistory($patientId, 1);
-            
+
             $processedMetrics = $this->monitoringService->processMetrics($metrics, $rawHistory, $prefs, true);
             $formatted = [];
-            
+
             foreach ($processedMetrics as $metric) {
                 if ($metric instanceof \modules\models\entities\Indicator) {
                     $viewData = $metric->getViewData();
@@ -869,7 +847,7 @@ class PatientController
 
                     $timeRaw = $metric->getTimestamp();
                     $rawTs = (is_string($timeRaw) && strpos($timeRaw, '+') === false && strpos($timeRaw, 'Z') === false) ? $timeRaw . ' UTC' : $timeRaw;
-                    
+
                     $formatted[] = [
                         'parameter_id' => $metric->getId(),
                         'slug' => $viewData['slug'] ?? 'param',
@@ -998,16 +976,7 @@ class PatientController
 
         try {
             $metrics = $this->monitorModel->getLatestMetrics($patientId);
-            
-            /**
-             * PERFORMANCE OPTIMIZATION:
-             * Instead of loading the entire history table for all parameters (O(N)),
-             * we fetch only the last 1000 points per parameter (O(Params * 1000)).
-             * This prevents memory exhaustion on the initial page load while 
-             * keeping sparklines perfectly accurate.
-             */
             $rawHistory = $this->monitorModel->getLatestHistoryForAllParameters($patientId, 1000);
-            
             $prefs = $this->prefModel->getUserPreferences($userId);
             /** @var array<int, array<string, mixed>> */
             $processedMetrics = $this->monitoringService->processMetrics($metrics, $rawHistory, $prefs);
@@ -1060,14 +1029,13 @@ class PatientController
      */
     public function apiStream(): void
     {
-        // Increase execution time for long-polling/SSE
         set_time_limit(0);
         ignore_user_abort(false);
 
         header('Content-Type: text/event-stream');
         header('Cache-Control: no-cache');
         header('Connection: keep-alive');
-        header('X-Accel-Buffering: no'); // Disable Nginx buffering
+        header('X-Accel-Buffering: no');
 
         try {
             $userId = $_SESSION['user_id'] ?? null;
@@ -1115,19 +1083,13 @@ class PatientController
                 }
             }
 
-            /**
-             * Continuous streaming loop.
-             * Tracks the last sent timestamp from the DB to avoid time drift
-             * and ensures no data points are skipped between polling intervals.
-             */
             while (true) {
                 if (connection_aborted()) {
                     break;
                 }
-                
-                // Fetch ALL data since $lastSentTimestamp for all indicators
+
                 $allNewHistory = $this->monitorModel->getRawHistory($patientId, 0, $lastSentTimestamp);
-                
+
                 if (!empty($allNewHistory)) {
                     $formatted = [];
                     foreach ($allNewHistory as $hItem) {
@@ -1142,10 +1104,6 @@ class PatientController
 
                         $indicator = $indicatorsById[$pid] ?? null;
                         if ($indicator) {
-                            /**
-                             * Synchronize indicator state with the historical record
-                             * to generate correct metadata (color, slug, etc).
-                             */
                             $indicator->setValue($val !== null && $val !== '' ? (float)$val : null);
                             $indicator->setTimestamp($ts);
                             $indicator->setAlertFlag((int)$flag);
