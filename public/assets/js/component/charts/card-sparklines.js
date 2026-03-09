@@ -62,14 +62,16 @@
 
         items.forEach((item) => {
             const time = item.dataset.time || "";
-            const val = Number(item.dataset.value);
+            const rawVal = item.dataset.value;
+            const val = (rawVal === '' || rawVal === undefined || rawVal === 'null') ? null : Number(rawVal);
 
-            if (!time || !Number.isFinite(val)) return;
+            if (!time) return;
+            if (val !== null && !Number.isFinite(val)) return;
 
             const d = new Date(time);
-            if (isNaN(d.getTime())) return;
-
-            rawData.push([d.getTime(), val]);
+            if (!isNaN(d.getTime())) {
+                rawData.push([d.getTime(), val]);
+            }
         });
 
         if (!rawData.length) {
@@ -253,6 +255,7 @@
                     showSymbol: type === 'scatter',
                     symbolSize: type === 'scatter' ? 4 : 0,
                     smooth: true,
+                    connectNulls: true,
                     itemStyle: { color: chartColor },
                     lineStyle: { color: chartColor, width: 2 },
                     markArea: {
@@ -269,12 +272,12 @@
                     const lastTime = rawData[rawData.length - 1][0];
                     const minTime = lastTime - (hours * 3600 * 1000);
                     options.dataZoom = [
-                        { type: 'inside', startValue: minTime, endValue: lastTime }
+                        { type: 'inside', startValue: minTime, endValue: lastTime, filterMode: 'none' }
                     ];
                 }
             } else if (durationVal === 'all') {
                 options.dataZoom = [
-                    { type: 'inside', start: 0, end: 100 }
+                    { type: 'inside', start: 0, end: 100, filterMode: 'none' }
                 ];
             }
         }
@@ -426,9 +429,11 @@
                             if (canvas && canvas.chartInstance) {
                                 const chart = canvas.chartInstance;
                                 const timeMs = new Date(metric.time_iso).getTime();
-                                const val = Number(metric.value);
+                                let val = (metric.value === '' || metric.value === undefined || metric.value === 'null') ? null : Number(metric.value);
 
                                 if (isNaN(timeMs)) return;
+                                if (val !== null && !Number.isFinite(val)) return;
+                                if (typeof val === 'number') val = Math.round(val * 100) / 100;
 
                                 const option = chart.getOption();
                                 if (option.series && option.series.length > 0) {
@@ -437,7 +442,7 @@
                                     if (!exists) {
                                         ds.push([timeMs, val]);
                                         ds.sort((a, b) => a[0] - b[0]);
-                                        if (ds.length > 100) ds.shift();
+                                        if (ds.length > 1000) ds.shift();
 
                                         const updateObj = { series: [{ data: ds }] };
 
@@ -451,9 +456,9 @@
                                         chart.setOption(updateObj);
                                     }
                                 }
-                            } else {
-                                window.renderSparkline(card);
                             }
+                        } else {
+                            window.renderSparkline(card);
                         }
                     }
                 }
@@ -462,6 +467,7 @@
             console.error('SSE metrics fetch error:', e);
         }
     });
+
 
 })();
 

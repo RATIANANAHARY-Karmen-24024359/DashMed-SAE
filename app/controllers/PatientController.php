@@ -19,6 +19,7 @@ use modules\views\patient\DashboardView;
 use modules\views\patient\MedicalprocedureView;
 use modules\views\patient\PatientrecordView;
 use modules\views\patient\MonitoringView;
+use modules\views\patient\ExplorerView;
 use PDO;
 
 /**
@@ -81,6 +82,24 @@ class PatientController
         $this->monitoringService = new MonitoringService();
         $this->contextService = new PatientContextService($this->patientRepo);
         $this->thresholdRepo = new AlertThresholdRepository($this->pdo);
+    }
+
+    /**
+     * Explorer entry point.
+     *
+     * @return void
+     */
+    public function explorer(): void
+    {
+        $patientId = $this->contextService->getCurrentPatientId();
+        $patientData = $this->patientRepo->findById($patientId);
+
+        if (!$patientData) {
+            header('Location: /?page=dashboard');
+            exit;
+        }
+
+        (new ExplorerView($patientData))->show();
     }
 
     /**
@@ -809,14 +828,19 @@ class PatientController
 
             if ($isRaw) {
                 if ($isCsv) {
+                    $timestamp = date('Ymd_His');
                     header('Content-Type: text/csv');
-                    header('Content-Disposition: attachment; filename="history_' . $parameterId . '.csv"');
+                    header('Content-Disposition: attachment; filename="export_patient_' . $patientId . '_' . $parameterId . '_' . $timestamp . '.csv"');
                     $out = fopen('php://output', 'w');
                     fputcsv($out, ['timestamp', 'value', 'alert_flag']);
-
                     $stream = $this->monitorModel->streamRawHistoryByParameter($patientId, $parameterId, $targetDate, 0);
                     foreach ($stream as $row) {
-                        fputcsv($out, [$row['timestamp'], $row['value'], $row['alert_flag']]);
+                        $rawTs = (strpos($row['timestamp'], '+') === false && strpos($row['timestamp'], 'Z') === false) 
+                            ? $row['timestamp'] . ' UTC' : $row['timestamp'];
+                        fputcsv($out, [
+                            date('c', (int)strtotime($rawTs)),
+                            $row['value'] !== null ? round((float)$row['value'], 2) : ''
+                        ]);
                     }
                     fclose($out);
                 } else {
@@ -862,7 +886,7 @@ class PatientController
                             ? $row['timestamp'] . ' UTC' : $row['timestamp'];
                         yield [
                             'time_iso' => date('c', (int)strtotime($rawTs)),
-                            'value' => (string)round((float)$row['value'], 2),
+                            'value' => $row['value'] !== null ? (string)round((float)$row['value'], 2) : null,
                             'flag' => (string)$row['alert_flag']
                         ];
                     }
@@ -878,7 +902,7 @@ class PatientController
                     $rawTs = (strpos($ts, '+') === false && strpos($ts, 'Z') === false) ? $ts . ' UTC' : $ts;
                     $formatted[] = [
                         'time_iso' => date('c', (int)strtotime($rawTs)),
-                        'value' => $hItem['value'] !== null ? (string)round((float)$hItem['value'], 2) : '',
+                        'value' => $hItem['value'] !== null ? (string)round((float)$hItem['value'], 2) : null,
                         'flag' => (string)$hItem['alert_flag']
                     ];
                 }
@@ -923,7 +947,13 @@ class PatientController
             $roomId = $this->getRoomId();
             $patientId = null;
 
-            if ($roomId) {
+            // Priority to explicit parameter for API tools/Explorer
+            $getPatientId = $_GET['patient_id'] ?? null;
+            if ($getPatientId && is_numeric($getPatientId)) {
+                $patientId = (int)$getPatientId;
+            }
+
+            if (!$patientId && $roomId) {
                 $patientId = $this->patientRepo->getPatientIdByRoom($roomId);
             }
             if (!$patientId) {
@@ -966,7 +996,8 @@ class PatientController
                     'is_crit_flag' => !empty($viewData['is_crit_flag']),
                     'time_iso' => ($timeRaw !== null && $timeRaw !== '') ? date('c', (int) strtotime($rawTs)) : $latestTimeIso,
                     'chart_type' => is_scalar($viewData['chart_type'] ?? null) ? (string)$viewData['chart_type'] : 'line',
-                    'display_name' => is_scalar($viewData['display_name'] ?? null) ? (string)$viewData['display_name'] : ''
+                    'display_name' => is_scalar($viewData['display_name'] ?? null) ? (string)$viewData['display_name'] : '',
+                    'thresholds' => $viewData['thresholds'] ?? null
                 ];
             }
 
@@ -1268,6 +1299,49 @@ class PatientController
                 ob_flush();
             }
             flush();
+        }
+    }
+    /**
+     * Retrieves the name of a patient by their ID.
+     *
+     * @return void
+     */
+    public function apiPatientName(): void
+    {
+        try {
+            $userId = $_SESSION['user_id'] ?? null;
+            if (!$userId && !isset($_GET["debug"])) {
+                header('Content-Type: application/json');
+                echo json_encode(['error' => 'Non autorisé']);
+                return;
+            }
+
+            $rawId = $_GET['id'] ?? '';
+            $patientId = is_numeric($rawId) ? (int)$rawId : 0;
+
+            if ($patientId <= 0) {
+                header('Content-Type: application/json');
+                echo json_encode(['error' => 'ID invalide']);
+                return;
+            }
+
+            $patient = $this->patientRepo->findById($patientId);
+            if (!$patient) {
+                header('Content-Type: application/json');
+                echo json_encode(['error' => 'Patient introuvable']);
+                return;
+            }
+
+            header('Content-Type: application/json');
+            echo json_encode([
+                'id_patient' => $patient['id_patient'],
+                'first_name' => $patient['first_name'],
+                'last_name' => $patient['last_name']
+            ]);
+        } catch (\Exception $e) {
+            error_log('[PatientController] apiPatientName error: ' . $e->getMessage());
+            header('Content-Type: application/json');
+            echo json_encode(['error' => 'Erreur interne']);
         }
     }
 }

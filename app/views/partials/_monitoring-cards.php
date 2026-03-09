@@ -124,29 +124,32 @@ if (!empty($patientMetrics)): ?>
             data-card-display-duration="<?= $escape($viewData['card_display_duration'] ?? '0.0333') ?>">
 
 
-            <div class="card-header" style="display: flex; align-items: center; justify-content: space-between; width: 100%; height: 20px; margin: 0; padding: 0;">
-                <h3 style="flex: 1; text-align: left; font-size: 0.75rem; margin: 0; line-height: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+            <div class="card-header">
+                <h3>
                     <?= $escape($display) ?>
                 </h3>
                 <div style="flex: 0 0 auto; display: flex; align-items: center; justify-content: center; height: 100%; padding: 0 4px;">
                     <select class="card-interval-select" title="Durée d'affichage">
-                        <?php 
-                        $cardDuration = (string)($viewData['card_display_duration'] ?? '0.0333');
+                        <?php
+                        $cardDuration = (string) ($viewData['card_display_duration'] ?? '0.0333');
                         $cardOptions = [
                             '0.0333' => '2m',
                             'all' => 'Tout',
                             '1' => '1H',
                             '24' => '24H'
                         ];
-                        foreach ($cardOptions as $val => $lab) : ?>
+                        foreach ($cardOptions as $val => $lab): ?>
                             <option value="<?= $val ?>" <?= $cardDuration === $val ? 'selected' : '' ?>><?= $lab ?></option>
                         <?php endforeach; ?>
                     </select>
                 </div>
 
-                <p class="value" style="flex: 1; text-align: right; display: <?= $isValueOnly ? 'none' : 'flex' ?>; justify-content: flex-end; align-items: center; gap: 3px; margin: 0; line-height: 1;">
+                <p class="value"
+                    style="flex: 1; text-align: right; display: <?= $isValueOnly ? 'none' : 'flex' ?>; justify-content: flex-end; align-items: center; gap: 3px; margin: 0; line-height: 1;">
                     <span style="font-size: 0.95rem; font-weight: 700; color: var(--text-main);"><?= $escape($value) ?></span>
-                    <span class="unit" style="font-size: 0.7rem; color: var(--text-muted);"><?= $unit !== '' ? ' ' . $escape($unit) : '' ?></span>
+                    <span class="unit"
+                        style="font-size: 0.7rem; color: var(--text-muted);"><?= $unit !== '' ? ' ' . $escape($unit) : '' ?></span>
+
 
 
                     <span class="value-status-icon status-critical" title="Critique"
@@ -185,7 +188,8 @@ if (!empty($patientMetrics)): ?>
             </div>
 
             <div class="card-spark" style="display: <?= $isValueOnly ? 'none' : 'block' ?>; height: 100px; width: 100%;">
-                <div class="card-spark-canvas" id="<?= $escape($idPrefix) ?>spark-<?= $escape($slug) ?>" style="width: 100%; height: 100%;">
+                <div class="card-spark-canvas" id="<?= $escape($idPrefix) ?>spark-<?= $escape($slug) ?>"
+                    style="width: 100%; height: 100%;">
                 </div>
 
                 <div class="no-data-placeholder" style="display:none;">
@@ -237,27 +241,47 @@ if (!empty($patientMetrics)): ?>
                     <div class="modal-header-center" style="display: flex; align-items: center; gap: 10px;">
                         <input type="datetime-local" class="modal-input modal-date-picker"
                             title="Sélectionner une date et heure (fast travel)" max="<?= date('Y-m-d\TH:i') ?>">
-                        
-                        <a href="#" class="btn-csv-download" title="Télécharger toutes les données (CSV)" 
-                           style="display: flex; align-items: center; justify-content: center; padding: 8px; border-radius: 6px; background: rgba(255,255,255,0.05); border: 1px solid var(--border-color); color: var(--text-primary); transition: all 0.2s;"
-                           onmouseover="this.style.background='rgba(255,255,255,0.1)'" 
-                           onmouseout="this.style.background='rgba(255,255,255,0.05)'">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+
+                        <a href="#" class="btn-csv-download" title="Télécharger toutes les données (CSV)"
+                            style="display: flex; align-items: center; justify-content: center; padding: 8px; border-radius: 6px; background: rgba(255,255,255,0.05); border: 1px solid var(--border-color); color: var(--text-primary); transition: all 0.2s;"
+                            onmouseover="this.style.background='rgba(255,255,255,0.1)'"
+                            onmouseout="this.style.background='rgba(255,255,255,0.05)'">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+                                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                 <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v4"></path>
                                 <polyline points="7 10 12 15 17 10"></polyline>
                                 <line x1="12" y1="15" x2="12" y2="3"></line>
                             </svg>
                             <span style="font-size: 0.75rem; margin-left: 6px; font-weight: 500;">CSV</span>
                         </a>
+
+                        <a href="#" class="btn-html-export" title="Exporter en HTML"
+                            style="display: flex; align-items: center; justify-content: center; padding: 8px; border-radius: 6px; background: rgba(255,255,255,0.05); border: 1px solid var(--border-color); color: var(--text-primary); transition: all 0.2s;"
+                            onmouseover="this.style.background='rgba(255,255,255,0.1)'"
+                            onmouseout="this.style.background='rgba(255,255,255,0.05)'">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+                                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                                <polyline points="14 2 14 8 20 8"></polyline>
+                                <line x1="16" y1="13" x2="8" y2="13"></line>
+                                <line x1="16" y1="17" x2="8" y2="17"></line>
+                                <polyline points="10 9 9 9 8 9"></polyline>
+                            </svg>
+                            <span style="font-size: 0.75rem; margin-left: 6px; font-weight: 500;">HTML</span>
+                        </a>
+
                     </div>
 
-                    <div class="modal-chart-types-container" style="display: flex; flex-direction: column; gap: 0.5rem; align-items: flex-end;">
+                    <div class="modal-chart-types-container"
+                        style="display: flex; flex-direction: column; gap: 0.5rem; align-items: flex-end;">
                         <div class="modal-chart-types">
-                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; gap: 8px;">
-                                <span class="chart-type-label" style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600;">Modale</span>
-                                <select class="modal-interval-select" style="font-size: 0.70rem; padding: 2px 4px; border-radius: 4px; border: 1px solid var(--border-color); background: rgba(0,0,0,0.2); color: var(--text-primary); cursor: pointer; outline: none; width: auto; max-width: 90px;">
-                                    <?php 
-                                    $currentDuration = (string)($viewData['display_duration'] ?? '0.0333');
+                            <div
+                                style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; gap: 8px;">
+                                <span class="chart-type-label"
+                                    style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600;">Modale</span>
+                                <select class="modal-interval-select">
+                                    <?php
+                                    $currentDuration = (string) ($viewData['display_duration'] ?? '0.0333');
                                     $options = [
                                         '0.0333' => '2m',
                                         'all' => 'Tout',
@@ -270,15 +294,15 @@ if (!empty($patientMetrics)): ?>
                                         '168' => '7J',
                                         '720' => '30J'
                                     ];
-                                    foreach ($options as $val => $lab) : ?>
-                                        <option value="<?= $val ?>" <?= $currentDuration === $val ? 'selected' : '' ?>><?= $lab ?></option>
+                                    foreach ($options as $val => $lab): ?>
+                                        <option value="<?= $val ?>" <?= $currentDuration === $val ? 'selected' : '' ?>><?= $lab ?>
+                                        </option>
                                     <?php endforeach; ?>
                                 </select>
 
                             </div>
                             <div class="chart-type-group">
-                                <?php foreach ($chartAllowed as $allowedType) :
-
+                                <?php foreach ($chartAllowed as $allowedType): ?>
                                     $icon = '';
                                     switch ($allowedType) {
                                         case 'line':
@@ -394,7 +418,6 @@ viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-li
                 <div class="canvas-wrapper" style="width: 100%; height: 400px; position: relative;">
                     <div class="modal-chart chart-<?= $escape($chartType) ?>" tabindex="-1"
                         data-id="<?= $escape($idPrefix) ?>modal-chart-<?= $escape($slug) ?>" style="width: 100%; height: 100%;"></div>
-
                 </div>
 
                 <div class="modal-no-data-placeholder" style="display:none;">

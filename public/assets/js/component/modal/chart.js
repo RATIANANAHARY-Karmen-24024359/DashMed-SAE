@@ -122,22 +122,29 @@ async function updatePanelChart(panelId, chartId, title) {
             const cacheKey = `${paramId}-${targetDate || 'now'}`;
 
             let dataArr;
-            if (historyCache[cacheKey]) {
+            const useCache = !!targetDate; // Disable cache for 'now' queries to prevent stale live data
+            if (useCache && historyCache[cacheKey]) {
                 dataArr = historyCache[cacheKey];
             } else {
-                // We no longer send limit=0 by default. 
-                // The server automatically downsamples for the chart if needed.
                 const res = await fetch(`${window.location.origin}/api_history?param=${encodeURIComponent(paramId)}${dateParam}`);
                 if (!res.ok) throw new Error('Fetch failed');
                 dataArr = await res.json();
                 if (dataArr.error) throw new Error(dataArr.error);
-                historyCache[cacheKey] = dataArr;
+                if (useCache) historyCache[cacheKey] = dataArr;
             }
 
             // --- Configure CSV Download Link ---
             const csvBtn = panel.querySelector('.btn-csv-download');
             if (csvBtn) {
                 csvBtn.href = `${window.location.origin}/api_history?param=${encodeURIComponent(paramId)}${dateParam}&raw=1&format=csv`;
+            }
+
+            const htmlBtn = panel.querySelector('.btn-html-export');
+            if (htmlBtn) {
+                htmlBtn.onclick = (e) => {
+                    e.preventDefault();
+                    downloadHTMLHistory(title, paramId);
+                };
             }
 
             if (dataArr.length === 0) {
@@ -153,7 +160,7 @@ async function updatePanelChart(panelId, chartId, title) {
             const rawData = [];
             dataArr.forEach((item) => {
                 const timeStr = item.time_iso;
-                const val = Number(item.value);
+                const val = (item.value === null || item.value === '') ? null : Number(item.value);
                 if (timeStr) {
                     const d = new Date(timeStr);
                     if (!isNaN(d.getTime())) {
@@ -255,21 +262,18 @@ function createEChart(type, title, rawData, target, color, thresholds, view, ext
         const bMax = view.max !== undefined && view.max !== null && !isNaN(view.max) ? view.max : 250;
 
         if (Number.isFinite(cmax) && Number.isFinite(nmin) && cmax <= nmin) {
-            // Inverted scale (e.g. Glasgow)
             markArea.push([{ yAxis: cmax, itemStyle: { color: c_red } }, { yAxis: bMin }]);
             markArea.push([{ yAxis: nmin, itemStyle: { color: c_yellow } }, { yAxis: cmax }]);
             const greenTop = Number.isFinite(nmax) ? nmax : bMax;
             if (greenTop > nmin) markArea.push([{ yAxis: greenTop, itemStyle: { color: c_green } }, { yAxis: nmin }]);
             if (Number.isFinite(nmax) && bMax > nmax) markArea.push([{ yAxis: bMax, itemStyle: { color: c_yellow } }, { yAxis: nmax }]);
         } else if (Number.isFinite(nmax) && Number.isFinite(cmin) && nmax <= cmin) {
-            // Inverted scale 2
             const greenBottom = Number.isFinite(nmin) ? nmin : bMin;
             if (Number.isFinite(nmin) && greenBottom > bMin) markArea.push([{ yAxis: greenBottom, itemStyle: { color: c_yellow } }, { yAxis: bMin }]);
             if (nmax > greenBottom) markArea.push([{ yAxis: nmax, itemStyle: { color: c_green } }, { yAxis: greenBottom }]);
             markArea.push([{ yAxis: cmin, itemStyle: { color: c_yellow } }, { yAxis: nmax }]);
             markArea.push([{ yAxis: bMax, itemStyle: { color: c_red } }, { yAxis: cmin }]);
         } else {
-            // Standard scale
             if (Number.isFinite(cmin)) markArea.push([{ yAxis: cmin, itemStyle: { color: c_red } }, { yAxis: bMin }]);
 
             let greenBottom = bMin;
@@ -317,7 +321,7 @@ function createEChart(type, title, rawData, target, color, thresholds, view, ext
                     xAxisIndex: 0,
                     startValue: xMin,
                     endValue: rawData.length > 0 ? rawData[rawData.length - 1][0] : undefined,
-                    filterMode: 'filter'
+                    filterMode: 'none'
                 },
                 {
                     type: 'slider',
@@ -330,7 +334,8 @@ function createEChart(type, title, rawData, target, color, thresholds, view, ext
                     handleStyle: { color: chartColor },
                     fillerColor: 'rgba(39, 90, 254, 0.2)',
                     startValue: xMin,
-                    endValue: rawData.length > 0 ? rawData[rawData.length - 1][0] : undefined
+                    endValue: rawData.length > 0 ? rawData[rawData.length - 1][0] : undefined,
+                    filterMode: 'none'
                 }
             ],
             xAxis: {
@@ -341,7 +346,7 @@ function createEChart(type, title, rawData, target, color, thresholds, view, ext
                 axisTick: { show: false },
                 axisLine: { show: false }
             },
-            dataset: { source: [[0, 0]] }, // Dummy dataset just to help some ECharts internal logic if needed
+            dataset: { source: [[0, 0]] },
             yAxis: {
                 type: 'value',
                 min: view.min,
@@ -358,6 +363,7 @@ function createEChart(type, title, rawData, target, color, thresholds, view, ext
                 showSymbol: type === 'scatter',
                 symbolSize: type === 'scatter' ? 6 : 0,
                 smooth: true,
+                connectNulls: true,
                 sampling: null,
                 large: false,
                 itemStyle: { color: chartColor },
@@ -379,19 +385,20 @@ function createEChart(type, title, rawData, target, color, thresholds, view, ext
     chartInstance.setOption(options);
 
     chartInstance.on('dataZoom', function (evt) {
-        // If the user interacts (manual zoom or pan), we break the sync
         const canvas = chartInstance.getDom();
         if (evt.batch) {
-            // Check if it's a manual interaction (not our programmatic dispatch)
-            // Most manual interactions in ECharts have a batch or are simple events
-            // We'll set isSynced to false if the user moves away from the end
             const opt = chartInstance.getOption();
             const dz = opt.dataZoom[0];
-            const end = dz.endValue;
             const lastData = rawData.length > 0 ? rawData[rawData.length - 1][0] : 0;
 
-            // If the viewed end is significantly before the last data point, it's not synced
-            if (lastData - end > 1000) {
+            let isAtEnd = false;
+            if (dz.endValue !== undefined) {
+                isAtEnd = (lastData - dz.endValue <= 1000);
+            } else if (dz.end !== undefined) {
+                isAtEnd = (dz.end >= 99.5);
+            }
+
+            if (!isAtEnd) {
                 canvas.dataset.isSynced = "false";
                 const panel = canvas.closest('.modal-grid');
                 if (panel) {
@@ -405,6 +412,30 @@ function createEChart(type, title, rawData, target, color, thresholds, view, ext
 
     const ro = new ResizeObserver(() => chartInstance.resize());
     ro.observe(canvas.parentElement);
+}
+
+function getChartVisibleDurationMs(chart, panel) {
+    const opt = chart.getOption();
+    if (!opt || !opt.dataZoom || !opt.dataZoom[0]) return 120000;
+    const dz = opt.dataZoom[0];
+    if (dz.startValue !== undefined && dz.endValue !== undefined) {
+        const d = dz.endValue - dz.startValue;
+        if (d > 1000) return d;
+    }
+
+    if (dz.start !== undefined && dz.end !== undefined) {
+        const series = opt.series[0].data;
+        if (series && series.length > 1) {
+            const totalRange = series[series.length - 1][0] - series[0][0];
+            const d = ((dz.end - dz.start) / 100) * totalRange;
+            if (d > 1000) return d;
+        }
+    }
+
+    const dVal = panel.dataset.displayDuration;
+    if (dVal === 'all') return 0;
+    const hours = parseFloat(dVal || '0.0333');
+    return hours * 3600 * 1000;
 }
 
 function setupRealtimeSyncButton(panel, chartId, title) {
@@ -435,21 +466,26 @@ function setupRealtimeSyncButton(panel, chartId, title) {
             if (canvas && canvas.chartInstance) {
                 const chart = canvas.chartInstance;
                 const opt = chart.getOption();
-                const dz = opt.dataZoom[0];
 
-                // Keep the current duration
-                const duration = (dz.endValue || Date.now()) - (dz.startValue || (Date.now() - 120000));
-
-                const lastData = opt.series[0].data;
-                const lastTime = lastData.length > 0 ? lastData[lastData.length - 1][0] : Date.now();
+                const duration = getChartVisibleDurationMs(chart, panel);
+                const seriesData = opt.series[0].data;
+                const lastTime = seriesData.length > 0 ? seriesData[seriesData.length - 1][0] : Date.now();
 
                 canvas.dataset.isSynced = "true";
 
-                chart.dispatchAction({
-                    type: 'dataZoom',
-                    startValue: lastTime - duration,
-                    endValue: lastTime
-                });
+                if (duration > 0) {
+                    chart.dispatchAction({
+                        type: 'dataZoom',
+                        startValue: lastTime - duration,
+                        endValue: lastTime
+                    });
+                } else {
+                    chart.dispatchAction({
+                        type: 'dataZoom',
+                        start: 0,
+                        end: 100
+                    });
+                }
 
                 syncBtn.style.display = 'none';
             }
@@ -457,7 +493,7 @@ function setupRealtimeSyncButton(panel, chartId, title) {
 
         const canvas = document.getElementById(chartId);
         if (canvas) {
-            canvas.dataset.isSynced = "true"; // Start as synced
+            canvas.dataset.isSynced = "true";
             canvas.parentElement.appendChild(syncBtn);
         }
     } else {
@@ -634,14 +670,19 @@ document.addEventListener('change', function (e) {
                         const updateObj = { series: [{ data: ds }] };
 
                         if (canvas.dataset.isSynced === "true") {
-                            const opt = chart.getOption();
-                            const dz = opt.dataZoom[0];
-                            const duration = dz.endValue - dz.startValue;
+                            const duration = getChartVisibleDurationMs(chart, panel);
 
-                            updateObj.dataZoom = [
-                                { type: 'inside', startValue: time - duration, endValue: time },
-                                { type: 'slider', startValue: time - duration, endValue: time }
-                            ];
+                            if (duration > 0) {
+                                updateObj.dataZoom = [
+                                    { type: 'inside', startValue: time - duration, endValue: time },
+                                    { type: 'slider', startValue: time - duration, endValue: time }
+                                ];
+                            } else {
+                                updateObj.dataZoom = [
+                                    { type: 'inside', start: 0, end: 100 },
+                                    { type: 'slider', start: 0, end: 100 }
+                                ];
+                            }
                         }
 
                         chart.setOption(updateObj);
@@ -657,3 +698,133 @@ document.addEventListener('change', function (e) {
         }
     });
 })();
+
+/**
+ * Generates and downloads a standalone interactive HTML file.
+ * Fetches FULL raw history to allow the user to navigate the entire dataset.
+ * 
+ * @param {string} title - The parameter name.
+ * @param {string} paramId - The technical ID to fetch raw data.
+ */
+async function downloadHTMLHistory(title, paramId) {
+    // Show a loading state if possible, though this is fast
+    const res = await fetch(`${window.location.origin}/api_history?param=${encodeURIComponent(paramId)}&raw=1`);
+    if (!res.ok) {
+        alert("Erreur lors de la récupération de l'historique complet.");
+        return;
+    }
+    const fullData = await res.json();
+    if (!fullData || !fullData.length) {
+        alert("Aucune donnée à exporter.");
+        return;
+    }
+
+    const rawDataJson = JSON.stringify(fullData.map(item => [new Date(item.time_iso).getTime(), item.value === null ? null : Number(item.value)]));
+
+    let rows = '';
+    fullData.slice().reverse().forEach(item => {
+        const date = new Date(item.time_iso);
+        const dateStr = date.toLocaleString('fr-FR');
+        const alertClass = item.flag === '1' ? 'style="color: #ef4444; font-weight: bold;"' : '';
+        const val = item.value === null ? '—' : item.value;
+
+        rows += `
+            <tr>
+                <td style="padding: 12px; border-bottom: 1px solid #eee;">${dateStr}</td>
+                <td style="padding: 12px; border-bottom: 1px solid #eee; text-align: right; ${alertClass}">${val}</td>
+                <td style="padding: 12px; border-bottom: 1px solid #eee; text-align: center;">${item.flag === '1' ? '🚨' : '✅'}</td>
+            </tr>`;
+    });
+
+    const htmlContent = `
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Export DashMed - ${title}</title>
+    <script src="https://fastly.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; padding: 40px; color: #333; background: #f9f9f9; }
+        .container { max-width: 1000px; margin: 0 auto; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); }
+        h1 { color: #275afe; margin-bottom: 5px; }
+        p.subtitle { color: #666; margin-bottom: 30px; }
+        #chart-container { width: 100%; height: 500px; margin-bottom: 40px; border: 1px solid #eee; border-radius: 8px; }
+        table { width: 100%; border-collapse: collapse; }
+        th { background: #f2f5ff; color: #275afe; text-align: left; padding: 12px; border-bottom: 2px solid #275afe; position: sticky; top: 0; }
+        tr:hover { background: #fafafa; }
+        .footer { margin-top: 30px; font-size: 0.8rem; color: #999; text-align: center; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Historique Interactif : ${title}</h1>
+        <p class="subtitle">Export complet généré le ${new Date().toLocaleString('fr-FR')} par DashMed</p>
+        
+        <div id="chart-container"></div>
+
+        <h2>Détail des mesures</h2>
+        <div style="max-height: 600px; overflow-y: auto; border: 1px solid #eee; border-radius: 8px;">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Date et Heure</th>
+                        <th style="text-align: right;">Valeur</th>
+                        <th style="text-align: center;">Statut</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${rows}
+                </tbody>
+            </table>
+        </div>
+        <div class="footer">Document confidentiel - DashMed SAE v1.0</div>
+    </div>
+
+    <script>
+        const chartDom = document.getElementById('chart-container');
+        const myChart = echarts.init(chartDom);
+        const rawData = ${rawDataJson};
+
+        const option = {
+            animation: false,
+            tooltip: { trigger: 'axis', axisPointer: { type: 'cross' } },
+            grid: { left: '3%', right: '4%', bottom: '15%', containLabel: true },
+            xAxis: { type: 'time', splitLine: { show: false } },
+            yAxis: { type: 'value', scale: true, splitLine: { lineStyle: { type: 'dashed' } } },
+            dataZoom: [
+                { type: 'inside', start: 0, end: 100 },
+                { type: 'slider', start: 0, end: 100 }
+            ],
+            series: [{
+                name: '${title}',
+                type: 'line',
+                smooth: true,
+                symbol: 'none',
+                connectNulls: true,
+                data: rawData,
+                lineStyle: { color: '#275afe', width: 3 },
+                areaStyle: {
+                    color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                        { offset: 0, color: 'rgba(39, 90, 254, 0.3)' },
+                        { offset: 1, color: 'rgba(39, 90, 254, 0)' }
+                    ])
+                }
+            }]
+        };
+
+        myChart.setOption(option);
+        window.addEventListener('resize', () => myChart.resize());
+    </script>
+</body>
+</html>`;
+
+    const blob = new Blob([htmlContent], { type: 'text/html' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `interactif_${title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.html`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+}

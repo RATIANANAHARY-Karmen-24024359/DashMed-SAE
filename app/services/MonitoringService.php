@@ -236,9 +236,10 @@ class MonitoringService
             
             $viewData['history_html_data'][] = [
                 'time_iso' => $tsStr !== '' ? date('c', (int) strtotime($rawTsStr)) : '',
-                'value' => is_numeric($rawHVal) || is_string($rawHVal) ? (string) $rawHVal : '',
+                'value' => is_numeric($rawHVal) ? (string)$rawHVal : null,
                 'flag' => (is_numeric($rawHFlag) && (int) $rawHFlag === 1) ? '1' : '0'
             ];
+
         }
 
         if (count($viewData['history_html_data']) === 0) {
