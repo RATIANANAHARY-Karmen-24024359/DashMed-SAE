@@ -33,7 +33,6 @@ try {
         $currentUser = $userRepo->getById((int) $_SESSION['user_id']);
     }
 
-    // Handle POST for updating settings
     if ($_SERVER['REQUEST_METHOD'] === 'POST' && $currentUser) {
         $input = json_decode(file_get_contents('php://input'), true);
         if ($input && isset($input['action']) && $input['action'] === 'update_settings') {

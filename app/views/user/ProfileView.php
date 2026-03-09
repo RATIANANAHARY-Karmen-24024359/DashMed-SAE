@@ -170,7 +170,6 @@ class ProfileView
                                     const enabled = e.target.checked;
                                     localStorage.setItem('dashmed_dnd', enabled);
 
-                                    // Use the global function if available to sync with DB
                                     if (window.DashMedGlobalAlerts && window.DashMedGlobalAlerts.syncSettings) {
                                         window.DashMedGlobalAlerts.syncSettings({ alert_dnd: enabled ? 1 : 0 });
                                     }
