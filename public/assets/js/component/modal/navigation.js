@@ -16,7 +16,6 @@ document.addEventListener('DOMContentLoaded', () => {
             const sourceDetail = document.getElementById(detailId);
 
             if (sourceDetail && modalDetails) {
-                // Prevent memory leaks by properly destroying existing chart instances
                 const existingCanvases = modalDetails.querySelectorAll('canvas');
                 existingCanvases.forEach(canvas => {
                     if (canvas.chartInstance) {

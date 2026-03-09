@@ -323,7 +323,6 @@ class MonitorRepository extends BaseRepository
             ORDER BY `timestamp` ASC
             ";
 
-            // Configure PDO to use unbuffered queries for this statement
             $this->pdo->setAttribute(\PDO::MYSQL_ATTR_USE_BUFFERED_QUERY, false);
             $st = $this->pdo->prepare($sql);
 
@@ -351,7 +350,6 @@ class MonitorRepository extends BaseRepository
         } catch (\PDOException $e) {
             error_log("MonitorRepository::streamRawHistoryByParameter Error: " . $e->getMessage());
         } finally {
-            // Restore buffered queries for other application parts
             $this->pdo->setAttribute(\PDO::MYSQL_ATTR_USE_BUFFERED_QUERY, true);
         }
     }
@@ -383,7 +381,6 @@ class MonitorRepository extends BaseRepository
                 }
             }
 
-            // Bucket the timestamp by $intervalSeconds using MySQL FROM_UNIXTIME/UNIX_TIMESTAMP
             $sql = "
             SELECT 
                 parameter_id,

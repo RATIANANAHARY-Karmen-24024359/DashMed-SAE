@@ -775,7 +775,6 @@ class PatientController
                 return;
             }
 
-            // Release session lock to allow concurrent requests (prevents UI freezing)
             session_write_close();
 
             $roomId = $this->getRoomId();
@@ -784,7 +783,6 @@ class PatientController
             if ($roomId) {
                 $patientId = $this->patientRepo->getPatientIdByRoom($roomId);
             }
-            // fallback to context service if no room cookie
             if (!$patientId) {
                 $this->contextService->handleRequest();
                 $patientId = $this->contextService->getCurrentPatientId();
@@ -807,16 +805,14 @@ class PatientController
 
             $limit = isset($_GET['limit']) && is_numeric($_GET['limit']) ? (int) $_GET['limit'] : 2000;
 
-            // --- SERVER-SIDE CACHING (30s TTL) ---
             $cacheDir = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'dashmed_cache';
             if (!is_dir($cacheDir)) {
                 mkdir($cacheDir, 0777, true);
             }
             $cacheKey = md5("history_{$patientId}_{$parameterId}_{$limit}_{$targetDate}");
             $cacheFile = $cacheDir . DIRECTORY_SEPARATOR . $cacheKey . '.json';
-            $cacheTTL = 30; // persist for 30 seconds
+            $cacheTTL = 30;
 
-            // Serve from cache if valid
             if (file_exists($cacheFile) && (time() - filemtime($cacheFile) < $cacheTTL)) {
                 $cachedData = file_get_contents($cacheFile);
                 if ($cachedData) {
@@ -825,23 +821,17 @@ class PatientController
                 }
             }
 
-            // High volume data processing (limit=0 or > 10,000)
             if ($limit === 0 || $limit > 10000) {
                 $totalRows = $this->monitorModel->countRawHistoryByParameter($patientId, $parameterId, $targetDate);
 
-                // --- SQL PRE-AGGREGATION OPTIMIZATION ---
-                // For massive datasets (e.g. > 50k rows), perform a first pass reduction in SQL
-                // to minimize PHP memory usage and CPU load from the LTTB algorithm.
                 if ($totalRows > 50000) {
-                    $interval = (int) ceil($totalRows / 5000); // Target approximately 5000 buckets
+                    $interval = (int) ceil($totalRows / 5000);
                     $stream = $this->monitorModel->streamPreAggregatedHistoryByParameter($patientId, $parameterId, $interval, $targetDate);
-                    // Update totalRows for the stream downsampler
                     $totalRows = (int) ceil($totalRows / $interval);
                 } else {
                     $stream = $this->monitorModel->streamRawHistoryByParameter($patientId, $parameterId, $targetDate, $limit);
                 }
 
-                // Formatter Generator: normalizing database output
                 $formatter = function (\Generator $source) {
                     foreach ($source as $itemRaw) {
                         /** @var array{timestamp?: string, value?: numeric|null, alert_flag?: int|string} $itemRaw */
@@ -866,10 +856,8 @@ class PatientController
                 return;
             }
 
-            // Fallback for smaller limits
             $history = $this->monitorModel->getRawHistoryByParameter($patientId, $parameterId, $targetDate, $limit);
 
-            // Format for JS
             $formatted = [];
             foreach ($history as $hItem) {
                 $ts = $hItem['timestamp'];
@@ -884,14 +872,13 @@ class PatientController
                 ];
             }
 
-            // Downsample only if dataset is too large
             if (count($formatted) > 5000) {
                 $downsampler = new \modules\services\DownsamplingService();
                 $formatted = $downsampler->downsampleLTTB($formatted, 5000);
             }
 
             $jsonResult = json_encode($formatted);
-            file_put_contents($cacheFile, $jsonResult); // Save to cache
+            file_put_contents($cacheFile, $jsonResult);
             echo $jsonResult;
         } catch (\Exception $e) {
             error_log('[PatientController] apiHistory error: ' . $e->getMessage());
@@ -920,7 +907,6 @@ class PatientController
                 return;
             }
 
-            // Release session lock to allow concurrent requests (prevents UI freezing)
             session_write_close();
 
             $roomId = $this->getRoomId();
@@ -944,7 +930,6 @@ class PatientController
             $rawUserId = $_SESSION['user_id'] ?? 0;
             $prefs = $this->prefModel->getUserPreferences(is_numeric($rawUserId) ? (int) $rawUserId : 0);
 
-            // Only need a lightweight history or just empty if we only care about the latest value
             $rawHistory = $this->monitorModel->getRawHistory($patientId, 1);
 
             $processedMetrics = $this->monitoringService->processMetrics($metrics, $rawHistory, $prefs, true);

@@ -336,13 +336,11 @@
                                 const ds = chart.data.datasets[0];
                                 if (!ds || !ds.data) return;
 
-                                // Add new measure if not already present
                                 const exists = ds.data.some(p => p.x === timeMs);
                                 if (!exists) {
                                     ds.data.push({ x: timeMs, y: val });
                                     ds.data.sort((a, b) => a.x - b.x);
 
-                                    // Maintain fixed observation window for sparklines
                                     if (ds.data.length > 100) ds.data.shift();
 
                                     chart.update('none');

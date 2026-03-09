@@ -98,9 +98,6 @@ class MonitoringService
                 }
             }
 
-            // Assign chart preferences.
-            // The modal chart type gracefully falls back to the card's assigned chart type, 
-            // which itself falls back to the system-defined default for this metric.
             $userChart = $chartPrefs[$pid]['chart_type'] ?? null;
             $userModalChart = $chartPrefs[$pid]['modal_chart_type'] ?? null;
             $defaultChart = $m->getDefaultChart();

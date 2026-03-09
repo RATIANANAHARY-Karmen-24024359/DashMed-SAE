@@ -576,7 +576,6 @@ class SysadminView
                 <script src="assets/js/pages/dash.js"></script>
                 <script>
                     document.addEventListener('DOMContentLoaded', function () {
-                        // ── Tab Switcher ──
                         const switcherBtns = document.querySelectorAll('.section-switcher-btn');
                         const panels = document.querySelectorAll('.section-panel');
 

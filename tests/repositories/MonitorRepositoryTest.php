@@ -66,7 +66,6 @@ class MonitorRepositoryTest extends TestCase
 
         $this->monitorModel = new MonitorRepository($this->pdo, 'patient_data');
 
-        // Register MySQL functions for SQLite testing
         $this->pdo->sqliteCreateFunction('UNIX_TIMESTAMP', function($timestamp) {
             return strtotime($timestamp);
         }, 1);
@@ -123,7 +122,6 @@ class MonitorRepositoryTest extends TestCase
      */
     public function testStreamPreAggregatedHistory()
     {
-        // Insert 6 points, 10 seconds apart: 0s, 10s, 20s, 30s, 40s, 50s
         for ($i = 0; $i < 6; $i++) {
             $seconds = str_pad((string)($i * 10), 2, '0', STR_PAD_LEFT);
             $time = "2023-01-01 10:00:$seconds";
@@ -133,7 +131,6 @@ class MonitorRepositoryTest extends TestCase
             );
         }
 
-        // Aggregate by 30 seconds (should result in 2 buckets: 0-29s and 30-59s)
         $generator = $this->monitorModel->streamPreAggregatedHistoryByParameter(1, 'BPM', 30);
         $results = iterator_to_array($generator);
 

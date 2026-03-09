@@ -705,7 +705,6 @@ async function updatePanelChart(panelId, chartId, title) {
         if (canvas) canvas.style.opacity = '0.5';
 
         try {
-            // fetchLimit=0 triggers server-side streaming LTTB (fetching all history)
             const fetchLimit = 0;
             const dateParam = targetDate ? `&date=${encodeURIComponent(targetDate)}` : '';
             const cacheKey = `${paramId}-${fetchLimit}-${targetDate || 'now'}`;
@@ -933,7 +932,7 @@ function createChart(
             }
         };
     } else {
-        const v = rev(data);
+        const v = data;
         const pieLabels = config.data.labels;
         const pieColors = extra?.colors?.length
             ? extra.colors
@@ -1148,7 +1147,6 @@ document.addEventListener('change', function (e) {
             if (!isNaN(hours)) {
                 let maxTime = Date.now();
 
-                // If the chart has an explicit max range bound, use that 
                 const dataSets = chart.data.datasets;
                 if (dataSets && dataSets.length > 0 && dataSets[0].data && dataSets[0].data.length > 0) {
                     const data = dataSets[0].data;
@@ -1163,7 +1161,6 @@ document.addEventListener('change', function (e) {
 
         chart.update();
 
-        // Show the sync button as the user modified the view
         const syncBtn = panel.querySelector('.sync-realtime-btn');
         if (syncBtn) {
             syncBtn.style.display = 'block';
@@ -1211,14 +1208,11 @@ document.addEventListener('change', function (e) {
                 const ds = chart.data.datasets[0];
                 if (!ds || !ds.data || isNaN(time)) return;
 
-                // Add new measure if not already present
                 const exists = ds.data.some(p => p.x === time);
                 if (!exists) {
                     ds.data.push({ x: time, y: val });
-                    // Sort chronologically to prevent rendering artifacts from delayed metrics
                     ds.data.sort((a, b) => a.x - b.x);
 
-                    // Limit array size to prevent memory leaks during long background sessions
                     if (ds.data.length > 2000) ds.data.shift();
 
                     chart.update('none');

@@ -163,9 +163,7 @@ class PatientrecordView
                         </div>
                         <div class="header-actions" style="display: flex; gap: 12px;">
                             <button type="button" class="btn-edit-patient" onclick="openThresholdsModal()" aria-label="Modifier les seuils d'alerte">
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="opacity: 0.7;">
-                                    <path d="M12 20h9"></path><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
-                                </svg>
+                                <img src="assets/img/icons/edit.svg" alt="" />
                                 <span>Modifier Seuils</span>
                             </button>
                             <button class="btn-edit-patient" onclick="openEditModal()" aria-label="Modifier le dossier">
