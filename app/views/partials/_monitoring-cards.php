@@ -125,6 +125,14 @@ if (!empty($patientMetrics)): ?>
             data-display-duration="<?= $escape($viewData['display_duration'] ?? '0.0333') ?>"
             data-card-display-duration="<?= $escape($viewData['card_display_duration'] ?? '0.0333') ?>">
 
+            <div class="card-dismiss-btn" title="Masquer l'indicateur"
+                style="position: absolute; left: 0; top: 0; bottom: 0; width: 30px; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; cursor: pointer; opacity: 0; pointer-events: none; transition: opacity 0.2s; border-top-left-radius: 8px; border-bottom-left-radius: 8px; z-index: 10;">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                    style="color: white;">
+                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                </svg>
+            </div>
 
             <div class="card-header">
                 <h3>
@@ -189,12 +197,21 @@ if (!empty($patientMetrics)): ?>
 
             <div class="card-spark" style="display: <?= $isValueOnly ? 'none' : 'block' ?>;">
                 <div class="card-chart-loader">
-                    <svg class="card-chart-loader-svg" viewBox="0 0 50 50">
-                        <circle class="card-chart-loader-circle" cx="25" cy="25" r="20" />
+                    <svg class="loader-logo-svg" viewBox="0 0 1024 1024" preserveAspectRatio="xMidYMid meet"
+                        style="width: 30px; height: 30px; margin-bottom: 8px;">
+                        <g transform="translate(0,1024) scale(0.1,-0.1)" fill="var(--primary-color, #275afe)">
+                            <path
+                                d="M1740 5215 l0 -1975 643 0 c614 0 844 7 987 31 198 33 389 99 572 197 166 88 280 174 423 317 287 286 451 631 521 1095 22 143 25 500 5 640 -35 254 -100 479 -191 660 -47 94 -154 261 -208 325 -286 341 -656 565 -1064 644 -180 35 -338 41 -1024 41 l-664 0 0 -1975z m1469 1209 c239 -35 433 -135 598 -307 150 -157 240 -335 288 -566 51 -245 35 -604 -36 -821 -106 -323 -355 -574 -669 -674 -167 -53 -207 -58 -537 -63 l-313 -5 0 1226 0 1226 281 0 c204 0 311 -4 388 -16z" />
+                            <path
+                                d="M4840 6763 l0 -428 29 -80 c16 -44 44 -118 61 -165 50 -136 98 -323 122 -474 26 -170 31 -554 10 -726 -31 -245 -96 -494 -171 -649 l-36 -76 -5 -463 -5 -462 413 0 412 0 0 1241 0 1242 26 -39 c15 -21 127 -181 249 -354 122 -173 353 -503 514 -732 l292 -418 537 767 537 767 3 -1237 2 -1237 398 0 397 0 -3 1975 -2 1975 -384 0 -385 0 -136 -202 c-449 -668 -957 -1413 -963 -1415 -4 -1 -36 41 -72 95 -36 53 -247 363 -470 687 -223 325 -443 645 -489 713 l-83 122 -399 0 -399 0 0 -427z" />
+                        </g>
                     </svg>
+                    <div class="loader-progress-container">
+                        <div class="loader-progress-bar"></div>
+                    </div>
+                    <span class="loader-progress-text">0%</span>
                 </div>
-                <canvas class="card-spark-canvas" id="<?= $escape($idPrefix) ?>spark-<?= $escape($slug) ?>">
-                </canvas>
+                <div class="card-spark-canvas" id="<?= $escape($idPrefix) ?>spark-<?= $escape($slug) ?>"></div>
                 <div class="no-data-placeholder" style="display:none;">
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 60" class="no-data-svg">
                         <path d="M10 45 L25 35 L40 40 L55 25 L70 30 L85 20" stroke="currentColor" stroke-width="2" fill="none"
@@ -403,9 +420,19 @@ viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-li
 
                 <div class="canvas-wrapper">
                     <div class="modal-chart-loader">
-                        <svg class="modal-chart-loader-svg" viewBox="0 0 50 50">
-                            <circle class="modal-chart-loader-circle" cx="25" cy="25" r="20" />
+                        <svg class="loader-logo-svg" viewBox="0 0 1024 1024" preserveAspectRatio="xMidYMid meet"
+                            style="width: 40px; height: 40px; margin-bottom: 12px;">
+                            <g transform="translate(0,1024) scale(0.1,-0.1)" fill="var(--primary-color, #275afe)">
+                                <path
+                                    d="M1740 5215 l0 -1975 643 0 c614 0 844 7 987 31 198 33 389 99 572 197 166 88 280 174 423 317 287 286 451 631 521 1095 22 143 25 500 5 640 -35 254 -100 479 -191 660 -47 94 -154 261 -208 325 -286 341 -656 565 -1064 644 -180 35 -338 41 -1024 41 l-664 0 0 -1975z m1469 1209 c239 -35 433 -135 598 -307 150 -157 240 -335 288 -566 51 -245 35 -604 -36 -821 -106 -323 -355 -574 -669 -674 -167 -53 -207 -58 -537 -63 l-313 -5 0 1226 0 1226 281 0 c204 0 311 -4 388 -16z" />
+                                <path
+                                    d="M4840 6763 l0 -428 29 -80 c16 -44 44 -118 61 -165 50 -136 98 -323 122 -474 26 -170 31 -554 10 -726 -31 -245 -96 -494 -171 -649 l-36 -76 -5 -463 -5 -462 413 0 412 0 0 1241 0 1242 26 -39 c15 -21 127 -181 249 -354 122 -173 353 -503 514 -732 l292 -418 537 767 537 767 3 -1237 2 -1237 398 0 397 0 -3 1975 -2 1975 -384 0 -385 0 -136 -202 c-449 -668 -957 -1413 -963 -1415 -4 -1 -36 41 -72 95 -36 53 -247 363 -470 687 -223 325 -443 645 -489 713 l-83 122 -399 0 -399 0 0 -427z" />
+                            </g>
                         </svg>
+                        <div class="loader-progress-container">
+                            <div class="loader-progress-bar"></div>
+                        </div>
+                        <span class="loader-progress-text">0%</span>
                     </div>
                     <div class="modal-chart chart-<?= $escape($chartType) ?>" tabindex="-1"
                         data-id="<?= $escape($idPrefix) ?>modal-chart-<?= $escape($slug) ?>" style="width: 100%; height: 100%;">

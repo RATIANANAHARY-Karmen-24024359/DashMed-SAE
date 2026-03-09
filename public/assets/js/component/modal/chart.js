@@ -64,8 +64,48 @@ async function updatePanelChart(panelId, chartId, title) {
     const unit = (panel.dataset.unit || '').trim().toLowerCase();
 
     const modalLoader = panel.querySelector('.modal-chart-loader');
-    const hideLoader = () => { if (modalLoader) modalLoader.classList.add('hidden'); };
-    const showLoader = () => { if (modalLoader) modalLoader.classList.remove('hidden'); };
+    let finishLoader = null;
+
+    const showLoader = () => {
+        if (!modalLoader) return;
+        modalLoader.classList.remove('hidden');
+
+        const bar = modalLoader.querySelector('.loader-progress-bar');
+        const text = modalLoader.querySelector('.loader-progress-text');
+        if (!bar || !text) return;
+
+        bar.style.width = '0%';
+        text.textContent = '0%';
+
+        let active = true;
+        let progress = 0;
+        const animate = () => {
+            if (!active) return;
+            if (progress < 40) progress += Math.random() * 8;
+            else if (progress < 85) progress += Math.random() * 2;
+            else if (progress < 95) progress += Math.random() * 0.3;
+            if (progress > 95) progress = 95;
+
+            bar.style.width = progress + '%';
+            text.textContent = Math.floor(progress) + '%';
+            setTimeout(animate, 30);
+        };
+        animate();
+
+        finishLoader = () => {
+            active = false;
+            bar.style.width = '100%';
+            text.textContent = '100%';
+            setTimeout(() => {
+                modalLoader.classList.add('hidden');
+            }, 300);
+        };
+    };
+
+    const hideLoader = () => {
+        if (finishLoader) { finishLoader(); finishLoader = null; }
+        else if (modalLoader) modalLoader.classList.add('hidden');
+    };
 
     if (chartType === 'value') {
         const valueRaw = panel.dataset.value || '—';
@@ -125,8 +165,6 @@ async function updatePanelChart(panelId, chartId, title) {
             if (historyCache[cacheKey]) {
                 dataArr = historyCache[cacheKey];
             } else {
-                // We no longer send limit=0 by default. 
-                // The server automatically downsamples for the chart if needed.
                 const res = await fetch(`${window.location.origin}/api_history?param=${encodeURIComponent(paramId)}${dateParam}`);
                 if (!res.ok) throw new Error('Fetch failed');
                 dataArr = await res.json();
@@ -134,7 +172,6 @@ async function updatePanelChart(panelId, chartId, title) {
                 historyCache[cacheKey] = dataArr;
             }
 
-            // --- Configure CSV Download Link ---
             const csvBtn = panel.querySelector('.btn-csv-download');
             if (csvBtn) {
                 csvBtn.href = `${window.location.origin}/api_history?param=${encodeURIComponent(paramId)}${dateParam}&raw=1&format=csv`;
@@ -556,28 +593,21 @@ document.addEventListener('change', function (e) {
         const val = select.value;
         const paramId = panel.dataset.paramId;
 
-        // Persist preference for ALL parameters (global behavior requested)
-        // We'll iterate over all visible panels or just send one global request if the server supports it.
-        // The current server logic saves per parameter. To make it "the same for everyone", 
-        // we can either send multiple requests or update the server. 
-        // User said "la même chose pour la modale et que ça soit sauvegardé", implying global.
-
         const allPanels = document.querySelectorAll('.modal-grid');
         allPanels.forEach(p => {
             const pId = p.dataset.paramId;
             if (pId) {
-                p.dataset.displayDuration = val; // Update local dataset
+                p.dataset.displayDuration = val;
                 const formData = new FormData();
                 formData.append('parameter_id', pId);
 
-                formData.append('chart_type', val); // Value is the duration
+                formData.append('chart_type', val);
                 formData.append('chart_pref_submit', '1');
                 formData.append('preference_type', 'duration');
                 fetch(window.location.href, { method: 'POST', body: formData }).catch(console.error);
             }
         });
 
-        // Update all open charts in UI
         const allCanvas = document.querySelectorAll('.modal-chart');
         allCanvas.forEach(canvas => {
             if (canvas.chartInstance) {
@@ -602,20 +632,16 @@ document.addEventListener('change', function (e) {
                     const syncBtn = p.querySelector('.sync-realtime-btn');
                     if (syncBtn) syncBtn.style.display = 'block';
 
-                    // Synchronize the other selects
                     const s = p.querySelector('.modal-interval-select');
                     if (s && s !== select) s.value = val;
                 }
             }
         });
-
-        // Dashboard sparklines are now independent
     }
 });
 
 
 
-// SSE Modal Sync
 (function () {
     window.addEventListener('DashMedMetricsUpdate', function (event) {
         const modal = document.querySelector(".modal");
@@ -664,7 +690,6 @@ document.addEventListener('change', function (e) {
 
                         const updateObj = { series: [{ data: ds }] };
 
-                        // AUTO-SCROLL LOGIC
                         if (canvas.dataset.isSynced === "true") {
                             const duration = getChartVisibleDurationMs(chart, panel);
 

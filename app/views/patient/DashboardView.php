@@ -191,6 +191,12 @@ class DashboardView
 
                     <?php if (!empty($uniqueCategories)): ?>
                         <div class="category-filters">
+                            <button class="category-filter-btn urgent-filter" data-filter="urgent"
+                                style="color: var(--color-critical, #EF4444); font-weight: bold; display: flex; align-items: center; gap: 8px;">
+                                URGENT
+                                <span id="urgent-badge"
+                                    style="background: var(--color-critical, #EF4444); color: white; border-radius: 50%; min-width: 20px; height: 20px; display: inline-flex; align-items: center; justify-content: center; font-size: 12px; font-weight: bold; padding: 0 6px;">0</span>
+                            </button>
                             <button class="category-filter-btn active" data-filter="all">Toutes</button>
                             <?php foreach ($uniqueCategories as $cat): ?>
                                 <button class="category-filter-btn" data-filter="<?= htmlspecialchars($cat, ENT_QUOTES, 'UTF-8') ?>">
@@ -437,6 +443,7 @@ class DashboardView
 
                         const HIDE_DELAY = 20000;
                         const cardStates = new WeakMap();
+                        let nextAlertOrder = 1;
 
                         function getSpan(card) {
                             const colMatch = (card.style.gridColumn || '').match(/span\s+(\d+)/);
@@ -447,90 +454,20 @@ class DashboardView
                             };
                         }
 
-                        function getAlertColor(card) {
-                            if (card.classList.contains('card--alert')) return 'var(--color-critical, #EF4444)';
-                            if (card.classList.contains('card--warn')) return 'var(--color-warning, #F59E0B)';
-                            return 'var(--text-muted, #999)';
-                        }
-
-                        function buildSVG(card, color, remaining) {
-                            const old = card.querySelector('.hide-progress');
-                            if (old) old.remove();
-
-                            const w = card.offsetWidth;
-                            const h = card.offsetHeight;
-                            if (w === 0 || h === 0) return null;
-                            const inset = 2;
-                            const rx = 12;
-                            const rw = w - inset * 2;
-                            const rh = h - inset * 2;
-                            const perimeter = 2 * (rw + rh) - (8 - 2 * Math.PI) * rx;
-
-                            const ns = 'http://www.w3.org/2000/svg';
-                            const svg = document.createElementNS(ns, 'svg');
-                            svg.classList.add('hide-progress');
-                            svg.setAttribute('viewBox', `0 0 ${w} ${h}`);
-                            svg.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;z-index:10;pointer-events:none;';
-
-                            const rect = document.createElementNS(ns, 'rect');
-                            rect.setAttribute('x', inset);
-                            rect.setAttribute('y', inset);
-                            rect.setAttribute('width', rw);
-                            rect.setAttribute('height', rh);
-                            rect.setAttribute('rx', rx);
-                            rect.setAttribute('ry', rx);
-                            rect.setAttribute('fill', 'none');
-                            rect.setAttribute('stroke', color);
-                            rect.setAttribute('stroke-width', '3');
-                            rect.setAttribute('stroke-dasharray', perimeter);
-                            rect.setAttribute('stroke-dashoffset', '0');
-                            rect.setAttribute('stroke-linecap', 'round');
-
-                            svg.appendChild(rect);
-                            card.style.position = 'relative';
-                            card.appendChild(svg);
-
-                            const safeRemaining = Math.max(1, remaining);
-                            const startOffset = ((HIDE_DELAY - safeRemaining) / HIDE_DELAY) * perimeter;
-
-                            const anim = rect.animate([
-                                { strokeDashoffset: startOffset },
-                                { strokeDashoffset: perimeter }
-                            ], { duration: safeRemaining, easing: 'linear' });
-
-                            return anim;
-                        }
-
-                        const resizeObserver = new ResizeObserver(entries => {
-                            for (const entry of entries) {
-                                const card = entry.target;
-                                const state = cardStates.get(card);
-                                if (!state || !state.isCountingDown || state.hidden) continue;
-
-                                state.svgAnim = buildSVG(card, state.lastAlertColor || 'var(--text-muted, #999)', state.remaining);
-                                if (state.svgAnim && state.isHovered) {
-                                    state.svgAnim.pause();
-                                }
-                            }
-                        });
-
                         function showCard(card) {
                             const state = cardStates.get(card);
                             if (!state) return;
 
-                            const prog = card.querySelector('.hide-progress');
-                            if (prog) prog.remove();
-
-                            const needsAnim = state.hidden;
                             if (state.hidden) {
                                 state.hidden = false;
                                 const span = state.span;
                                 card.style.gridColumn = `auto / span ${span.w}`;
                                 card.style.gridRow = `auto / span ${span.h}`;
                                 card.style.display = 'flex';
+                                card.style.order = nextAlertOrder++;
                             }
 
-                            if (needsAnim && !state.animating) {
+                            if (!state.animating) {
                                 state.animating = true;
                                 const anim = card.animate([
                                     { transform: 'scale(0.5) translateY(20px)', opacity: 0 },
@@ -540,26 +477,6 @@ class DashboardView
                             }
                         }
 
-                        function startHideCountdown(card, color) {
-                            const state = cardStates.get(card);
-                            if (!state || state.hidden || state.isCountingDown || state.animating) return;
-
-                            state.isCountingDown = true;
-                            state.remaining = HIDE_DELAY;
-                            state.lastTick = Date.now();
-                            state.isPaused = false;
-
-                            state.svgAnim = buildSVG(card, color, state.remaining);
-
-                            const isModalOpened = (activeModalCard === card && document.body.classList.contains('modal-open'));
-                            if (state.isHovered || isModalOpened) {
-                                state.isPaused = true;
-                                if (state.svgAnim) state.svgAnim.pause();
-                            }
-
-                            resizeObserver.observe(card);
-                        }
-
                         Array.from(mainGrid.querySelectorAll('.card')).forEach(card => {
                             const isAlert = card.classList.contains('card--alert') || card.classList.contains('card--warn');
                             const span = getSpan(card);
@@ -567,28 +484,56 @@ class DashboardView
                             cardStates.set(card, {
                                 hidden: !isAlert,
                                 animating: false,
-                                isCountingDown: false,
-                                isHovered: false,
-                                isPaused: false,
-                                remaining: isAlert ? HIDE_DELAY : 0,
-                                lastTick: Date.now(),
-                                svgAnim: null,
-                                span: span,
-                                lastAlertColor: isAlert ? getAlertColor(card) : null
+                                span: span
                             });
 
                             card.addEventListener('click', () => {
                                 activeModalCard = card;
                             });
 
+                            const dismissBtn = card.querySelector('.card-dismiss-btn');
+                            if (dismissBtn) {
+                                dismissBtn.addEventListener('click', (e) => {
+                                    e.stopPropagation();
+                                    const st = cardStates.get(card);
+                                    if (st && !st.animating) {
+                                        st.animating = true;
+                                        const anim = card.animate([
+                                            { transform: 'scale(1)', opacity: 1 },
+                                            { transform: 'scale(0.5)', opacity: 0 }
+                                        ], { duration: 300, easing: 'cubic-bezier(0.4, 0, 0.2, 1)' });
+
+                                        anim.onfinish = () => {
+                                            card.style.display = 'none';
+                                            card.style.gridColumn = '0';
+                                            card.style.gridRow = '0';
+                                            st.hidden = true;
+                                            st.animating = false;
+                                            if (typeof activeModalCard !== 'undefined' && activeModalCard === card) activeModalCard = null;
+                                        };
+                                    }
+                                });
+                            }
+
                             card.addEventListener('mouseenter', () => {
-                                const state = cardStates.get(card);
-                                if (state) state.isHovered = true;
+                                const st = cardStates.get(card);
+                                if (st) st.isHovered = true;
+
+                                const isAlert = card.classList.contains('card--alert') || card.classList.contains('card--warn');
+                                if (!isAlert && dismissBtn) {
+                                    dismissBtn.style.opacity = '1';
+                                    dismissBtn.style.pointerEvents = 'auto';
+                                }
                             });
 
                             card.addEventListener('mouseleave', () => {
-                                const state = cardStates.get(card);
-                                if (state) state.isHovered = false;
+                                const st = cardStates.get(card);
+                                if (st) st.isHovered = false;
+
+                                if (dismissBtn) {
+                                    dismissBtn.style.opacity = '0';
+                                    dismissBtn.style.pointerEvents = 'none';
+                                }
                             });
 
                             if (isAlert) {
@@ -601,9 +546,13 @@ class DashboardView
                             }
                         });
 
+
                         setInterval(() => {
-                            const now = Date.now();
-                            const isModalGloballyOpen = document.body.classList.contains("modal-open");
+                            let activeAlertsCount = 0;
+
+                            const activeFilterBtn = document.querySelector('.category-filter-btn.active');
+                            const activeFilter = activeFilterBtn ? activeFilterBtn.getAttribute('data-filter') : 'all';
+                            const isUrgentOrAll = activeFilter === 'urgent' || activeFilter === 'all';
 
                             Array.from(mainGrid.querySelectorAll('.card')).forEach(card => {
                                 const state = cardStates.get(card);
@@ -611,61 +560,28 @@ class DashboardView
 
                                 const isAlert = card.classList.contains('card--alert') || card.classList.contains('card--warn');
 
+                                const dismissBtn = card.querySelector('.card-dismiss-btn');
                                 if (isAlert) {
-                                    const wasInCountdown = state.isCountingDown;
-                                    if (state.isCountingDown) {
-                                        state.isCountingDown = false;
-                                        resizeObserver.unobserve(card);
+                                    activeAlertsCount++;
+                                    if (state.hidden && isUrgentOrAll) {
+                                        showCard(card);
                                     }
-                                    state.lastAlertColor = getAlertColor(card);
-                                    showCard(card, wasInCountdown);
-                                    state.lastTick = now;
-                                } else if (!state.hidden && !state.animating) {
-                                    if (!state.isCountingDown) {
-                                        startHideCountdown(card, state.lastAlertColor || 'var(--text-muted, #999)');
-                                    } else {
-                                        const isModalOpened = (activeModalCard === card && isModalGloballyOpen);
-                                        const shouldBePaused = state.isHovered || isModalOpened;
-
-                                        if (shouldBePaused && !state.isPaused) {
-                                            state.isPaused = true;
-                                            if (state.svgAnim) state.svgAnim.pause();
-                                        } else if (!shouldBePaused && state.isPaused) {
-                                            state.isPaused = false;
-                                            if (state.svgAnim) state.svgAnim.play();
-                                        }
-
-                                        if (!state.isPaused) {
-                                            state.remaining -= (now - state.lastTick);
-                                        }
-                                        state.lastTick = now;
-
-                                        if (state.remaining <= 0) {
-                                            state.isCountingDown = false;
-                                            resizeObserver.unobserve(card);
-
-                                            state.animating = true;
-                                            const prog = card.querySelector('.hide-progress');
-                                            if (prog) prog.remove();
-
-                                            const anim = card.animate([
-                                                { transform: 'scale(1)', opacity: 1 },
-                                                { transform: 'scale(0.5)', opacity: 0 }
-                                            ], { duration: 300, easing: 'cubic-bezier(0.4, 0, 0.2, 1)' });
-
-                                            anim.onfinish = () => {
-                                                card.style.display = 'none';
-                                                card.style.gridColumn = '0';
-                                                card.style.gridRow = '0';
-                                                state.hidden = true;
-                                                state.animating = false;
-                                                state.lastAlertColor = null;
-                                                if (activeModalCard === card) activeModalCard = null;
-                                            };
-                                        }
+                                    if (dismissBtn) {
+                                        dismissBtn.style.opacity = '0';
+                                        dismissBtn.style.pointerEvents = 'none';
+                                    }
+                                } else {
+                                    if (state.isHovered && dismissBtn) {
+                                        dismissBtn.style.opacity = '1';
+                                        dismissBtn.style.pointerEvents = 'auto';
                                     }
                                 }
                             });
+
+                            const badge = document.getElementById('urgent-badge');
+                            if (badge) {
+                                badge.textContent = activeAlertsCount;
+                            }
                         }, 50);
                     });
                 </script>

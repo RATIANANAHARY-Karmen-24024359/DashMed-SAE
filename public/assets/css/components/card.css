@@ -134,11 +134,31 @@
     position: absolute;
     inset: 0;
     display: flex;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
     z-index: 2;
     background: var(--bg-surface);
     transition: opacity 0.4s ease, visibility 0.4s ease;
+}
+
+.loader-logo-svg {
+    filter: drop-shadow(0 0 6px rgba(37, 91, 254, 0.15));
+    animation: loader-logo-pulse 2s ease-in-out infinite;
+}
+
+@keyframes loader-logo-pulse {
+
+    0%,
+    100% {
+        opacity: 0.8;
+        transform: scale(1);
+    }
+
+    50% {
+        opacity: 1;
+        transform: scale(1.1);
+    }
 }
 
 .card-chart-loader.hidden {
@@ -147,45 +167,30 @@
     pointer-events: none;
 }
 
-.card-chart-loader-svg {
-    width: 40px;
-    height: 40px;
-    filter: drop-shadow(0 0 6px rgba(37, 91, 254, 0.15));
+.loader-progress-container {
+    width: 60%;
+    max-width: 150px;
+    height: 8px;
+    background-color: var(--bg-surface-hover, rgba(0, 0, 0, 0.1));
+    border-radius: 4px;
+    overflow: hidden;
+    margin-bottom: 8px;
+    display: flex;
 }
 
-.card-chart-loader-circle {
-    fill: none;
-    stroke: var(--text-primary);
-    stroke-width: 3;
-    stroke-linecap: round;
-    stroke-dasharray: 126;
-    stroke-dashoffset: 126;
-    transform-origin: center;
-    animation: card-loader-dash 1.4s ease-in-out infinite, card-loader-rotate 1.8s linear infinite;
+.loader-progress-bar {
+    width: 0%;
+    height: 100%;
+    background-color: var(--primary-color, #275afe);
+    border-radius: 4px;
+    transition: width 0.1s ease-out;
 }
 
-@keyframes card-loader-dash {
-    0% {
-        stroke-dashoffset: 126;
-    }
-
-    50% {
-        stroke-dashoffset: 30;
-    }
-
-    100% {
-        stroke-dashoffset: 126;
-    }
-}
-
-@keyframes card-loader-rotate {
-    0% {
-        transform: rotate(0deg);
-    }
-
-    100% {
-        transform: rotate(360deg);
-    }
+.loader-progress-text {
+    font-size: 0.8em;
+    font-weight: 700;
+    color: var(--text-primary);
+    font-variant-numeric: tabular-nums;
 }
 
 .card .card-interval-select {

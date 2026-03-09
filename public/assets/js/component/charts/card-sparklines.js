@@ -29,7 +29,43 @@
         const headerValue = card.querySelector('.card-header .value');
         const chartLoader = card.querySelector('.card-chart-loader');
 
-        const hideLoader = () => { if (chartLoader) chartLoader.classList.add('hidden'); };
+        const startFakeProgress = (loader) => {
+            if (!loader || loader.classList.contains('hidden')) {
+                return () => { if (loader) loader.classList.add('hidden'); };
+            }
+            const bar = loader.querySelector('.loader-progress-bar');
+            const text = loader.querySelector('.loader-progress-text');
+            if (!bar || !text) {
+                return () => { loader.classList.add('hidden'); };
+            }
+            let active = true;
+            let progress = 0;
+            const animate = () => {
+                if (!active) return;
+                if (progress < 40) progress += Math.random() * 10;
+                else if (progress < 85) progress += Math.random() * 3;
+                else if (progress < 95) progress += Math.random() * 0.5;
+                if (progress > 95) progress = 95;
+
+                bar.style.width = progress + '%';
+                text.textContent = Math.floor(progress) + '%';
+                setTimeout(animate, 20);
+            };
+            animate();
+
+            return () => {
+                active = false;
+                bar.style.width = '100%';
+                text.textContent = '100%';
+                setTimeout(() => {
+                    loader.classList.add('hidden');
+                    setTimeout(() => { bar.style.width = '0%'; text.textContent = '0%'; }, 200);
+                }, 300); // Slight delay at 100% to satisfy visual proof
+            };
+        };
+
+        const finishLoader = startFakeProgress(chartLoader);
+        const hideLoader = () => { if (finishLoader) finishLoader(); };
 
         if (type === 'value') {
             if (valueOnlyContainer) valueOnlyContainer.style.display = 'flex';
@@ -269,12 +305,12 @@
                     const lastTime = rawData[rawData.length - 1][0];
                     const minTime = lastTime - (hours * 3600 * 1000);
                     options.dataZoom = [
-                        { type: 'inside', startValue: minTime, endValue: lastTime }
+                        { type: 'inside', startValue: minTime, endValue: lastTime, zoomLock: true, zoomOnMouseWheel: false, moveOnMouseMove: false }
                     ];
                 }
             } else if (durationVal === 'all') {
                 options.dataZoom = [
-                    { type: 'inside', start: 0, end: 100 }
+                    { type: 'inside', start: 0, end: 100, zoomLock: true, zoomOnMouseWheel: false, moveOnMouseMove: false }
                 ];
             }
         }
@@ -282,7 +318,6 @@
         hideLoader();
         chartInstance.setOption(options);
 
-        // Resize observer instead of resize window
         const ro = new ResizeObserver(() => {
             chartInstance.resize();
         });
@@ -442,13 +477,11 @@
 
                                         const updateObj = { series: [{ data: ds }] };
 
-                                        // Auto-scroll logic for sparkline too? 
-                                        // Sparklines are usually fixed to the duration.
                                         const durationVal = card.dataset.displayDuration;
                                         if (durationVal && durationVal !== 'all') {
                                             const hours = parseFloat(durationVal);
                                             const minTime = timeMs - (hours * 3600 * 1000);
-                                            updateObj.dataZoom = [{ type: 'inside', startValue: minTime, endValue: timeMs }];
+                                            updateObj.dataZoom = [{ type: 'inside', startValue: minTime, endValue: timeMs, zoomLock: true, zoomOnMouseWheel: false, moveOnMouseMove: false }];
                                         }
 
                                         chart.setOption(updateObj);
