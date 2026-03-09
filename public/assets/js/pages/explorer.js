@@ -722,17 +722,63 @@
     }
 
     function detectPeaks(data) {
+        if (!data.length) return [];
+
+        const values = data.map(d => d[1]);
+        const n = values.length;
+        if (n < 3) return [];
+
+        // 1. Smoothing (Moving Average to reduce noise)
+        const smoothed = movingAverage(data, 3).map(d => d[1]);
+
+        // 2. Statistics for thresholding
+        const validValues = smoothed.filter(v => v !== null);
+        const avg = validValues.reduce((a, b) => a + b, 0) / validValues.length;
+        const std = Math.sqrt(validValues.reduce((a, b) => a + Math.pow(b - avg, 2), 0) / validValues.length);
+        const threshold = avg + 0.5 * std; // Dynamic threshold
+
         const peaks = [];
-        for (let i = 1; i < data.length - 1; i++) {
-            const prev = data[i - 1][1];
-            const curr = data[i][1];
-            const next = data[i + 1][1];
+
+        // 3. Find local maxima and calculate prominence
+        for (let i = 1; i < n - 1; i++) {
+            const curr = smoothed[i];
+            const prev = smoothed[i - 1];
+            const next = smoothed[i + 1];
+
             if (curr !== null && prev !== null && next !== null && curr > prev && curr > next) {
-                // Heuristic for "significant" peak
-                if (curr > 0) peaks.push(data[i]);
+                // Potential peak
+                if (curr > threshold) {
+                    // Calculate prominence (simple version: height above neighboring valleys)
+                    let leftValley = curr;
+                    for (let j = i - 1; j >= 0 && smoothed[j] !== null; j--) {
+                        if (smoothed[j] < leftValley) leftValley = smoothed[j];
+                        else if (smoothed[j] > curr) break;
+                    }
+
+                    let rightValley = curr;
+                    for (let j = i + 1; j < n && smoothed[j] !== null; j++) {
+                        if (smoothed[j] < rightValley) rightValley = smoothed[j];
+                        else if (smoothed[j] > curr) break;
+                    }
+
+                    const prominence = curr - Math.max(leftValley, rightValley);
+                    
+                    // Significant peak if prominence > some heuristic (e.g., 10% of value)
+                    if (prominence > curr * 0.05) {
+                        peaks.push({
+                            data: data[i],
+                            prominence: prominence
+                        });
+                    }
+                }
             }
         }
-        return peaks.slice(0, 50); // Limit to top 50
+
+        // 4. Sort by prominence and limit
+        return peaks
+            .sort((a, b) => b.prominence - a.prominence)
+            .slice(0, 30)
+            .map(p => p.data);
     }
 
     function updateStats() {
