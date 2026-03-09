@@ -5,10 +5,13 @@ namespace modules\views\patient;
 /**
  * Class ExplorerView
  *
- * View for the Data Explorer and CSV Viewer.
+ * High-performance UI for multidimensional medical data exploration.
+ * Integrates interactive ECharts, CSV processing, and clinical analytics.
+ * 
+ * Part of the DashMed Visualization Layer.
  *
- * Provides a specialized environment for analyzing large datasets,
- * uploading CSV files, and visual navigation.
+ * @package DashMed\Modules\Views\Patient
+ * @author DashMed Team
  */
 class ExplorerView
 {

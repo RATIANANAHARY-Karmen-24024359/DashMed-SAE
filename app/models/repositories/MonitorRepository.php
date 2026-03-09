@@ -8,15 +8,18 @@ use PDO;
 /**
  * Class MonitorRepository
  *
- * Handles retrieval of patient monitoring metrics and history.
+ * High-performance data access layer for physiological time-series data.
+ * Optimized for real-time streaming, downsampling (LTTB), and historical analytics.
+ * 
+ * Part of the DashMed Core Infrastructure.
  *
  * @package DashMed\Modules\Models\Repositories
  * @author DashMed Team
- * @license Proprietary
+ * @version 3.4.2
  */
 class MonitorRepository extends BaseRepository
 {
-    /** @var string Table name */
+    /** @var string The main table containing measurement samples (e.g., 'patient_data'). */
     private string $table;
 
     /** @var string Status: Normal */
@@ -168,13 +171,16 @@ class MonitorRepository extends BaseRepository
     }
 
     /**
-     * Retrieves raw buffered history for a patient.
+     * Retrieves a standard buffered collection of historical data points.
+     * 
+     * Standard implementation for small to medium ranges. For large scale analysis,
+     * use streamRawHistoryByParameter() instead to maintain flat memory usage.
      *
      * @param int $patientId The unique patient identifier.
      * @param int $limit Maximum number of records to return (0 for unlimited).
-     * @param string|null $sinceTimestamp Optional timestamp filter (YYYY-MM-DD HH:MM:SS). 
-     *                                   Only records strictly after this time are returned.
-     * @return array<int, array{parameter_id: string, value: float|null, timestamp: string, alert_flag: int}> Ordered ASC.
+     * @param string|null $sinceTimestamp Optional starting point (YYYY-MM-DD HH:MM:SS).
+     * @return array<int, array{parameter_id: string, value: float|null, timestamp: string, alert_flag: int}>
+     * @throws \PDOException If retrieval fails.
      */
     public function getRawHistory(int $patientId, int $limit = 0, ?string $sinceTimestamp = null): array
     {
@@ -340,11 +346,12 @@ class MonitorRepository extends BaseRepository
     }
 
     /**
-     * Streams raw history for a specific patient and parameter using an unbuffered query.
+     * Streams raw history using an unbuffered MySQL query.
      *
-     * This method utilizes PDO unbuffered queries to yield rows one by one directly
-     * from the driver, ensuring the PHP memory footprint remains perfectly flat (O(1))
-     * regardless of how many millions of rows are returned.
+     * This method utilizes PDO unbuffered queries to yield rows one by one.
+     * Ensures O(1) memory footprint regardless of the number of points.
+     * 
+     * @important MUST restore PDO::MYSQL_ATTR_USE_BUFFERED_QUERY after use.
      *
      * @param int $patientId The unique ID of the patient.
      * @param string $parameterId The target medical parameter (e.g., 'FC', 'SpO2').
@@ -417,11 +424,11 @@ class MonitorRepository extends BaseRepository
      * It performs a FIRST pass of reduction in SQL using AVG() and GROUP BY,
      * so PHP only receives a manageable amount of points (e.g. 5,000-10,000).
      *
-     * @param int $patientId Patient ID
-     * @param string $parameterId Parameter identifier
-     * @param int $intervalSeconds Grouping interval in seconds
-     * @param string|null $targetDate Optional target date filter
-     * @return \Generator Streams associative arrays of data
+     * @param int $patientId Patient ID.
+     * @param string $parameterId Parameter identifier.
+     * @param int $intervalSeconds Time bucket size in seconds.
+     * @param string|null $targetDate Optional date filter.
+     * @return \Generator
      */
     public function streamPreAggregatedHistoryByParameter(
         int $patientId,
