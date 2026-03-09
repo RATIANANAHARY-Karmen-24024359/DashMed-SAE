@@ -321,7 +321,7 @@ function createEChart(type, title, rawData, target, color, thresholds, view, ext
                     xAxisIndex: 0,
                     startValue: xMin,
                     endValue: rawData.length > 0 ? rawData[rawData.length - 1][0] : undefined,
-                    filterMode: 'filter'
+                    filterMode: 'none'
                 },
                 {
                     type: 'slider',
@@ -334,7 +334,8 @@ function createEChart(type, title, rawData, target, color, thresholds, view, ext
                     handleStyle: { color: chartColor },
                     fillerColor: 'rgba(39, 90, 254, 0.2)',
                     startValue: xMin,
-                    endValue: rawData.length > 0 ? rawData[rawData.length - 1][0] : undefined
+                    endValue: rawData.length > 0 ? rawData[rawData.length - 1][0] : undefined,
+                    filterMode: 'none'
                 }
             ],
             xAxis: {
@@ -362,6 +363,7 @@ function createEChart(type, title, rawData, target, color, thresholds, view, ext
                 showSymbol: type === 'scatter',
                 symbolSize: type === 'scatter' ? 6 : 0,
                 smooth: true,
+                connectNulls: true,
                 sampling: null,
                 large: false,
                 itemStyle: { color: chartColor },

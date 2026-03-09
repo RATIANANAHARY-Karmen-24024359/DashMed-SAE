@@ -247,6 +247,7 @@
                     showSymbol: type === 'scatter',
                     symbolSize: type === 'scatter' ? 4 : 0,
                     smooth: true,
+                    connectNulls: true,
                     itemStyle: { color: chartColor },
                     lineStyle: { color: chartColor, width: 2 },
                     markArea: {
@@ -263,12 +264,12 @@
                     const lastTime = rawData[rawData.length - 1][0];
                     const minTime = lastTime - (hours * 3600 * 1000);
                     options.dataZoom = [
-                        { type: 'inside', startValue: minTime, endValue: lastTime }
+                        { type: 'inside', startValue: minTime, endValue: lastTime, filterMode: 'none' }
                     ];
                 }
             } else if (durationVal === 'all') {
                 options.dataZoom = [
-                    { type: 'inside', start: 0, end: 100 }
+                    { type: 'inside', start: 0, end: 100, filterMode: 'none' }
                 ];
             }
         }
