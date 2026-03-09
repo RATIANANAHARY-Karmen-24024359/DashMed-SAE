@@ -54,9 +54,10 @@ class ExplorerView
             <style>
                 :root {
                     --explorer-glass: rgba(255, 255, 255, 0.05);
-                    --explorer-glass-stroke: rgba(255, 255, 255, 0.1);
+                    --explorer-glass-stroke: rgba(255, 255, 255, 0.12);
                     --explorer-accent: #275afe;
-                    --explorer-accent-glow: rgba(39, 90, 254, 0.3);
+                    --explorer-accent-glow: rgba(39, 90, 254, 0.4);
+                    --explorer-card-bg: rgba(18, 18, 23, 0.7);
                 }
 
                 body { font-family: 'Outfit', sans-serif; }
@@ -106,8 +107,9 @@ class ExplorerView
                 }
                 
                 .explorer-card:hover {
-                    border-color: rgba(39, 90, 254, 0.3);
-                    box-shadow: 0 8px 40px rgba(0,0,0,0.4), 0 0 20px rgba(39, 90, 254, 0.05);
+                    border-color: rgba(39, 90, 254, 0.4);
+                    box-shadow: 0 12px 48px rgba(0,0,0,0.5), 0 0 30px rgba(39, 90, 254, 0.1);
+                    transform: translateY(-2px);
                 }
 
                 .drop-zone { 
@@ -132,13 +134,31 @@ class ExplorerView
                     height: calc(100vh - 200px); 
                     width: 100%; 
                     position: relative; 
-                    background: var(--explorer-glass);
-                    backdrop-filter: blur(12px);
-                    -webkit-backdrop-filter: blur(12px);
-                    border-radius: 16px; 
+                    background: var(--explorer-card-bg);
+                    backdrop-filter: blur(20px);
+                    -webkit-backdrop-filter: blur(20px);
+                    border-radius: 20px; 
                     border: 1px solid var(--explorer-glass-stroke); 
                     overflow: hidden; 
-                    box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+                    box-shadow: 0 12px 40px rgba(0,0,0,0.3);
+                    transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+                }
+
+                .chart-viewer.full-screen {
+                    position: fixed;
+                    top: 0;
+                    left: 0;
+                    right: 0;
+                    bottom: 0;
+                    z-index: 99999;
+                    height: 100vh;
+                    width: 100vw;
+                    border-radius: 0;
+                    border: none;
+                }
+
+                body.chart-full-screen {
+                    overflow: hidden !important;
                 }
                 
                 #explorer-chart { width: 100%; height: 100%; }
@@ -198,10 +218,45 @@ class ExplorerView
                 .btn-primary:active { transform: translateY(0); }
 
                 .stats-panel-inner {
-                    background: rgba(0,0,0,0.15);
+                    background: rgba(0,0,0,0.25);
                     border-radius: 12px;
                     padding: 18px;
                     border: 1px solid var(--explorer-glass-stroke);
+                }
+
+                .chart-overlay-controls {
+                    position: absolute;
+                    top: 20px;
+                    right: 20px;
+                    display: flex;
+                    gap: 10px;
+                    z-index: 10;
+                }
+
+                .chart-btn {
+                    background: rgba(255, 255, 255, 0.08);
+                    border: 1px solid rgba(255, 255, 255, 0.1);
+                    color: white;
+                    padding: 8px 12px;
+                    border-radius: 8px;
+                    cursor: pointer;
+                    font-size: 0.8rem;
+                    font-weight: 500;
+                    display: flex;
+                    align-items: center;
+                    gap: 6px;
+                    backdrop-filter: blur(8px);
+                    transition: all 0.2s;
+                }
+
+                .chart-btn:hover {
+                    background: rgba(39, 90, 254, 0.2);
+                    border-color: var(--explorer-accent);
+                    transform: translateY(-1px);
+                }
+
+                .chart-btn svg {
+                    opacity: 0.8;
                 }
                 
                 .stat-row { 
@@ -338,7 +393,17 @@ class ExplorerView
                             </div>
                         </div>
 
-                        <div class="chart-viewer">
+                        <div class="chart-viewer" id="chart-viewer-container">
+                            <div class="chart-overlay-controls">
+                                <button id="reset-zoom-btn" class="chart-btn" title="Réinitialiser le zoom">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><path d="M3 3v5h5"></path></svg>
+                                    Reset
+                                </button>
+                                <button id="full-screen-btn" class="chart-btn" title="Plein écran">
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 3 6 6"></path><path d="m9 21-6-6"></path><path d="M21 3v6h-6"></path><path d="M3 21v-6h6"></path><path d="m21 3-9 9"></path><path d="m3 21 9-9"></path></svg>
+                                    Plein écran
+                                </button>
+                            </div>
                             <div id="explorer-chart"></div>
                         </div>
                     </div>

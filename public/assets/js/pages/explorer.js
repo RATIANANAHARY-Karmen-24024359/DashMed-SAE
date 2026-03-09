@@ -41,6 +41,8 @@
         const paramSelector = document.getElementById('param-selector');
         const angleSelector = document.getElementById('analysis-angle');
         const exportBtn = document.getElementById('export-segment-btn');
+        const resetZoomBtn = document.getElementById('reset-zoom-btn');
+        const fullScreenBtn = document.getElementById('full-screen-btn');
 
         if (dropZone && fileInput) {
             dropZone.onclick = () => fileInput.click();
@@ -89,6 +91,51 @@
 
         if (exportBtn) {
             exportBtn.onclick = () => exportSegment();
+        }
+
+        if (resetZoomBtn) {
+            resetZoomBtn.onclick = () => resetZoom();
+        }
+
+        if (fullScreenBtn) {
+            fullScreenBtn.onclick = () => toggleFullScreen();
+        }
+    }
+
+    function resetZoom() {
+        if (!chart) return;
+        chart.dispatchAction({
+            type: 'dataZoom',
+            start: 0,
+            end: 100
+        });
+        updateStats();
+    }
+
+    function toggleFullScreen() {
+        const container = document.getElementById('chart-viewer-container');
+        if (!container) return;
+
+        const isEntering = !container.classList.contains('full-screen');
+        container.classList.toggle('full-screen');
+        document.body.classList.toggle('chart-full-screen');
+
+        // Re-init chart or resize with multiple checks to ensure responsiveness
+        const resizeChart = () => {
+            if (chart) chart.resize();
+        };
+
+        // Resize immediately and after transition
+        resizeChart();
+        setTimeout(resizeChart, 100);
+        setTimeout(resizeChart, 300);
+        setTimeout(resizeChart, 500); // Matches transition duration
+
+        const btn = document.getElementById('full-screen-btn');
+        if (btn) {
+            btn.innerHTML = isEntering
+                ? '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3v5H3"></path><path d="M21 8h-5V3"></path><path d="M3 16h5v5"></path><path d="M16 21v-5h5"></path></svg> Quitter'
+                : '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 3 6 6"></path><path d="m9 21-6-6"></path><path d="M21 3v6h-6"></path><path d="M3 21v-6h6"></path><path d="m21 3-9 9"></path><path d="m3 21 9-9"></path></svg> Plein écran';
         }
     }
 
@@ -257,9 +304,9 @@
                 show: false,
                 dimension: 1,
                 pieces: [
-                    { gt: nmax || 999999, color: '#ef4444' }, // Critical high
-                    { gt: nmin || -999999, lte: nmax || 999999, color: '#22c55e' }, // Normal
-                    { lte: nmin || -999999, color: '#ef4444' } // Critical low
+                    { gt: nmax || 999999, color: '#ff4d4f' }, // Critical high (Vibrant red)
+                    { gt: nmin || -999999, lte: nmax || 999999, color: '#00e676' }, // Normal (Vibrant green)
+                    { lte: nmin || -999999, color: '#ff4d4f' } // Critical low
                 ]
             };
 
@@ -272,8 +319,8 @@
             }
 
             // Reference lines
-            if (nmin !== null) markLines.push({ yAxis: nmin, lineStyle: { color: '#fbbf24', type: 'dashed' }, label: { position: 'end', formatter: 'Min Normal' } });
-            if (nmax !== null) markLines.push({ yAxis: nmax, lineStyle: { color: '#fbbf24', type: 'dashed' }, label: { position: 'end', formatter: 'Max Normal' } });
+            if (nmin !== null) markLines.push({ yAxis: nmin, lineStyle: { color: 'rgba(255, 193, 7, 0.4)', type: 'dashed' }, label: { position: 'end', formatter: 'Min', color: '#ffca28', fontSize: 10 } });
+            if (nmax !== null) markLines.push({ yAxis: nmax, lineStyle: { color: 'rgba(255, 193, 7, 0.4)', type: 'dashed' }, label: { position: 'end', formatter: 'Max', color: '#ffca28', fontSize: 10 } });
         }
 
         let seriesType = 'line';
@@ -289,11 +336,23 @@
             step = 'end';
         } else if (currentChartType === 'area') {
             seriesType = 'line';
-            areaStyle = { opacity: 0.3 };
+            areaStyle = {
+                opacity: 0.2,
+                color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                    { offset: 0, color: 'rgba(39, 90, 254, 0.4)' },
+                    { offset: 1, color: 'rgba(39, 90, 254, 0)' }
+                ])
+            };
         } else if (currentChartType === 'smooth-area') {
             seriesType = 'line';
             smooth = true;
-            areaStyle = { opacity: 0.3 };
+            areaStyle = {
+                opacity: 0.2,
+                color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                    { offset: 0, color: 'rgba(39, 90, 254, 0.4)' },
+                    { offset: 1, color: 'rgba(39, 90, 254, 0)' }
+                ])
+            };
         } else if (currentChartType === 'bar') {
             seriesType = 'bar';
         } else if (currentChartType === 'scatter') {
@@ -310,9 +369,8 @@
             yAxis: { type: 'value', scale: true, splitLine: { lineStyle: { type: 'dashed' } } },
             visualMap: visualMap,
             dataZoom: [
-                { type: 'inside', start: 0, end: 100, orient: 'horizontal' },
-                { type: 'inside', orient: 'vertical' }, // 2D Zoom
-                { type: 'slider', start: 0, end: 100 }
+                { type: 'inside', start: 0, end: 100, orient: 'horizontal', zoomOnMouseWheel: true },
+                { type: 'slider', start: 0, end: 100, height: 25, bottom: 10, borderColor: 'transparent', backgroundColor: 'rgba(0,0,0,0.1)', fillerColor: 'rgba(39, 90, 254, 0.15)', handleSize: '100%' }
             ],
             series: [{
                 name: meta ? meta.display_name : 'Valeur',
@@ -323,11 +381,15 @@
                 symbolSize: seriesType === 'scatter' ? 8 : (seriesType === 'effectScatter' ? 12 : 4),
                 connectNulls: true,
                 data: displayData,
-                lineStyle: { width: 3 },
+                lineStyle: { width: 3, cap: 'round' },
                 areaStyle: areaStyle,
-                markArea: { data: markAreas[0] ? markAreas[0].data : [] },
+                markArea: {
+                    itemStyle: { color: 'rgba(0, 230, 118, 0.03)' },
+                    data: markAreas[0] ? markAreas[0].data : []
+                },
                 markLine: {
                     silent: true,
+                    symbol: ['none', 'none'],
                     data: markLines,
                     label: { show: true }
                 }
