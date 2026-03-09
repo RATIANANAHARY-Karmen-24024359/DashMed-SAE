@@ -67,12 +67,18 @@ document.addEventListener('DOMContentLoaded', () => {
                         return 'auto';
                     };
 
+                    const inLayout = card.getAttribute('data-in-layout') === '1' || card.hasAttribute('data-no-data');
+                    const isAlert = card.classList.contains('card--alert') || card.classList.contains('card--warn');
+
                     if (filterValue === 'all') {
-                        card.style.display = '';
-                        card.style.gridColumn = origCol;
-                        card.style.gridRow = origRow;
+                        if (inLayout) {
+                            card.style.display = '';
+                            card.style.gridColumn = origCol;
+                            card.style.gridRow = origRow;
+                        } else {
+                            card.style.display = 'none';
+                        }
                     } else if (filterValue === 'urgent') {
-                        const isAlert = card.classList.contains('card--alert') || card.classList.contains('card--warn');
                         if (isAlert) {
                             card.style.display = '';
                             card.style.gridColumn = getAutoSpan(origCol);
@@ -82,7 +88,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         }
                     } else {
                         const cardCategory = card.getAttribute('data-category');
-                        if (cardCategory === filterValue) {
+                        if (cardCategory === filterValue && inLayout) {
                             card.style.display = '';
                             card.style.gridColumn = getAutoSpan(origCol);
                             card.style.gridRow = getAutoSpan(origRow);

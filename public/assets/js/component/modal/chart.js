@@ -412,27 +412,35 @@ function createEChart(type, title, rawData, target, color, thresholds, view, ext
 
     chartInstance.setOption(options);
 
-    chartInstance.on('dataZoom', function (evt) {
+    chartInstance.on('dataZoom', function () {
         const canvas = chartInstance.getDom();
-        if (evt.batch) {
-            const opt = chartInstance.getOption();
-            const dz = opt.dataZoom[0];
-            const lastData = rawData.length > 0 ? rawData[rawData.length - 1][0] : 0;
+        const opt = chartInstance.getOption();
+        const dz = opt.dataZoom && opt.dataZoom[0];
+        if (!dz) return;
 
-            let isAtEnd = false;
-            if (dz.endValue !== undefined) {
-                isAtEnd = (lastData - dz.endValue <= 1000);
-            } else if (dz.end !== undefined) {
-                isAtEnd = (dz.end >= 99.5);
+        const seriesData = opt.series && opt.series[0] && opt.series[0].data;
+        const lastData = seriesData && seriesData.length > 0 ? seriesData[seriesData.length - 1][0] : 0;
+
+        let isAtEnd = false;
+        if (dz.endValue !== undefined && dz.endValue !== null) {
+            isAtEnd = (lastData - dz.endValue <= 2000);
+        } else if (dz.end !== undefined) {
+            isAtEnd = (dz.end >= 99.5);
+        }
+
+        if (!isAtEnd) {
+            canvas.dataset.isSynced = "false";
+            const panel = canvas.closest('.modal-grid');
+            if (panel) {
+                const syncBtn = panel.querySelector('.sync-realtime-btn');
+                if (syncBtn) syncBtn.style.display = 'flex';
             }
-
-            if (!isAtEnd) {
-                canvas.dataset.isSynced = "false";
-                const panel = canvas.closest('.modal-grid');
-                if (panel) {
-                    const syncBtn = panel.querySelector('.sync-realtime-btn');
-                    if (syncBtn) syncBtn.style.display = 'flex';
-                }
+        } else {
+            canvas.dataset.isSynced = "true";
+            const panel = canvas.closest('.modal-grid');
+            if (panel) {
+                const syncBtn = panel.querySelector('.sync-realtime-btn');
+                if (syncBtn) syncBtn.style.display = 'none';
             }
         }
         canvas.dispatchEvent(new CustomEvent('chartInteract'));

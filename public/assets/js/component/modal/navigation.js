@@ -1,8 +1,3 @@
-/**
- * Initializes modal navigation interactions.
- * Listens for clicks on dashboard cards to open their respective detailed modals,
- * replacing the modal's internal HTML and initializing Chart.js visualizations.
- */
 document.addEventListener('DOMContentLoaded', () => {
     const cards = document.querySelectorAll('.card');
     const modalDetails = document.getElementById('modalDetails');
@@ -11,12 +6,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
     cards.forEach(card => {
         card.addEventListener('click', () => {
+            if (card.hasAttribute('data-no-data')) return;
             const slug = card.getAttribute('data-slug');
             const detailId = card.getAttribute('data-detail-id') || `detail-${slug}`;
             const sourceDetail = document.getElementById(detailId);
 
             if (sourceDetail && modalDetails) {
-                // Prevent memory leaks by properly disposing of existing chart instances
                 const existingCharts = modalDetails.querySelectorAll('.modal-chart, canvas');
                 existingCharts.forEach(el => {
                     if (el.chartInstance) {

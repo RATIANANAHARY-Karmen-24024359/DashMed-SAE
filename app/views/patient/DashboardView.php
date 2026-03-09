@@ -586,9 +586,13 @@ class DashboardView
                         Array.from(mainGrid.querySelectorAll('.card')).forEach(card => {
                             const isAlert = card.classList.contains('card--alert') || card.classList.contains('card--warn');
                             const span = getSpan(card);
+                            const inLayout = card.getAttribute('data-in-layout') === '1' || card.hasAttribute('data-no-data');
+
+                            const shouldHide = !inLayout;
 
                             cardStates.set(card, {
-                                hidden: false,
+                                hidden: shouldHide,
+                                inLayout: inLayout,
                                 animating: false,
                                 isCountingDown: false,
                                 isHovered: false,
@@ -599,6 +603,12 @@ class DashboardView
                                 span: span,
                                 lastAlertColor: isAlert ? getAlertColor(card) : null
                             });
+
+                            if (shouldHide) {
+                                card.style.display = 'none';
+                                card.style.gridColumn = '0';
+                                card.style.gridRow = '0';
+                            }
 
                             card.addEventListener('click', () => { activeModalCard = card; });
 
@@ -681,7 +691,7 @@ class DashboardView
                                 const isAlert = card.classList.contains('card--alert') || card.classList.contains('card--warn');
                                 const dismissBtn = card.querySelector('.card-dismiss-btn');
 
-                                if (isAlert && !state.hidden) activeAlertsCount++;
+                                if (isAlert) activeAlertsCount++;
 
                                 if (urgentActive) {
                                     if (isAlert) {

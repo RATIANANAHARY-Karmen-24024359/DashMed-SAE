@@ -40,6 +40,15 @@ $escape = static fn(mixed $value): string => htmlspecialchars(
 );
 
 if (!empty($patientMetrics)): ?>
+    <?php if (empty($layoutMap)): ?>
+        <article class="card" data-no-data="1" style="grid-column: 1 / -1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 2rem; text-align: center; gap: 1rem;">
+            <h3 style="font-size: 1.1rem; font-weight: 600; color: var(--text-color);">Aucune donnée</h3>
+            <p style="color: var(--text-muted); font-size: 0.9rem; max-width: 400px; line-height: 1.5;">
+                Nous vous invitons à paramétrer vos indicateurs dans
+                <a href="/?page=customization" style="color: var(--primary-color, #275afe); text-decoration: underline; font-weight: 500;">Personnalisation</a>.
+            </p>
+        </article>
+    <?php endif; ?>
     <?php foreach ($patientMetrics as $row): ?>
         <?php
         if ($row instanceof \modules\models\entities\Indicator) {
@@ -109,10 +118,11 @@ if (!empty($patientMetrics)): ?>
         } elseif ($useCustomSize) {
             $gridStyle = sprintf('grid-column: auto / span %d; grid-row: auto / span %d;', $w, $h);
         }
+        $inLayout = ($layout !== null) ? '1' : '0';
         ?>
 
         <article id="indicateurs-<?= $escape($parameterId) ?>" class="card <?= $stateClass ?>" style="<?= $gridStyle ?>"
-            data-category="<?= $escape($category) ?>" data-display="<?= $escape($display) ?>"
+            data-in-layout="<?= $inLayout ?>" data-category="<?= $escape($category) ?>" data-display="<?= $escape($display) ?>"
             data-value="<?= $escape($value) ?>" data-crit="<?= $critFlag ? '1' : '0' ?>"
             data-detail-id="<?= $escape($idPrefix . 'detail-' . $slug) ?>" data-slug="<?= $escape($slug) ?>"
             data-chart='<?= $escape($chartConfig) ?>' data-chart-type="<?= $escape($chartType) ?>"
@@ -459,8 +469,13 @@ viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-li
     <?php endforeach; ?>
 
 <?php else: ?>
-    <article class="card">
-        <h3>Aucune donnée</h3>
-        <p class="value">—</p>
+    <article class="card" data-no-data="1"
+        style="grid-column: 1 / -1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 2rem; text-align: center; gap: 1rem;">
+        <h3 style="font-size: 1.1rem; font-weight: 600; color: var(--text-color);">Aucune donnée</h3>
+        <p style="color: var(--text-muted); font-size: 0.9rem; max-width: 400px; line-height: 1.5;">
+            Nous vous invitons à paramétrer vos indicateurs dans
+            <a href="/?page=customization"
+                style="color: var(--primary-color, #275afe); text-decoration: underline; font-weight: 500;">Personnalisation</a>.
+        </p>
     </article>
 <?php endif; ?>
