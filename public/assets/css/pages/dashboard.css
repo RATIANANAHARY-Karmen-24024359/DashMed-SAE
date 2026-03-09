@@ -152,7 +152,7 @@ a {
     font-size: 0.9rem;
     cursor: pointer;
     transition: all 0.2s ease;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
 }
 
 .category-filter-btn:hover {
@@ -164,7 +164,24 @@ a {
     background: var(--primary-color, #2563eb);
     color: #ffffff;
     font-weight: 600;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.category-vert-separator {
+    width: 1px;
+    height: 28px;
+    background: var(--border-subtle, #e5e7eb);
+    align-self: center;
+    flex-shrink: 0;
+}
+
+.category-filter-btn--custom {
+    border-style: dashed;
+    transition: all 0.2s ease;
+}
+
+.category-filter-btn--custom.active {
+    border-style: solid;
 }
 
 .critical-zone-header {

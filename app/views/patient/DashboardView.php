@@ -40,6 +40,9 @@ class DashboardView
     /** @var array<string, mixed> User layout preferences */
     private array $userLayout;
 
+    /** @var array<int, array{id: int, name: string, color: string, indicator_ids: array<int, string>, layout: array<string, array{x: ?int, y: ?int, w: int, h: int}>}> Custom groups */
+    private array $customGroups;
+
     /**
      * Constructor.
      *
@@ -55,6 +58,7 @@ class DashboardView
      * @param array<string, mixed> $patientData Patient info
      * @param array<string, mixed> $chartTypes Visualizations
      * @param array<string, mixed> $userLayout Layout prefs
+     * @param array<int, array{id: int, name: string, color: string, indicator_ids: array<int, string>, layout: array<string, array{x: ?int, y: ?int, w: int, h: int}>}> $customGroups Custom groups
      */
     public function __construct(
         array $consultationsPassees = [],
@@ -63,7 +67,8 @@ class DashboardView
         array $patientMetrics = [],
         array $patientData = [],
         array $chartTypes = [],
-        array $userLayout = []
+        array $userLayout = [],
+        array $customGroups = []
     ) {
         $this->consultationsPassees = $consultationsPassees;
         $this->consultationsFutures = $consultationsFutures;
@@ -72,6 +77,7 @@ class DashboardView
         $this->patientData = $patientData;
         $this->chartTypes = $chartTypes;
         $this->userLayout = $userLayout;
+        $this->customGroups = $customGroups;
     }
 
     /**
@@ -179,7 +185,8 @@ class DashboardView
                         if ($pmRow instanceof \modules\models\entities\Indicator) {
                             $cat = $pmRow->getCategory();
                         } else {
-                            $cat = $pmRow['category'] ?? ($pmRow['view_data']['category'] ?? '');
+                            /** @var array{category?: string, view_data?: array{category?: string}} $pmRow */
+                            $cat = (string) ($pmRow['category'] ?? ($pmRow['view_data']['category'] ?? ''));
                         }
                         if ($cat && !in_array($cat, $uniqueCategories, true)) {
                             $uniqueCategories[] = $cat;
@@ -198,11 +205,106 @@ class DashboardView
                             </button>
                             <button class="category-filter-btn active" data-filter="all">Toutes</button>
                             <?php foreach ($uniqueCategories as $cat): ?>
-                                <button class="category-filter-btn" data-filter="<?= htmlspecialchars($cat, ENT_QUOTES, 'UTF-8') ?>">
-                                    <?= htmlspecialchars($cat, ENT_QUOTES, 'UTF-8') ?>
+                                <button class="category-filter-btn"
+                                    data-filter="<?= htmlspecialchars((string) $cat, ENT_QUOTES, 'UTF-8') ?>">
+                                    <?= htmlspecialchars((string) $cat, ENT_QUOTES, 'UTF-8') ?>
                                 </button>
                             <?php endforeach; ?>
+                            <?php if (!empty($this->customGroups)): ?>
+                                <div class="category-vert-separator"></div>
+                                <?php foreach ($this->customGroups as $cg): ?>
+                                    <button class="category-filter-btn category-filter-btn--custom" data-filter="custom_group"
+                                        data-group-id="<?= (int) $cg['id'] ?>"
+                                        data-group-indicators="<?= htmlspecialchars(implode(',', $cg['indicator_ids']), ENT_QUOTES, 'UTF-8') ?>"
+                                        data-group-layout='<?= htmlspecialchars((string) json_encode($cg['layout']), ENT_QUOTES, 'UTF-8') ?>'
+                                        style="border-color: <?= htmlspecialchars($cg['color'], ENT_QUOTES, 'UTF-8') ?>; color: <?= htmlspecialchars($cg['color'], ENT_QUOTES, 'UTF-8') ?>;">
+                                        <?= htmlspecialchars($cg['name'], ENT_QUOTES, 'UTF-8') ?>
+                                    </button>
+                                <?php endforeach; ?>
+                            <?php endif; ?>
                         </div>
+                    <?php endif; ?>
+
+                    <?php
+                    $patientMetrics = $this->patientMetrics;
+                    $chartTypes = $this->chartTypes;
+                    $userLayout = $this->userLayout;
+
+                    $priorityMetrics = [];
+                    $priorityMetrics = [];
+                    foreach ($patientMetrics as $row) {
+                        if ($row instanceof \modules\models\entities\Indicator) {
+                            $viewData = $row->getViewData();
+                        } else {
+                            $viewData = is_array($row['view_data'] ?? null) ? $row['view_data'] : [];
+                        }
+
+                        $cardClass = $viewData['card_class'] ?? '';
+                        $isPriority = ($cardClass === 'card--alert' || $cardClass === 'card--warn');
+                        if ($isPriority) {
+                            $priorityMetrics[] = $row;
+                        }
+                    }
+                    ?>
+
+                    <?php if (!empty($priorityMetrics)): ?>
+                        <?php
+                        $criticalCount = 0;
+                        $warningCount = 0;
+                        $criticalCount = 0;
+                        $warningCount = 0;
+                        foreach ($priorityMetrics as $pm) {
+                            if ($pm instanceof \modules\models\entities\Indicator) {
+                                $vd = $pm->getViewData();
+                            } else {
+                                $vd = is_array($pm['view_data'] ?? null) ? $pm['view_data'] : [];
+                            }
+
+                            $pClass = $vd['card_class'] ?? '';
+                            if ($pClass === 'card--alert') {
+                                $criticalCount++;
+                            } elseif ($pClass === 'card--warn') {
+                                $warningCount++;
+                            }
+                        }
+                        $totalAlerts = count($priorityMetrics);
+                        ?>
+                        <section class="critical-zone" id="priority-zone">
+                            <div class="critical-zone-header">
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                    stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2
+                                        2 0 0 0-3.42 0z" />
+                                    <line x1="12" y1="9" x2="12" y2="13" />
+                                    <line x1="12" y1="17" x2="12.01" y2="17" />
+                                </svg>
+                                <h2>Alertes prioritaires</h2>
+                                <div class="alert-badges">
+                                    <?php if ($criticalCount > 0): ?>
+                                        <span class="alert-badge alert-badge--critical"><?= $criticalCount ?>
+                                            critique<?= $criticalCount > 1 ? 's' : '' ?></span>
+                                    <?php endif; ?>
+                                    <?php if ($warningCount > 0): ?>
+                                        <span class="alert-badge alert-badge--warning"><?= $warningCount ?>
+                                            alerte<?= $warningCount > 1 ? 's' : '' ?></span>
+                                    <?php endif; ?>
+                                </div>
+                            </div>
+                            <section class="cards-container cards-grid priority-grid">
+                                <?php
+                                $idPrefix = 'crit-';
+                                $useCustomSize = true;
+                                $patientMetrics = $priorityMetrics;
+                                $componentPath = dirname(__DIR__) . '/partials/_monitoring-cards.php';
+                                if (file_exists($componentPath)) {
+                                    include $componentPath;
+                                }
+                                $idPrefix = '';
+                                $useCustomSize = false;
+                                ?>
+                            </section>
+                        </section>
+                        <hr class="zone-separator">
                     <?php endif; ?>
 
                     <section class="skeleton-wrapper skeleton-monitoring-grid" id="skeleton-cards" data-skeleton-for="real-cards"
@@ -418,6 +520,21 @@ class DashboardView
                     </div>
                 </div>
 
+                <script src="assets/js/consultation-filter.js"></script>
+                <script src="assets/js/pages/dash.js"></script>
+                <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+                <script src="https://cdn.jsdelivr.net/npm/moment@2.30.1/moment.min.js"></script>
+                <script src="https://cdn.jsdelivr.net/npm/moment@2.30.1/locale/fr.js"></script>
+                <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-moment@1.0.1/dist/chartjs-adapter-moment.min.js">
+                </script>
+                <script src="https://cdn.jsdelivr.net/npm/hammerjs@2.0.8"></script>
+                <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1/dist/chartjs-plugin-zoom.min.js">
+                </script>
+
+                <script src="assets/js/component/modal/chart.js?v=<?= time() ?>"></script>
+                <script src="assets/js/component/modal/navigation.js"></script>
+                <script src="assets/js/component/charts/card-sparklines.js?v=<?= time() ?>"></script>
+                <script src="assets/js/component/modal/modal.js"></script>
 
                 <script>
                     document.addEventListener('DOMContentLoaded', () => {
@@ -863,6 +980,7 @@ class DashboardView
                         }, 50);
                     });
                 </script>
+                <?php include dirname(__DIR__) . '/partials/_scroll-to-top.php'; ?>
             </main>
 
             <?php

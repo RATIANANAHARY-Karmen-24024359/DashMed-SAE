@@ -125,7 +125,7 @@ class MedicalprocedureView
 
                 <section class="dashboard-content-container">
                     <?php include dirname(__DIR__) . '/partials/_searchbar.php'; ?>
-                    <input type="hidden" id="context-patient-id" value="<?= htmlspecialchars((string) 
+                    <input type="hidden" id="context-patient-id" value="<?= htmlspecialchars((string)
                         $this->patientId) ?>">
 
                     <div id="button-bar">
@@ -488,6 +488,9 @@ class MedicalprocedureView
                         </form>
                     </div>
                 </div>
+
+                <script src="assets/js/consultation-filter.js"></script>
+                <script src="assets/js/consultation-modal.js"></script>
 
                 <script>
                     document.addEventListener('DOMContentLoaded', () => {

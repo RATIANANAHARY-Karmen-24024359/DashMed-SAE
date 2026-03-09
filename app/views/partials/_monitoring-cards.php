@@ -67,9 +67,9 @@ if (!empty($patientMetrics)): ?>
         $chartType = $viewData['chart_type'] ?? 'line';
         $stateClass = $viewData['card_class'] ?? '';
         $critFlag = (bool) ($viewData['is_crit_flag'] ?? false);
-        $category = $viewData['category'] ?? '';
         $chartConfig = $viewData['chart_config'] ?? '{}';
         $chartAllowed = $viewData['chart_allowed'] ?? ['line'];
+        $category = $viewData['category'] ?? '';
 
         $dmax = $viewData['view_limits']['max'] ?? null;
         $nmax = $viewData['thresholds']['nmax'] ?? null;
@@ -127,6 +127,7 @@ if (!empty($patientMetrics)): ?>
 
         <article id="indicateurs-<?= $escape($parameterId) ?>" class="card <?= $stateClass ?>" style="<?= $gridStyle ?>"
                  data-in-layout="<?= $inLayout ?>" data-category="<?= $escape($category) ?>" data-display="<?= $escape($display) ?>"
+                 data-parameter-id="<?= $escape($parameterId) ?>"
                  data-value="<?= $escape($value) ?>" data-crit="<?= $critFlag ? '1' : '0' ?>"
                  data-detail-id="<?= $escape($idPrefix . 'detail-' . $slug) ?>" data-slug="<?= $escape($slug) ?>"
                  data-chart='<?= $escape($chartConfig) ?>' data-chart-type="<?= $escape($chartType) ?>"
@@ -152,6 +153,9 @@ if (!empty($patientMetrics)): ?>
                 <h3>
                     <?= $escape($display) ?>
                 </h3>
+                <p class="value" style="display: <?= $isValueOnly ? 'none' : 'flex' ?>; align-items: center; gap: 6px;">
+                    <span><?= $escape($value) ?></span>
+                    <span class="unit"><?= $unit !== '' ? ' ' . $escape($unit) : '' ?></span>
 
                 <div
                     style="flex: 0 0 auto; display: flex; align-items: center; justify-content: center; height: 100%; padding: 0 4px;">
