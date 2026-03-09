@@ -133,7 +133,6 @@ class DashboardView
                 'assets/css/components/card.css',
                 'assets/css/components/popup.css',
                 'assets/css/components/modal.css?v=' . time(),
-                'assets/css/layout/aside/calendar.css',
                 'assets/css/layout/aside/patient-info.css',
                 'assets/css/layout/aside/events.css',
                 'assets/css/layout/aside/doctor-list.css',
@@ -584,279 +583,286 @@ class DashboardView
                             }
                         }
 
-                        function hideCard(card) {
-                            const state = cardStates.get(card);
-                            if (!state) return;
+                        function hideCard(card, op                              tions = {}) {
+                                        const state = cardStates.get(card);
+                                        if (!state) return;
+                            
+                                        const animate = options.animate === true;
+                                        let siblings = [];
+                                        let firstPositions = new Map();
 
-                            const siblings = Array.from(mainGrid.querySelectorAll('.card')).filter(c => {
-                                const s = cardStates.get(c);
-                                return s && !s.hidden && c !== card;
-                            });
-                            const firstPositions = new Map();
-                            siblings.forEach(c => firstPositions.set(c, c.getBoundingClientRect()));
-
-                            state.hidden = true;
-                            card.style.display = 'none';
-                            card.style.gridColumn = '0';
-                            card.style.gridRow = '0';
-                            card.style.order = String(state.baseOrder);
-
-                            requestAnimationFrame(() => {
-                                siblings.forEach(c => {
-                                    const first = firstPositions.get(c);
-                                    if (!first) return;
-                                    const last = c.getBoundingClientRect();
-                                    const dx = first.left - last.left;
-                                    const dy = first.top - last.top;
-                                    if (Math.abs(dx) > 1 || Math.abs(dy) > 1) {
-                                        c.animate([
-                                            { transform: `translate(${dx}px, ${dy}px)` },
-                                            { transform: 'translate(0, 0)' }
-                                        ], { duration: 400, easing: 'cubic-bezier(0.4, 0, 0.2, 1)' });
-                                    }
-                                });
-                            });
-                        }
-
-                        function syncCard(card, options = {}) {
-                            const state = cardStates.get(card);
-                            if (!state) return;
-
-                            const filter = getActiveFilter();
-                            const isAlert = isAlertCard(card);
-                            const category = card.getAttribute('data-category') || '';
-                            const animate = options.animate === true;
-
-                            let shouldShow = false;
-                            let prioritize = false;
-                            let compact = false;
-
-                            if (filter === 'urgent') {
-                                shouldShow = state.isUrgentlyVisible && !state.dismissed;
-                                prioritize = shouldShow;
-                                compact = shouldShow;
-                            } else if (filter === 'all') {
-                                shouldShow = state.inLayout;
-                            } else {
-                                shouldShow = (category === filter);
-                                compact = shouldShow;
-                            }
-
-                            if (shouldShow) {
-                                showCard(card, { animate, prioritize, compact });
-                                return;
-                            }
-
-                            hideCard(card);
-                        }
-
-                        function syncAllCards(options = {}) {
-                            if (isUrgentFilter()) nextAlertOrder = 1;
-                            Array.from(mainGrid.querySelectorAll('.card')).forEach(card => {
-                                syncCard(card, options);
-                            });
-                        }
-
-                        Array.from(mainGrid.querySelectorAll('.card')).forEach((card, index) => {
-                            const inLayout = card.getAttribute('data-in-layout') === '1' || card.hasAttribute('data-no-data');
-
-                            cardStates.set(card, {
-                                hidden: false,
-                                inLayout,
-                                animating: false,
-                                isHovered: false,
-                                isPaused: false,
-                                dismissed: false,
-                                isCountingDown: false,
-                                countdownComplete: false,
-                                isUrgentlyVisible: isAlertCard(card),
-                                remaining: 0,
-                                lastTick: Date.now(),
-                                svgAnim: null,
-                                span: getSpan(card),
-                                baseOrder: index + 1,
-                                origCol: card.style.gridColumn || 'auto',
-                                origRow: card.style.gridRow || 'auto',
-                                lastAlertColor: isAlertCard(card) ? getAlertColor(card) : null
-                            });
-
-                            card.addEventListener('click', () => {
-                                activeModalCard = card;
-                            });
-
-                            const dismissBtn = card.querySelector('.card-dismiss-btn');
-                            if (dismissBtn) {
-                                dismissBtn.addEventListener('click', e => {
-                                    e.stopPropagation();
-                                    if (!isUrgentFilter()) return;
-
-                                    const state = cardStates.get(card);
-                                    if (!state || state.animating) return;
-                                    if (isAlertCard(card) || state.isCountingDown) return;
-
-                                    state.dismissed = true;
-                                    state.animating = true;
-                                    state.isUrgentlyVisible = false;
-
-                                    const anim = card.animate([
-                                        { transform: 'scale(1)', opacity: 1 },
-                                        { transform: 'scale(0.5)', opacity: 0 }
-                                    ], { duration: 300, easing: 'cubic-bezier(0.4, 0, 0.2, 1)' });
-
-                                    anim.onfinish = () => {
-                                        state.animating = false;
-                                        card.classList.remove('card--alert', 'card--warn');
-                                        state.lastAlertColor = null;
-                                        hideCard(card);
-                                        if (typeof activeModalCard !== 'undefined' && activeModalCard === card) {
-                                            activeModalCard = null;
+                                        if (animate) {
+                                            siblings = Array.from(mainGrid.querySelectorAll('.card')).filter(c => {
+                                                const s = cardStates.get(c);
+                                                return s && !s.hidden && c !== card;
+                                            });
+                                            siblings.forEach(c => firstPositions.set(c, c.getBoundingClientRect()));
                                         }
-                                    };
-                                });
-                            }
 
-                            card.addEventListener('mouseenter', () => {
-                                const state = cardStates.get(card);
-                                if (state) state.isHovered = true;
-                                if (dismissBtn && isUrgentFilter()) {
-                                    if (!isAlertCard(card) && !state.isCountingDown && state.isUrgentlyVisible && !state.hidden) {
-                                        dismissBtn.style.opacity = '1';
-                                        dismissBtn.style.pointerEvents = 'auto';
-                                        dismissBtn.style.transform = 'scale(1)';
-                                    }
-                                }
-                            });
+                                        state.hidden = true;
+                                        card.style.display = 'none';
+                                        card.style.gridColumn = '0';
+                                        card.style.gridRow = '0';
+                                        card.style.order = String(state.baseOrder);
 
-                            card.addEventListener('mouseleave', () => {
-                                const state = cardStates.get(card);
-                                if (state) state.isHovered = false;
-                                if (dismissBtn) {
-                                    dismissBtn.style.opacity = '0';
-                                    dismissBtn.style.pointerEvents = 'none';
-                                    dismissBtn.style.transform = 'scale(0)';
-                                }
-                            });
-                        });
-
-                        document.querySelectorAll('.category-filter-btn').forEach(btn => {
-                            btn.addEventListener('click', () => {
-                                document.querySelectorAll('.category-filter-btn').forEach(b => b.classList.remove('active'));
-                                btn.classList.add('active');
-
-                                Array.from(mainGrid.querySelectorAll('.card')).forEach(card => {
-                                    const state = cardStates.get(card);
-                                    if (!state) return;
-                                    if (!isUrgentFilter()) {
-                                        state.dismissed = false;
-                                        if (state.isCountingDown) stopCooldown(card);
-                                    } else {
-                                        if (!isAlertCard(card)) {
-                                            state.isUrgentlyVisible = false;
-                                            state.countdownComplete = false;
-                                        }
-                                    }
-                                });
-
-                                syncAllCards({ animate: isUrgentFilter() });
-                            });
-                        });
-
-                        syncAllCards();
-
-                        setInterval(() => {
-                            const now = Date.now();
-                            const isModalGlobalOpen = document.body.classList.contains('modal-open');
-                            const urgentActive = isUrgentFilter();
-                            let activeAlertsCount = 0;
-
-                            Array.from(mainGrid.querySelectorAll('.card')).forEach(card => {
-                                const state = cardStates.get(card);
-                                if (!state) return;
-
-                                const isAlert = isAlertCard(card);
-                                const dismissBtn = card.querySelector('.card-dismiss-btn');
-
-                                if (isAlert && !state.dismissed) {
-                                    activeAlertsCount++;
-                                } else if ((state.isCountingDown || state.isUrgentlyVisible) && !state.dismissed) {
-                                    activeAlertsCount++;
-                                }
-
-                                if (urgentActive) {
-                                    if (isAlert) {
-                                        if (state.isCountingDown) stopCooldown(card);
-                                        state.lastAlertColor = getAlertColor(card);
-                                        state.lastTick = now;
-                                        state.dismissed = false;
-                                        state.countdownComplete = false;
-                                        state.isUrgentlyVisible = true;
-                                        if (state.hidden) showCard(card, { animate: true, prioritize: true, compact: true });
-                                    } else if (!state.hidden && !state.animating) {
-                                        if (!state.isCountingDown && !state.countdownComplete && state.lastAlertColor) {
-                                            startCooldown(card, state.lastAlertColor);
-                                        } else if (state.isCountingDown) {
-                                            const isModalOpen = activeModalCard === card && isModalGlobalOpen;
-                                            const shouldBePaused = state.isHovered || isModalOpen;
-                                            if (shouldBePaused && !state.isPaused) {
-                                                state.isPaused = true;
-                                                if (state.svgAnim) state.svgAnim.pause();
-                                            } else if (!shouldBePaused && state.isPaused) {
-                                                state.isPaused = false;
-                                                if (state.svgAnim) state.svgAnim.play();
-                                            }
-                                            if (!state.isPaused) state.remaining -= (now - state.lastTick);
-                                            state.lastTick = now;
-                                            rebuildSVGIfStale(card, state);
-                                            if (state.remaining <= 0) {
-                                                stopCooldown(card);
-                                                if (!isAlertCard(card)) {
-                                                    card.classList.remove('card--alert', 'card--warn');
-                                                }
-                                                state.lastAlertColor = null;
-                                                state.countdownComplete = true;
-                                            }
+                                        if (animate) {
+                                            requestAnimationFrame(() => {
+                                                siblings.forEach(c => {
+                                                    const first = firstPositions.get(c);
+                                                    if (!first) return;
+                                                    const last = c.getBoundingClientRect();
+                                                    const dx = first.left - last.left;
+                                                    const dy = first.top - last.top;
+                                                    if (Math.abs(dx) > 1 || Math.abs(dy) > 1) {
+                                                        c.animate([
+                                                            { transform: `translate(${dx}px, ${dy}px)` },
+                                                            { transform: 'translate(0, 0)' }
+                                                        ], { duration: 400, easing: 'cubic-bezier(0.4, 0, 0.2, 1)' });
+                                                    }
+                                                });
+                                            });
                                         }
                                     }
 
-                                    const canDismiss = !isAlert && !state.isCountingDown && state.isUrgentlyVisible && !state.hidden;
-                                    if (dismissBtn) {
-                                        if (canDismiss && state.isHovered) {
-                                            dismissBtn.style.opacity = '1';
-                                            dismissBtn.style.pointerEvents = 'auto';
-                                            dismissBtn.style.transform = 'scale(1)';
+                                    function syncCard(card, options = {}) {
+                                        const state = cardStates.get(card);
+                                        if (!state) return;
+
+                                        const filter = getActiveFilter();
+                                        const isAlert = isAlertCard(card);
+                                        const category = card.getAttribute('data-category') || '';
+                                        const animate = options.animate === true;
+
+                                        let shouldShow = false;
+                                        let prioritize = false;
+                                        let compact = false;
+
+                                        if (filter === 'urgent') {
+                                            shouldShow = state.isUrgentlyVisible && !state.dismissed;
+                                            prioritize = shouldShow;
+                                            compact = shouldShow;
+                                        } else if (filter === 'all') {
+                                            shouldShow = state.inLayout;
                                         } else {
-                                            dismissBtn.style.opacity = '0';
-                                            dismissBtn.style.pointerEvents = 'none';
-                                            dismissBtn.style.transform = 'scale(0)';
+                                            shouldShow = (category === filter);
+                                            compact = shouldShow;
                                         }
-                                    }
-                                } else {
-                                    if (state.isCountingDown) stopCooldown(card);
-                                    if (isAlert) {
-                                        state.lastAlertColor = getAlertColor(card);
-                                    } else {
-                                        state.dismissed = false;
-                                        state.lastAlertColor = null;
-                                        state.isUrgentlyVisible = false;
-                                        state.countdownComplete = false;
-                                    }
-                                    syncCard(card);
-                                    if (dismissBtn) {
-                                        dismissBtn.style.opacity = '0';
-                                        dismissBtn.style.pointerEvents = 'none';
-                                        dismissBtn.style.transform = 'scale(0)';
-                                    }
-                                }
-                            });
 
-                            const badge = document.getElementById('urgent-badge');
-                            if (badge) badge.textContent = String(activeAlertsCount);
-                        }, 50);
-                    });
-                </script>
-            </main>
+                                        if (shouldShow) {
+                                            showCard(card, { animate, prioritize, compact });
+                                            return;
+                                        }
 
-            <?php
+                                        hideCard(card, { animate });
+                                    }
+
+                                    function syncAllCards(options = {}) {
+                                        if (isUrgentFilter()) nextAlertOrder = 1;
+                                        Array.from(mainGrid.querySelectorAll('.card')).forEach(card => {
+                                            syncCard(card, options);
+                                        });
+                                    }
+
+                                    Array.from(mainGrid.querySelectorAll('.card')).forEach((card, index) => {
+                                        const inLayout = card.getAttribute('data-in-layout') === '1' || card.hasAttribute('data-no-data');
+
+                                        cardStates.set(card, {
+                                            hidden: false,
+                                            inLayout,
+                                            animating: false,
+                                            isHovered: false,
+                                            isPaused: false,
+                                            dismissed: false,
+                                            isCountingDown: false,
+                                            countdownComplete: false,
+                                            isUrgentlyVisible: isAlertCard(card),
+                                            remaining: 0,
+                                            lastTick: Date.now(),
+                                            svgAnim: null,
+                                            span: getSpan(card),
+                                            baseOrder: index + 1,
+                                            origCol: card.style.gridColumn || 'auto',
+                                            origRow: card.style.gridRow || 'auto',
+                                            lastAlertColor: isAlertCard(card) ? getAlertColor(card) : null
+                                        });
+
+                                        card.addEventListener('click', () => {
+                                            activeModalCard = card;
+                                        });
+
+                                        const dismissBtn = card.querySelector('.card-dismiss-btn');
+                                        if (dismissBtn) {
+                                            dismissBtn.addEventListener('click', e => {
+                                                e.stopPropagation();
+                                                if (!isUrgentFilter()) return;
+
+                                                const state = cardStates.get(card);
+                                                if (!state || state.animating) return;
+                                                if (isAlertCard(card) || state.isCountingDown) return;
+
+                                                state.dismissed = true;
+                                                state.animating = true;
+                                                state.isUrgentlyVisible = false;
+
+                                                const anim = card.animate([
+                                                    { transform: 'scale(1)', opacity: 1 },
+                                                    { transform: 'scale(0.5)', opacity: 0 }
+                                                ], { duration: 300, easing: 'cubic-bezier(0.4, 0, 0.2, 1)' });
+
+                                                anim.onfinish = () => {
+                                                    state.animating = false;
+                                                    card.classList.remove('card--alert', 'card--warn');
+                                                    state.lastAlertColor = null;
+                                                    hideCard(card, { animate: true });
+                                                    if (typeof activeModalCard !== 'undefined' && activeModalCard === card) {
+                                                        activeModalCard = null;
+                                                    }
+                                                };
+                                            });
+                                        }
+
+                                        card.addEventListener('mouseenter', () => {
+                                            const state = cardStates.get(card);
+                                            if (state) state.isHovered = true;
+                                            if (dismissBtn && isUrgentFilter()) {
+                                                if (!isAlertCard(card) && !state.isCountingDown && state.isUrgentlyVisible && !state.hidden) {
+                                                    dismissBtn.style.opacity = '1';
+                                                    dismissBtn.style.pointerEvents = 'auto';
+                                                    dismissBtn.style.transform = 'scale(1)';
+                                                }
+                                            }
+                                        });
+
+                                        card.addEventListener('mouseleave', () => {
+                                            const state = cardStates.get(card);
+                                            if (state) state.isHovered = false;
+                                            if (dismissBtn) {
+                                                dismissBtn.style.opacity = '0';
+                                                dismissBtn.style.pointerEvents = 'none';
+                                                dismissBtn.style.transform = 'scale(0)';
+                                            }
+                                        });
+                                    });
+
+                                    document.querySelectorAll('.category-filter-btn').forEach(btn => {
+                                        btn.addEventListener('click', () => {
+                                            document.querySelectorAll('.category-filter-btn').forEach(b => b.classList.remove('active'));
+                                            btn.classList.add('active');
+
+                                            Array.from(mainGrid.querySelectorAll('.card')).forEach(card => {
+                                                const state = cardStates.get(card);
+                                                if (!state) return;
+                                                if (!isUrgentFilter()) {
+                                                    state.dismissed = false;
+                                                    if (state.isCountingDown) stopCooldown(card);
+                                                } else {
+                                                    if (!isAlertCard(card)) {
+                                                        state.isUrgentlyVisible = false;
+                                                        state.countdownComplete = false;
+                                                    }
+                                                }
+                                            });
+
+                                            syncAllCards({ animate: isUrgentFilter() });
+                                        });
+                                    });
+
+                                    syncAllCards();
+
+                                    setInterval(() => {
+                                        const now = Date.now();
+                                        const isModalGlobalOpen = document.body.classList.contains('modal-open');
+                                        const urgentActive = isUrgentFilter();
+                                        let activeAlertsCount = 0;
+
+                                        Array.from(mainGrid.querySelectorAll('.card')).forEach(card => {
+                                            const state = cardStates.get(card);
+                                            if (!state) return;
+
+                                            const isAlert = isAlertCard(card);
+                                            const dismissBtn = card.querySelector('.card-dismiss-btn');
+
+                                            if (isAlert && !state.dismissed) {
+                                                activeAlertsCount++;
+                                            } else if ((state.isCountingDown || state.isUrgentlyVisible) && !state.dismissed) {
+                                                activeAlertsCount++;
+                                            }
+
+                                            if (urgentActive) {
+                                                if (isAlert) {
+                                                    if (state.isCountingDown) stopCooldown(card);
+                                                    state.lastAlertColor = getAlertColor(card);
+                                                    state.lastTick = now;
+                                                    state.dismissed = false;
+                                                    state.countdownComplete = false;
+                                                    state.isUrgentlyVisible = true;
+                                                    if (state.hidden) showCard(card, { animate: true, prioritize: true, compact: true });
+                                                } else if (!state.hidden && !state.animating) {
+                                                    if (!state.isCountingDown && !state.countdownComplete && state.lastAlertColor) {
+                                                        startCooldown(card, state.lastAlertColor);
+                                                    } else if (state.isCountingDown) {
+                                                        const isModalOpen = activeModalCard === card && isModalGlobalOpen;
+                                                        const shouldBePaused = state.isHovered || isModalOpen;
+                                                        if (shouldBePaused && !state.isPaused) {
+                                                            state.isPaused = true;
+                                                            if (state.svgAnim) state.svgAnim.pause();
+                                                        } else if (!shouldBePaused && state.isPaused) {
+                                                            state.isPaused = false;
+                                                            if (state.svgAnim) state.svgAnim.play();
+                                                        }
+                                                        if (!state.isPaused) state.remaining -= (now - state.lastTick);
+                                                        state.lastTick = now;
+                                                        rebuildSVGIfStale(card, state);
+                                                        if (state.remaining <= 0) {
+                                                            stopCooldown(card);
+                                                            if (!isAlertCard(card)) {
+                                                                card.classList.remove('card--alert', 'card--warn');
+                                                            }
+                                                            state.lastAlertColor = null;
+                                                            state.countdownComplete = true;
+                                                        }
+                                                    }
+                                                }
+
+                                                const canDismiss = !isAlert && !state.isCountingDown && state.isUrgentlyVisible && !state.hidden;
+                                                if (dismissBtn) {
+                                                    if (canDismiss && state.isHovered) {
+                                                        dismissBtn.style.opacity = '1';
+                                                        dismissBtn.style.pointerEvents = 'auto';
+                                                        dismissBtn.style.transform = 'scale(1)';
+                                                    } else {
+                                                        dismissBtn.style.opacity = '0';
+                                                        dismissBtn.style.pointerEvents = 'none';
+                                                        dismissBtn.style.transform = 'scale(0)';
+                                                    }
+                                                }
+                                            } else {
+                                                if (state.isCountingDown) stopCooldown(card);
+                                                if (isAlert) {
+                                                    state.lastAlertColor = getAlertColor(card);
+                                                } else {
+                                                    state.dismissed = false;
+                                                    state.lastAlertColor = null;
+                                                    state.isUrgentlyVisible = false;
+                                                    state.countdownComplete = false;
+                                                }
+                                                syncCard(card);
+                                                if (dismissBtn) {
+                                                    dismissBtn.style.opacity = '0';
+                                                    dismissBtn.style.pointerEvents = 'none';
+                                                    dismissBtn.style.transform = 'scale(0)';
+                                                }
+                                            }
+                                        });
+
+                                        const badge = document.getElementById('urgent-badge');
+                                        if (badge) badge.textContent = String(activeAlertsCount);
+                                    }, 50);
+                                });
+                            </script>
+                        </main>
+
+                        <?php
         });
     }
 }
