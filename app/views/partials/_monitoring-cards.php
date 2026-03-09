@@ -75,11 +75,11 @@ if (!empty($patientMetrics)): ?>
         $nmax = $viewData['thresholds']['nmax'] ?? null;
         $cmax = $viewData['thresholds']['cmax'] ?? null;
         $gaugeMax = str_contains((string) $unit, '%') ? 100 : (
-            is_numeric($dmax) ? (float) $dmax : (
-                is_numeric($nmax) ? (float) $nmax : (
-                    is_numeric($cmax) ? (float) $cmax : 100
-                )
-            )
+        is_numeric($dmax) ? (float) $dmax : (
+        is_numeric($nmax) ? (float) $nmax : (
+        is_numeric($cmax) ? (float) $cmax : 100
+        )
+        )
         );
 
         $isValueOnly = ($chartType === 'value');
@@ -89,51 +89,55 @@ if (!empty($patientMetrics)): ?>
 
         $gridStyle = '';
         $layout = $layoutMap[$parameterId] ?? null;
+        $isHidden = is_array($layout) && !empty($layout['is_hidden']);
+        $isVisibleInLayout = ($layout !== null && !$isHidden);
+
         $w = max(1, (int) ($layout['grid_w'] ?? $DEFAULT_WIDTH));
         $h = max(1, (int) ($layout['grid_h'] ?? $DEFAULT_HEIGHT));
 
         if ($useCustomLayout) {
-            if ($layout !== null) {
+            if ($isVisibleInLayout) {
                 $x = (int) ($layout['grid_x'] ?? 0);
                 $y = (int) ($layout['grid_y'] ?? 0);
                 $gridStyle = sprintf(
-                    'grid-column: %d / span %d; grid-row: %d / span %d;',
-                    $x + 1,
-                    $w,
-                    $y + 1,
-                    $h
+                        'grid-column: %d / span %d; grid-row: %d / span %d;',
+                        $x + 1,
+                        $w,
+                        $y + 1,
+                        $h
                 );
             } elseif ($useDefaultLayout) {
                 $x = ($defaultLayoutIndex % $WIDGETS_PER_ROW) * $DEFAULT_WIDTH;
                 $y = (int) floor($defaultLayoutIndex / $WIDGETS_PER_ROW) * $DEFAULT_HEIGHT;
                 $gridStyle = sprintf(
-                    'grid-column: %d / span %d; grid-row: %d / span %d;',
-                    $x + 1,
-                    $DEFAULT_WIDTH,
-                    $y + 1,
-                    $DEFAULT_HEIGHT
+                        'grid-column: %d / span %d; grid-row: %d / span %d;',
+                        $x + 1,
+                        $DEFAULT_WIDTH,
+                        $y + 1,
+                        $DEFAULT_HEIGHT
                 );
                 $defaultLayoutIndex++;
             }
-        } elseif ($useCustomSize) {
+        } elseif ($useCustomSize && $isVisibleInLayout) {
             $gridStyle = sprintf('grid-column: auto / span %d; grid-row: auto / span %d;', $w, $h);
         }
-        $inLayout = ($layout !== null) ? '1' : '0';
+
+        $inLayout = $isVisibleInLayout ? '1' : '0';
         ?>
 
         <article id="indicateurs-<?= $escape($parameterId) ?>" class="card <?= $stateClass ?>" style="<?= $gridStyle ?>"
-            data-in-layout="<?= $inLayout ?>" data-category="<?= $escape($category) ?>" data-display="<?= $escape($display) ?>"
-            data-value="<?= $escape($value) ?>" data-crit="<?= $critFlag ? '1' : '0' ?>"
-            data-detail-id="<?= $escape($idPrefix . 'detail-' . $slug) ?>" data-slug="<?= $escape($slug) ?>"
-            data-chart='<?= $escape($chartConfig) ?>' data-chart-type="<?= $escape($chartType) ?>"
-            data-max="<?= $escape($gaugeMax) ?>" data-dmin="<?= $escape($viewData['view_limits']['min'] ?? '') ?>"
-            data-dmax="<?= $escape($viewData['view_limits']['max'] ?? '') ?>"
-            data-nmin="<?= $escape($viewData['thresholds']['nmin'] ?? '') ?>"
-            data-nmax="<?= $escape($viewData['thresholds']['nmax'] ?? '') ?>"
-            data-cmin="<?= $escape($viewData['thresholds']['cmin'] ?? '') ?>"
-            data-cmax="<?= $escape($viewData['thresholds']['cmax'] ?? '') ?>"
-            data-display-duration="<?= $escape($viewData['display_duration'] ?? '0.0333') ?>"
-            data-card-display-duration="<?= $escape($viewData['card_display_duration'] ?? '0.0333') ?>">
+                 data-in-layout="<?= $inLayout ?>" data-category="<?= $escape($category) ?>" data-display="<?= $escape($display) ?>"
+                 data-value="<?= $escape($value) ?>" data-crit="<?= $critFlag ? '1' : '0' ?>"
+                 data-detail-id="<?= $escape($idPrefix . 'detail-' . $slug) ?>" data-slug="<?= $escape($slug) ?>"
+                 data-chart='<?= $escape($chartConfig) ?>' data-chart-type="<?= $escape($chartType) ?>"
+                 data-max="<?= $escape($gaugeMax) ?>" data-dmin="<?= $escape($viewData['view_limits']['min'] ?? '') ?>"
+                 data-dmax="<?= $escape($viewData['view_limits']['max'] ?? '') ?>"
+                 data-nmin="<?= $escape($viewData['thresholds']['nmin'] ?? '') ?>"
+                 data-nmax="<?= $escape($viewData['thresholds']['nmax'] ?? '') ?>"
+                 data-cmin="<?= $escape($viewData['thresholds']['cmin'] ?? '') ?>"
+                 data-cmax="<?= $escape($viewData['thresholds']['cmax'] ?? '') ?>"
+                 data-display-duration="<?= $escape($viewData['display_duration'] ?? '0.0333') ?>"
+                 data-card-display-duration="<?= $escape($viewData['card_display_duration'] ?? '0.0333') ?>">
 
             <div class="card-dismiss-btn" title="Masquer l'indicateur"
                 style="position: absolute; left: -10px; top: -10px; width: 22px; height: 22px; background: var(--primary-color, #275afe); display: flex; align-items: center; justify-content: center; cursor: pointer; opacity: 0; pointer-events: none; transition: opacity 0.2s, transform 0.15s; transform: scale(0); border-radius: 50%; z-index: 15; box-shadow: 0 2px 6px rgba(0,0,0,0.25);">
