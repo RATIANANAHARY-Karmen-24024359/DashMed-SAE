@@ -57,14 +57,16 @@
 
         items.forEach((item) => {
             const time = item.dataset.time || "";
-            const val = Number(item.dataset.value);
+            const rawVal = item.dataset.value;
+            const val = (rawVal === '' || rawVal === undefined || rawVal === 'null') ? null : Number(rawVal);
 
-            if (!time || !Number.isFinite(val)) return;
+            if (!time) return;
+            if (val !== null && !Number.isFinite(val)) return;
 
             const d = new Date(time);
-            if (isNaN(d.getTime())) return;
-
-            rawData.push([d.getTime(), val]);
+            if (!isNaN(d.getTime())) {
+                rawData.push([d.getTime(), val]);
+            }
         });
 
         if (!rawData.length) {
@@ -420,9 +422,11 @@
                             if (canvas && canvas.chartInstance) {
                                 const chart = canvas.chartInstance;
                                 const timeMs = new Date(metric.time_iso).getTime();
-                                const val = Number(metric.value);
+                                let val = (metric.value === '' || metric.value === undefined || metric.value === 'null') ? null : Number(metric.value);
 
                                 if (isNaN(timeMs)) return;
+                                if (val !== null && !Number.isFinite(val)) return;
+                                if (typeof val === 'number') val = Math.round(val * 100) / 100;
 
                                 const option = chart.getOption();
                                 if (option.series && option.series.length > 0) {
@@ -432,24 +436,23 @@
                                         ds.push([timeMs, val]);
                                         ds.sort((a, b) => a[0] - b[0]);
                                         if (ds.length > 100) ds.shift();
-
-                                        const updateObj = { series: [{ data: ds }] };
-
-                                        // Auto-scroll logic for sparkline too? 
-                                        // Sparklines are usually fixed to the duration.
-                                        const durationVal = card.dataset.displayDuration;
-                                        if (durationVal && durationVal !== 'all') {
-                                            const hours = parseFloat(durationVal);
-                                            const minTime = timeMs - (hours * 3600 * 1000);
-                                            updateObj.dataZoom = [{ type: 'inside', startValue: minTime, endValue: timeMs }];
-                                        }
-
-                                        chart.setOption(updateObj);
                                     }
+                                    const updateObj = { series: [{ data: ds }] };
+
+                                    // Auto-scroll logic for sparkline too? 
+                                    // Sparklines are usually fixed to the duration.
+                                    const durationVal = card.dataset.displayDuration;
+                                    if (durationVal && durationVal !== 'all') {
+                                        const hours = parseFloat(durationVal);
+                                        const minTime = timeMs - (hours * 3600 * 1000);
+                                        updateObj.dataZoom = [{ type: 'inside', startValue: minTime, endValue: timeMs }];
+                                    }
+
+                                    chart.setOption(updateObj);
                                 }
-                            } else {
-                                window.renderSparkline(card);
                             }
+                        } else {
+                            window.renderSparkline(card);
                         }
                     }
                 }
@@ -458,6 +461,7 @@
             console.error('SSE metrics fetch error:', e);
         }
     });
+
 
 })();
 

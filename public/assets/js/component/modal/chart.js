@@ -129,16 +129,15 @@ async function updatePanelChart(panelId, chartId, title) {
             const cacheKey = `${paramId}-${targetDate || 'now'}`;
 
             let dataArr;
-            if (historyCache[cacheKey]) {
+            const useCache = !!targetDate; // Disable cache for 'now' queries to prevent stale live data
+            if (useCache && historyCache[cacheKey]) {
                 dataArr = historyCache[cacheKey];
             } else {
-                // We no longer send limit=0 by default. 
-                // The server automatically downsamples for the chart if needed.
                 const res = await fetch(`${window.location.origin}/api_history?param=${encodeURIComponent(paramId)}${dateParam}`);
                 if (!res.ok) throw new Error('Fetch failed');
                 dataArr = await res.json();
                 if (dataArr.error) throw new Error(dataArr.error);
-                historyCache[cacheKey] = dataArr;
+                if (useCache) historyCache[cacheKey] = dataArr;
             }
 
             // --- Configure CSV Download Link ---
@@ -160,7 +159,7 @@ async function updatePanelChart(panelId, chartId, title) {
             const rawData = [];
             dataArr.forEach((item) => {
                 const timeStr = item.time_iso;
-                const val = Number(item.value);
+                const val = (item.value === null || item.value === '') ? null : Number(item.value);
                 if (timeStr) {
                     const d = new Date(timeStr);
                     if (!isNaN(d.getTime())) {

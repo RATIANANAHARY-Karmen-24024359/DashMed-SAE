@@ -770,7 +770,7 @@ class PatientController
                             ? $row['timestamp'] . ' UTC' : $row['timestamp'];
                         yield [
                             'time_iso' => date('c', (int)strtotime($rawTs)),
-                            'value' => (string)round((float)$row['value'], 2),
+                            'value' => $row['value'] !== null ? (string)round((float)$row['value'], 2) : null,
                             'flag' => (string)$row['alert_flag']
                         ];
                     }
@@ -787,7 +787,7 @@ class PatientController
                     $rawTs = (strpos($ts, '+') === false && strpos($ts, 'Z') === false) ? $ts . ' UTC' : $ts;
                     $formatted[] = [
                         'time_iso' => date('c', (int)strtotime($rawTs)),
-                        'value' => $hItem['value'] !== null ? (string)round((float)$hItem['value'], 2) : '',
+                        'value' => $hItem['value'] !== null ? (string)round((float)$hItem['value'], 2) : null,
                         'flag' => (string)$hItem['alert_flag']
                     ];
                 }
