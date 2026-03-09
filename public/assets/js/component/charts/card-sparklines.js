@@ -27,51 +27,10 @@
         const valueOnlyContainer = card.querySelector('.card-value-only-container');
         const sparkContainer = card.querySelector('.card-spark');
         const headerValue = card.querySelector('.card-header .value');
-        const chartLoader = card.querySelector('.card-chart-loader');
-
-        const startFakeProgress = (loader) => {
-            if (!loader || loader.classList.contains('hidden')) {
-                return () => { if (loader) loader.classList.add('hidden'); };
-            }
-            const bar = loader.querySelector('.loader-progress-bar');
-            const text = loader.querySelector('.loader-progress-text');
-            if (!bar || !text) {
-                return () => { loader.classList.add('hidden'); };
-            }
-            let active = true;
-            let progress = 0;
-            const animate = () => {
-                if (!active) return;
-                if (progress < 40) progress += Math.random() * 10;
-                else if (progress < 85) progress += Math.random() * 3;
-                else if (progress < 95) progress += Math.random() * 0.5;
-                if (progress > 95) progress = 95;
-
-                bar.style.width = progress + '%';
-                text.textContent = Math.floor(progress) + '%';
-                setTimeout(animate, 20);
-            };
-            animate();
-
-            return () => {
-                active = false;
-                bar.style.width = '100%';
-                text.textContent = '100%';
-                setTimeout(() => {
-                    loader.classList.add('hidden');
-                    setTimeout(() => { bar.style.width = '0%'; text.textContent = '0%'; }, 200);
-                }, 300); // Slight delay at 100% to satisfy visual proof
-            };
-        };
-
-        const finishLoader = startFakeProgress(chartLoader);
-        const hideLoader = () => { if (finishLoader) finishLoader(); };
-
         if (type === 'value') {
             if (valueOnlyContainer) valueOnlyContainer.style.display = 'flex';
             if (sparkContainer) sparkContainer.style.display = 'none';
             if (headerValue) headerValue.style.display = 'none';
-            hideLoader();
             return;
         } else {
             if (valueOnlyContainer) valueOnlyContainer.style.display = 'none';
@@ -82,7 +41,7 @@
         const dataList = card.querySelector("ul[data-spark]");
         const canvas = card.querySelector(".card-spark-canvas");
 
-        if (!canvas || !dataList) { hideLoader(); return; }
+        if (!canvas || !dataList) return;
 
         const items = dataList.querySelectorAll("li");
         const noDataPlaceholder = card.querySelector(".no-data-placeholder");
@@ -90,7 +49,6 @@
         if (!items.length) {
             if (canvas) canvas.style.display = 'none';
             if (noDataPlaceholder) noDataPlaceholder.style.display = 'flex';
-            hideLoader();
             return;
         }
 
@@ -111,7 +69,6 @@
         if (!rawData.length) {
             if (canvas) canvas.style.display = 'none';
             if (noDataPlaceholder) noDataPlaceholder.style.display = 'flex';
-            hideLoader();
             return;
         }
 
@@ -191,24 +148,21 @@
             const c_green = resolveColor('var(--chart-band-green)');
 
             const bMin = view.min !== undefined && view.min !== null && !isNaN(view.min) ? view.min : 0;
-            const bMax = view.max !== undefined && view.max !== null && !isNaN(view.max) ? view.max : 250; // fallback max
+            const bMax = view.max !== undefined && view.max !== null && !isNaN(view.max) ? view.max : 250;
 
             if (Number.isFinite(cmax) && Number.isFinite(nmin) && cmax <= nmin) {
-                // Inverted scale (e.g. Glasgow)
                 markArea.push([{ yAxis: cmax, itemStyle: { color: c_red } }, { yAxis: bMin }]);
                 markArea.push([{ yAxis: nmin, itemStyle: { color: c_yellow } }, { yAxis: cmax }]);
                 const greenTop = Number.isFinite(nmax) ? nmax : bMax;
                 if (greenTop > nmin) markArea.push([{ yAxis: greenTop, itemStyle: { color: c_green } }, { yAxis: nmin }]);
                 if (Number.isFinite(nmax) && bMax > nmax) markArea.push([{ yAxis: bMax, itemStyle: { color: c_yellow } }, { yAxis: nmax }]);
             } else if (Number.isFinite(nmax) && Number.isFinite(cmin) && nmax <= cmin) {
-                // Inverted scale 2
                 const greenBottom = Number.isFinite(nmin) ? nmin : bMin;
                 if (Number.isFinite(nmin) && greenBottom > bMin) markArea.push([{ yAxis: greenBottom, itemStyle: { color: c_yellow } }, { yAxis: bMin }]);
                 if (nmax > greenBottom) markArea.push([{ yAxis: nmax, itemStyle: { color: c_green } }, { yAxis: greenBottom }]);
                 markArea.push([{ yAxis: cmin, itemStyle: { color: c_yellow } }, { yAxis: nmax }]);
                 markArea.push([{ yAxis: bMax, itemStyle: { color: c_red } }, { yAxis: cmin }]);
             } else {
-                // Standard scale
                 if (Number.isFinite(cmin)) markArea.push([{ yAxis: cmin, itemStyle: { color: c_red } }, { yAxis: bMin }]);
 
                 let greenBottom = bMin;
@@ -257,7 +211,7 @@
                     }
                 },
                 xAxis: {
-                    type: 'time', // Fix: Use 'time' instead of 'category' for proper zoom
+                    type: 'time',
                     boundaryGap: false,
                     show: true,
                     z: 5,
@@ -315,7 +269,6 @@
             }
         }
 
-        hideLoader();
         chartInstance.setOption(options);
 
         const ro = new ResizeObserver(() => {

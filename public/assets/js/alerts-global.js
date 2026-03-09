@@ -529,8 +529,9 @@ const NotifHistory = (function () {
             });
         }
         if (settings.alert_dnd !== undefined) {
+            const isOn = settings.alert_dnd === true || settings.alert_dnd === 1 || settings.alert_dnd === 'true';
             const dndToggle = panel.querySelector('#notif-panel-dnd');
-            if (dndToggle) dndToggle.checked = settings.alert_dnd === true || settings.alert_dnd === 1 || settings.alert_dnd === 'true';
+            if (dndToggle) dndToggle.checked = isOn;
         }
     }
 
@@ -582,19 +583,15 @@ const NotifHistory = (function () {
                 </label>
             </div>
             <div class="notif-panel-footer">
-                <label class="panel-dnd-toggle-wrapper">
-                    <input type="checkbox" id="panel-dnd-toggle">
-                    <span>Ne pas déranger</span>
-                </label>
-                <div style="height: 12px;"></div>
                 <button class="notif-clear-all">Tout effacer</button>
             </div>`;
         panel.querySelector('.notif-panel-close').addEventListener('click', close);
 
-        const panelDndToggle = panel.querySelector('#panel-dnd-toggle');
-        panelDndToggle.addEventListener('change', (e) => {
+        const notifDnd = panel.querySelector('#notif-panel-dnd');
+        notifDnd.checked = getDndState();
+        notifDnd.addEventListener('change', (e) => {
             const isChecked = e.target.checked;
-            localStorage.setItem('dashmed_dnd', isChecked);
+            setDndState(isChecked);
             if (typeof iziToast !== 'undefined') {
                 if (isChecked) {
                     iziToast.info({ title: 'Info', message: 'Mode Ne pas déranger activé.', position: 'topRight' });
@@ -602,10 +599,6 @@ const NotifHistory = (function () {
                     iziToast.success({ title: 'Succès', message: 'Mode Ne pas déranger désactivé.', position: 'topRight' });
                 }
             }
-            updateBadge();
-
-            const profileToggle = document.getElementById('dnd-dev-toggle');
-            if (profileToggle) profileToggle.checked = isChecked;
         });
 
         panel.querySelector('.notif-clear-all').addEventListener('click', () => {
@@ -680,9 +673,9 @@ const NotifHistory = (function () {
             }
         });
 
+        // Initial check
         const dndToggle = panel.querySelector('#notif-panel-dnd');
-        dndToggle.checked = getDndState();
-        dndToggle.addEventListener('change', e => setDndState(e.target.checked));
+        if (dndToggle) dndToggle.checked = getDndState();
         document.body.appendChild(overlay);
         document.body.appendChild(panel);
     }
@@ -775,7 +768,7 @@ const NotifHistory = (function () {
         window.addEventListener('storage', (e) => {
             if (e.key === 'dashmed_dnd') {
                 updateBadge();
-                const dndToggle = panel?.querySelector('#panel-dnd-toggle');
+                const dndToggle = panel?.querySelector('#notif-panel-dnd');
                 if (dndToggle) dndToggle.checked = (e.newValue === 'true');
 
                 const profileToggle = document.getElementById('dnd-dev-toggle');

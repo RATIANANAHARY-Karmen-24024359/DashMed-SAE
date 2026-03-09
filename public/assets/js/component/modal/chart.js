@@ -63,49 +63,8 @@ async function updatePanelChart(panelId, chartId, title) {
     const idx = parseInt(panel.getAttribute('data-idx') || '0', 10);
     const unit = (panel.dataset.unit || '').trim().toLowerCase();
 
-    const modalLoader = panel.querySelector('.modal-chart-loader');
-    let finishLoader = null;
-
-    const showLoader = () => {
-        if (!modalLoader) return;
-        modalLoader.classList.remove('hidden');
-
-        const bar = modalLoader.querySelector('.loader-progress-bar');
-        const text = modalLoader.querySelector('.loader-progress-text');
-        if (!bar || !text) return;
-
-        bar.style.width = '0%';
-        text.textContent = '0%';
-
-        let active = true;
-        let progress = 0;
-        const animate = () => {
-            if (!active) return;
-            if (progress < 40) progress += Math.random() * 8;
-            else if (progress < 85) progress += Math.random() * 2;
-            else if (progress < 95) progress += Math.random() * 0.3;
-            if (progress > 95) progress = 95;
-
-            bar.style.width = progress + '%';
-            text.textContent = Math.floor(progress) + '%';
-            setTimeout(animate, 30);
-        };
-        animate();
-
-        finishLoader = () => {
-            active = false;
-            bar.style.width = '100%';
-            text.textContent = '100%';
-            setTimeout(() => {
-                modalLoader.classList.add('hidden');
-            }, 300);
-        };
-    };
-
-    const hideLoader = () => {
-        if (finishLoader) { finishLoader(); finishLoader = null; }
-        else if (modalLoader) modalLoader.classList.add('hidden');
-    };
+    const showLoader = () => { };
+    const hideLoader = () => { };
 
     if (chartType === 'value') {
         const valueRaw = panel.dataset.value || '—';
