@@ -334,6 +334,10 @@ class ExplorerView
                                         <option value="raw">Données Brutes (Temps Réel)</option>
                                         <option value="ma-5">Moyenne Mobile (Lissage LTI)</option>
                                         <option value="ma-20">Moyenne Mobile (Tendance Longue)</option>
+                                        <option value="median-5">Filtre Médian (Anti-Bruit)</option>
+                                        <option value="z-score">Standardisation (Z-Score)</option>
+                                        <option value="derivative">Vitesse de Variation (Dérivée)</option>
+                                        <option value="savgol">Lissage Savitzky-Golay (Physiologique)</option>
                                         <option value="peaks">Algorithme de Détection de Pics</option>
                                     </select>
                                 </div>

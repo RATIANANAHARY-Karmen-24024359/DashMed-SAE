@@ -278,6 +278,10 @@
 
         if (angle === 'ma-5') displayData = movingAverage(currentData, 5);
         if (angle === 'ma-20') displayData = movingAverage(currentData, 20);
+        if (angle === 'median-5') displayData = medianFilter(currentData, 5);
+        if (angle === 'z-score') displayData = zScoreFilter(currentData);
+        if (angle === 'derivative') displayData = derivativeFilter(currentData);
+        if (angle === 'savgol') displayData = savitzkyGolayFilter(currentData);
 
         if (currentChartType === 'histogram') {
             renderHistogram();
@@ -721,6 +725,53 @@
         });
     }
 
+    function medianFilter(data, period) {
+        return data.map((val, index) => {
+            if (index < period - 1) return [val[0], val[1]];
+            const window = [];
+            for (let i = 0; i < period; i++) {
+                if (data[index - i][1] !== null) window.push(data[index - i][1]);
+            }
+            if (window.length === 0) return [val[0], null];
+            window.sort((a, b) => a - b);
+            const median = window[Math.floor(window.length / 2)];
+            return [val[0], median];
+        });
+    }
+
+    function zScoreFilter(data) {
+        const values = data.map(d => d[1]).filter(v => v !== null);
+        if (!values.length) return data;
+        const avg = values.reduce((a, b) => a + b, 0) / values.length;
+        const std = Math.sqrt(values.reduce((a, b) => a + Math.pow(b - avg, 2), 0) / values.length);
+        if (std === 0) return data.map(d => [d[0], 0]);
+        return data.map(d => [d[0], d[1] === null ? null : (d[1] - avg) / std]);
+    }
+
+    function derivativeFilter(data) {
+        return data.map((d, i) => {
+            if (i === 0 || d[1] === null || data[i - 1][1] === null) return [d[0], 0];
+            const dt = (d[0] - data[i - 1][0]) / 1000; // in seconds
+            if (dt === 0) return [d[0], 0];
+            return [d[0], (d[1] - data[i - 1][1]) / dt];
+        });
+    }
+
+    function savitzkyGolayFilter(data) {
+        // Simple 5-point SG filter coefficients for smoothing
+        const coeffs = [-3, 12, 17, 12, -3];
+        const norm = 35;
+        return data.map((d, i) => {
+            if (i < 2 || i > data.length - 3) return [d[0], d[1]];
+            let sum = 0;
+            for (let j = -2; j <= 2; j++) {
+                if (data[i + j][1] === null) return [d[0], d[1]];
+                sum += data[i + j][1] * coeffs[j + 2];
+            }
+            return [d[0], sum / norm];
+        });
+    }
+
     function detectPeaks(data) {
         if (!data.length) return [];
 
@@ -762,7 +813,7 @@
                     }
 
                     const prominence = curr - Math.max(leftValley, rightValley);
-                    
+
                     // Significant peak if prominence > some heuristic (e.g., 10% of value)
                     if (prominence > curr * 0.05) {
                         peaks.push({
