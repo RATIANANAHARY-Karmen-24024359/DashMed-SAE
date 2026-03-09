@@ -228,6 +228,21 @@
             return;
         }
 
+        // Capture current zoom before re-rendering
+        let savedZoom = [];
+        if (chart) {
+            const currentOpt = chart.getOption();
+            if (currentOpt && currentOpt.dataZoom) {
+                // We only care about the values (start, end, startValue, endValue)
+                savedZoom = currentOpt.dataZoom.map(dz => ({
+                    type: dz.type,
+                    start: dz.start,
+                    end: dz.end,
+                    orient: dz.orient
+                }));
+            }
+        }
+
         // Thresholds logic
         const meta = currentParamId ? indicatorsMetadata[currentParamId] : null;
         let visualMap = null;
@@ -324,6 +339,11 @@
             option.series[0].markPoint = {
                 data: peaks.map(p => ({ coord: p, value: p[1].toFixed(2), symbolSize: 40, itemStyle: { color: '#ef4444' } }))
             };
+        }
+
+        // Apply saved zoom if available
+        if (savedZoom.length > 0) {
+            option.dataZoom = savedZoom;
         }
 
         chart.setOption(option, true);
