@@ -454,6 +454,94 @@ class DashboardView
                             };
                         }
 
+                        function getAlertColor(card) {
+                            if (card.classList.contains('card--alert')) return 'var(--color-critical, #EF4444)';
+                            if (card.classList.contains('card--warn')) return 'var(--color-warning, #F59E0B)';
+                            return 'var(--text-muted, #999)';
+                        }
+
+                        function buildSVG(card, color, remaining) {
+                            const old = card.querySelector('.hide-progress');
+                            if (old) old.remove();
+
+                            const w = card.offsetWidth;
+                            const h = card.offsetHeight;
+                            if (w === 0 || h === 0) return null;
+                            const inset = 2;
+                            const rx = 12;
+                            const rw = w - inset * 2;
+                            const rh = h - inset * 2;
+                            const perimeter = 2 * (rw + rh) - (8 - 2 * Math.PI) * rx;
+
+                            const ns = 'http://www.w3.org/2000/svg';
+                            const svg = document.createElementNS(ns, 'svg');
+                            svg.classList.add('hide-progress');
+                            svg.setAttribute('viewBox', `0 0 ${w} ${h}`);
+                            svg.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;z-index:10;pointer-events:none;';
+
+                            const rect = document.createElementNS(ns, 'rect');
+                            rect.setAttribute('x', inset);
+                            rect.setAttribute('y', inset);
+                            rect.setAttribute('width', rw);
+                            rect.setAttribute('height', rh);
+                            rect.setAttribute('rx', rx);
+                            rect.setAttribute('ry', rx);
+                            rect.setAttribute('fill', 'none');
+                            rect.setAttribute('stroke', color);
+                            rect.setAttribute('stroke-width', '3');
+                            rect.setAttribute('stroke-dasharray', perimeter);
+                            rect.setAttribute('stroke-dashoffset', '0');
+                            rect.setAttribute('stroke-linecap', 'round');
+
+                            svg.appendChild(rect);
+                            card.style.position = 'relative';
+                            card.appendChild(svg);
+
+                            const safeRemaining = Math.max(1, remaining);
+                            const startOffset = ((HIDE_DELAY - safeRemaining) / HIDE_DELAY) * perimeter;
+
+                            const anim = rect.animate([
+                                { strokeDashoffset: startOffset },
+                                { strokeDashoffset: perimeter }
+                            ], { duration: safeRemaining, easing: 'linear' });
+
+                            return anim;
+                        }
+
+                        const resizeObserver = new ResizeObserver(entries => {
+                            for (const entry of entries) {
+                                const card = entry.target;
+                                const state = cardStates.get(card);
+                                if (!state || !state.isCountingDown || state.hidden) continue;
+
+                                state.svgAnim = buildSVG(card, state.lastAlertColor || 'var(--text-muted, #999)', state.remaining);
+                                if (state.svgAnim && (state.isHovered || state.isPaused)) {
+                                    state.svgAnim.pause();
+                                }
+                            }
+                        });
+
+                        function startCooldown(card, color) {
+                            const state = cardStates.get(card);
+                            if (!state || state.hidden || state.isCountingDown || state.animating) return;
+
+                            state.isCountingDown = true;
+                            state.remaining = HIDE_DELAY;
+                            state.lastTick = Date.now();
+                            state.isPaused = false;
+                            state.lastAlertColor = color;
+
+                            state.svgAnim = buildSVG(card, color, state.remaining);
+
+                            const isModalOpened = (activeModalCard === card && document.body.classList.contains('modal-open'));
+                            if (state.isHovered || isModalOpened) {
+                                state.isPaused = true;
+                                if (state.svgAnim) state.svgAnim.pause();
+                            }
+
+                            resizeObserver.observe(card);
+                        }
+
                         function showCard(card) {
                             const state = cardStates.get(card);
                             if (!state) return;
@@ -484,7 +572,14 @@ class DashboardView
                             cardStates.set(card, {
                                 hidden: !isAlert,
                                 animating: false,
-                                span: span
+                                isCountingDown: false,
+                                isHovered: false,
+                                isPaused: false,
+                                remaining: 0,
+                                lastTick: Date.now(),
+                                svgAnim: null,
+                                span: span,
+                                lastAlertColor: isAlert ? getAlertColor(card) : null
                             });
 
                             card.addEventListener('click', () => {
@@ -498,6 +593,23 @@ class DashboardView
                                     const st = cardStates.get(card);
                                     if (st && !st.animating) {
                                         st.animating = true;
+
+                                        // Stop any running cooldown
+                                        if (st.isCountingDown) {
+                                            st.isCountingDown = false;
+                                            resizeObserver.unobserve(card);
+                                            const prog = card.querySelector('.hide-progress');
+                                            if (prog) prog.remove();
+                                        }
+
+                                        // FLIP: record positions of all visible sibling cards
+                                        const siblings = Array.from(mainGrid.querySelectorAll('.card')).filter(c => {
+                                            const s = cardStates.get(c);
+                                            return s && !s.hidden && c !== card;
+                                        });
+                                        const firstPositions = new Map();
+                                        siblings.forEach(c => firstPositions.set(c, c.getBoundingClientRect()));
+
                                         const anim = card.animate([
                                             { transform: 'scale(1)', opacity: 1 },
                                             { transform: 'scale(0.5)', opacity: 0 }
@@ -509,7 +621,24 @@ class DashboardView
                                             card.style.gridRow = '0';
                                             st.hidden = true;
                                             st.animating = false;
+                                            st.lastAlertColor = null;
                                             if (typeof activeModalCard !== 'undefined' && activeModalCard === card) activeModalCard = null;
+
+                                            // FLIP: animate siblings to their new positions
+                                            requestAnimationFrame(() => {
+                                                siblings.forEach(c => {
+                                                    const first = firstPositions.get(c);
+                                                    const last = c.getBoundingClientRect();
+                                                    const dx = first.left - last.left;
+                                                    const dy = first.top - last.top;
+                                                    if (Math.abs(dx) > 1 || Math.abs(dy) > 1) {
+                                                        c.animate([
+                                                            { transform: `translate(${dx}px, ${dy}px)` },
+                                                            { transform: 'translate(0, 0)' }
+                                                        ], { duration: 400, easing: 'cubic-bezier(0.4, 0, 0.2, 1)' });
+                                                    }
+                                                });
+                                            });
                                         };
                                     }
                                 });
@@ -523,6 +652,7 @@ class DashboardView
                                 if (!isAlert && dismissBtn) {
                                     dismissBtn.style.opacity = '1';
                                     dismissBtn.style.pointerEvents = 'auto';
+                                    dismissBtn.style.transform = 'scale(1)';
                                 }
                             });
 
@@ -533,6 +663,7 @@ class DashboardView
                                 if (dismissBtn) {
                                     dismissBtn.style.opacity = '0';
                                     dismissBtn.style.pointerEvents = 'none';
+                                    dismissBtn.style.transform = 'scale(0)';
                                 }
                             });
 
@@ -548,6 +679,8 @@ class DashboardView
 
 
                         setInterval(() => {
+                            const now = Date.now();
+                            const isModalGloballyOpen = document.body.classList.contains("modal-open");
                             let activeAlertsCount = 0;
 
                             const activeFilterBtn = document.querySelector('.category-filter-btn.active');
@@ -563,17 +696,64 @@ class DashboardView
                                 const dismissBtn = card.querySelector('.card-dismiss-btn');
                                 if (isAlert) {
                                     activeAlertsCount++;
+
+                                    // Cancel any running cooldown — it's back in alert
+                                    if (state.isCountingDown) {
+                                        state.isCountingDown = false;
+                                        resizeObserver.unobserve(card);
+                                        const prog = card.querySelector('.hide-progress');
+                                        if (prog) prog.remove();
+                                    }
+                                    state.lastAlertColor = getAlertColor(card);
+
                                     if (state.hidden && isUrgentOrAll) {
                                         showCard(card);
                                     }
+
+                                    // Hide dismiss button on alert cards
                                     if (dismissBtn) {
                                         dismissBtn.style.opacity = '0';
                                         dismissBtn.style.pointerEvents = 'none';
+                                        dismissBtn.style.transform = 'scale(0)';
                                     }
-                                } else {
+                                    state.lastTick = now;
+                                } else if (!state.hidden && !state.animating) {
+                                    // Card was alert, now it's not — start cooldown if not started
+                                    if (!state.isCountingDown && state.lastAlertColor) {
+                                        startCooldown(card, state.lastAlertColor);
+                                    } else if (state.isCountingDown) {
+                                        // Manage pause/resume
+                                        const isModalOpened = (activeModalCard === card && isModalGloballyOpen);
+                                        const shouldBePaused = state.isHovered || isModalOpened;
+
+                                        if (shouldBePaused && !state.isPaused) {
+                                            state.isPaused = true;
+                                            if (state.svgAnim) state.svgAnim.pause();
+                                        } else if (!shouldBePaused && state.isPaused) {
+                                            state.isPaused = false;
+                                            if (state.svgAnim) state.svgAnim.play();
+                                        }
+
+                                        if (!state.isPaused) {
+                                            state.remaining -= (now - state.lastTick);
+                                        }
+                                        state.lastTick = now;
+
+                                        // Cooldown finished — just remove the border, card stays visible
+                                        if (state.remaining <= 0) {
+                                            state.isCountingDown = false;
+                                            resizeObserver.unobserve(card);
+                                            const prog = card.querySelector('.hide-progress');
+                                            if (prog) prog.remove();
+                                            state.lastAlertColor = null;
+                                        }
+                                    }
+
+                                    // Show dismiss button on non-alert hovered cards
                                     if (state.isHovered && dismissBtn) {
                                         dismissBtn.style.opacity = '1';
                                         dismissBtn.style.pointerEvents = 'auto';
+                                        dismissBtn.style.transform = 'scale(1)';
                                     }
                                 }
                             });

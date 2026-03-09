@@ -126,8 +126,8 @@ if (!empty($patientMetrics)): ?>
             data-card-display-duration="<?= $escape($viewData['card_display_duration'] ?? '0.0333') ?>">
 
             <div class="card-dismiss-btn" title="Masquer l'indicateur"
-                style="position: absolute; left: 0; top: 0; bottom: 0; width: 30px; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; cursor: pointer; opacity: 0; pointer-events: none; transition: opacity 0.2s; border-top-left-radius: 8px; border-bottom-left-radius: 8px; z-index: 10;">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                style="position: absolute; left: -10px; top: -10px; width: 22px; height: 22px; background: var(--primary-color, #275afe); display: flex; align-items: center; justify-content: center; cursor: pointer; opacity: 0; pointer-events: none; transition: opacity 0.2s, transform 0.15s; transform: scale(0); border-radius: 50%; z-index: 15; box-shadow: 0 2px 6px rgba(0,0,0,0.25);">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"
                     style="color: white;">
                     <line x1="18" y1="6" x2="6" y2="18"></line>
                     <line x1="6" y1="6" x2="18" y2="18"></line>
