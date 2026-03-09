@@ -24,39 +24,57 @@ use PDO;
 /**
  * Class PatientController
  *
- * Centralizes all patient-centric actions.
+ * This controller serves as the central hub for all patient-related activities within the DashMed application.
+ * It manages dashboard views, real-time monitoring, medical records, consultations, and analytics.
  *
- * Replaces: DashboardController, MonitoringController,
- *           PatientrecordController, MedicalprocedureController.
+ * Design Pattern: Standard MVC Controller.
+ * Refactored from: DashboardController, MonitoringController, PatientrecordController, and MedicalprocedureController.
  *
  * @package DashMed\Modules\Controllers
  * @author DashMed Team
+ * @version 2.1.0
  * @license Proprietary
  */
 class PatientController
 {
-    /** @var PDO Database connection */
+    /** 
+     * @var PDO The active database connection instance for multi-repository management.
+     */
     private PDO $pdo;
 
-    /** @var PatientRepository Patient repository */
+    /** 
+     * @var PatientRepository Data access layer for patient biographical and structural information.
+     */
     private PatientRepository $patientRepo;
 
-    /** @var ConsultationRepository Consultation repository */
+    /** 
+     * @var ConsultationRepository Management of medical appointments and historical records.
+     */
     private ConsultationRepository $consultationRepo;
 
-    /** @var UserRepository User repository */
+    /** 
+     * @var UserRepository Identity management for clinical staff and administrative access.
+     */
     private UserRepository $userRepo;
 
-    /** @var MonitorRepository Monitor model */
+    /** 
+     * @var MonitorRepository Engine for high-frequency time-series medical data retrieval.
+     */
     private MonitorRepository $monitorModel;
 
-    /** @var MonitorPreferenceRepository Preferences model */
+    /** 
+     * @var MonitorPreferenceRepository Persistent user-specific UI layout and chart configurations.
+     */
     private MonitorPreferenceRepository $prefModel;
 
-    /** @var MonitoringService Monitoring service */
+    /** 
+     * @var MonitoringService Business logic for metric processing and health indicator calculation.
+     */
     private MonitoringService $monitoringService;
 
-    /** @var PatientContextService Context service */
+    /** 
+     * @var PatientContextService State manager for tracking the currently active patient across sessions.
+     */
     private PatientContextService $contextService;
 
     /**
@@ -80,9 +98,13 @@ class PatientController
     }
 
     /**
-     * Explorer entry point.
+     * Initializes and displays the high-performance Data Explorer and CSV viewer.
+     * 
+     * Retrieves the current patient context and validates their existence before
+     * rendering the specialized analytics view.
      *
      * @return void
+     * @throws \Exception If patient data cannot be verified.
      */
     public function explorer(): void
     {
@@ -98,7 +120,10 @@ class PatientController
     }
 
     /**
-     * Dashboard entry point (GET & POST).
+     * Entry point for the patient dashboard, handling both read and update operations.
+     * 
+     * Routes POST requests to preference management and GET requests to the main 
+     * clinical overview display.
      *
      * @return void
      */
@@ -144,7 +169,10 @@ class PatientController
     }
 
     /**
-     * Monitoring entry point (GET & POST).
+     * Entry point for real-time patient monitoring and physiological waveforms.
+     * 
+     * Manages asynchronous preference updates via POST and coordinate-based 
+     * clinical data rendering via GET.
      *
      * @return void
      */
@@ -183,7 +211,7 @@ class PatientController
 
             if ($patientId) {
                 $metrics = $this->monitorModel->getLatestMetrics($patientId);
-                $rawHistory = $this->monitorModel->getRawHistory($patientId);
+                $rawHistory = $this->monitorModel->getLatestHistoryForAllParameters($patientId, 1000);
             }
 
             $rawUserId = $_SESSION['user_id'] ?? 0;

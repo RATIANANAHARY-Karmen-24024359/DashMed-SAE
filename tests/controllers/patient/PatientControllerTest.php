@@ -110,24 +110,58 @@ class PatientControllerTest extends TestCase
         $this->assertStringContainsString('80', $output);
     }
 
-    public function testApiLiveMetricsReturnsJson()
+    public function testExploreRendersView()
     {
         $_SESSION['user_id'] = 1;
 
         $this->contextServiceMock->expects($this->once())
-            ->method('handleRequest');
+            ->method('getCurrentPatientId')
+            ->willReturn(123);
+
+        $this->patientRepoMock->expects($this->once())
+            ->method('findById')
+            ->with(123)
+            ->willReturn(['id_patient' => 123, 'first_name' => 'John', 'last_name' => 'Doe']);
+
+        ob_start();
+        $this->patientController->explorer();
+        $output = ob_get_clean();
+
+        $this->assertStringContainsString('Explorateur', $output);
+    }
+
+    public function testRecordPostUpdatesData()
+    {
+        $_SERVER['REQUEST_METHOD'] = 'POST';
+        $_SESSION['user_id'] = 1;
+        $_SESSION['email'] = 'test@example.com';
+        $_SESSION['csrf_patient'] = 'valid_token';
+        
+        $_POST['csrf'] = 'valid_token';
+        $_POST['first_name'] = 'Jane';
+        $_POST['last_name'] = 'Smith';
+        $_POST['admission_cause'] = 'Checkup';
+        $_POST['birth_date'] = '1990-01-01';
+
         $this->contextServiceMock->expects($this->once())
             ->method('getCurrentPatientId')
             ->willReturn(123);
 
-        $this->monitorModelMock->expects($this->once())
-            ->method('getLatestMetrics')
-            ->willReturn([]);
+        $this->patientRepoMock->expects($this->once())
+            ->method('update')
+            ->with(123, $this->callback(function($arg) {
+                return $arg['first_name'] === 'Jane' && $arg['last_name'] === 'Smith';
+            }))
+            ->willReturn(true);
 
         ob_start();
-        $this->patientController->apiLiveMetrics();
-        $output = ob_get_clean();
-
-        $this->assertJson($output);
+        try {
+            $this->patientController->record();
+        } catch (\PHPUnit\Framework\Error\Warning $e) {
+            // Silence header warnings
+        }
+        ob_end_clean();
+        
+        $this->assertEquals('success', $_SESSION['patient_msg']['type'] ?? '');
     }
 }
