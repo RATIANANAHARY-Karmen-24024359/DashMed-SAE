@@ -71,7 +71,7 @@ class ProfileView
                 <section class="dashboard-content-container">
                     <h1>Mon profil</h1>
 
-                    <?php if ($msg !== null) : ?>
+                    <?php if ($msg !== null): ?>
                         <div class="alert <?= $h($msg['type']) ?>">
                             <?= $h($msg['text']) ?>
                         </div>
@@ -138,7 +138,7 @@ class ProfileView
                                         ?>
                                     </select>
                                 </div>
-                                <?php if (!empty($user['profession_name'])) : ?>
+                                <?php if (!empty($user['profession_name'])): ?>
                                     <small class="current-info">Actuelle : <?= $h($user['profession_name']) ?></small>
                                 <?php endif; ?>
                             </div>
@@ -147,29 +147,42 @@ class ProfileView
                         </form>
                     </div>
 
-                    <div class="settings-card" style="background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: 16px; padding: 2rem; margin-bottom: 2rem; margin-top: 1rem;">
+                    <div class="settings-card"
+                        style="background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: 16px; padding: 2rem; margin-bottom: 2rem; margin-top: 1rem;">
                         <div class="settings-info" style="margin-bottom: 1rem;">
-                            <h3 style="margin: 0 0 0.5rem 0; color: var(--text-primary); font-size: 1.1rem; font-weight: 600;">Préférences de développement</h3>
-                            <p style="margin: 0; color: var(--text-secondary); font-size: 0.9rem;">Options de débug : Mode ne pas déranger.</p>
+                            <h3 style="margin: 0 0 0.5rem 0; color: var(--text-primary); font-size: 1.1rem; font-weight: 600;">
+                                Préférences de développement</h3>
+                            <p style="margin: 0; color: var(--text-secondary); font-size: 0.9rem;">Options de débug : Mode ne
+                                pas déranger.</p>
                         </div>
                         <div style="display: flex; align-items: center; gap: 1rem;">
-                            <label class="toggle-switch" style="display: flex; align-items: center; cursor: pointer; gap: 0.5rem; font-size: 0.95rem; color: var(--text-main);">
-                                <input type="checkbox" id="dnd-dev-toggle" style="width: 1.2rem; height: 1.2rem; cursor: pointer;">
+                            <label class="toggle-switch"
+                                style="display: flex; align-items: center; cursor: pointer; gap: 0.5rem; font-size: 0.95rem; color: var(--text-main);">
+                                <input type="checkbox" id="dnd-dev-toggle"
+                                    style="width: 1.2rem; height: 1.2rem; cursor: pointer;" <?= ($user['alert_dnd'] ?? 0) ? 'checked' : '' ?>>
                                 <span>Activer le mode "Ne pas déranger"</span>
                             </label>
                         </div>
                         <script>
-                            const dndToggle = document.getElementById('dnd-dev-toggle');
-                            dndToggle.checked = localStorage.getItem('dashmed_dnd') === 'true';
-                            dndToggle.addEventListener('change', (e) => {
-                                localStorage.setItem('dashmed_dnd', e.target.checked);
-                                if (typeof iziToast !== 'undefined') {
-                                    if (e.target.checked) {
-                                        iziToast.info({ title: 'Info', message: 'Mode Ne pas déranger activé.', position: 'topRight' });
-                                    } else {
-                                        iziToast.success({ title: 'Succès', message: 'Mode Ne pas déranger désactivé.', position: 'topRight' });
+                            document.addEventListener('DOMContentLoaded', () => {
+                                const dndToggle = document.getElementById('dnd-dev-toggle');
+                                dndToggle.addEventListener('change', (e) => {
+                                    const enabled = e.target.checked;
+                                    localStorage.setItem('dashmed_dnd', enabled);
+
+                                    // Use the global function if available to sync with DB
+                                    if (window.DashMedGlobalAlerts && window.DashMedGlobalAlerts.syncSettings) {
+                                        window.DashMedGlobalAlerts.syncSettings({ alert_dnd: enabled ? 1 : 0 });
                                     }
-                                }
+
+                                    if (typeof iziToast !== 'undefined') {
+                                        if (enabled) {
+                                            iziToast.info({ title: 'Info', message: 'Mode Ne pas déranger activé.', position: 'topRight' });
+                                        } else {
+                                            iziToast.success({ title: 'Succès', message: 'Mode Ne pas déranger désactivé.', position: 'topRight' });
+                                        }
+                                    }
+                                });
                             });
                         </script>
                     </div>

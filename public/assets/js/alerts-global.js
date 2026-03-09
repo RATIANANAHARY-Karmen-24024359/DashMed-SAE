@@ -73,6 +73,16 @@ const DashMedGlobalAlerts = (function () {
         return saved ? parseInt(saved, 10) : 20000;
     }
 
+    async function syncSettingsWithBackend(settings) {
+        try {
+            await fetch(API_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: 'update_settings', ...settings })
+            });
+        } catch (err) { console.error('Failed to sync settings:', err); }
+    }
+
     const esc = s => {
         const d = document.createElement('div');
         d.textContent = s;
@@ -252,6 +262,26 @@ const DashMedGlobalAlerts = (function () {
             const res = await fetch(room ? `${API_URL}?room=${room}` : API_URL);
             const data = await res.json();
             if (!data.success) return [];
+
+            if (data.settings) {
+                if (data.settings.alert_volume !== undefined) {
+                    localStorage.setItem('dashmed_notif_volume', data.settings.alert_volume.toString());
+                }
+                if (data.settings.alert_duration !== undefined) {
+                    localStorage.setItem('dashmed_notif_timeout', data.settings.alert_duration.toString());
+                }
+                if (data.settings.alert_dnd !== undefined) {
+                    const dnd = data.settings.alert_dnd ? 'true' : 'false';
+                    localStorage.setItem('dashmed_dnd', dnd);
+                }
+                if (typeof NotifHistory !== 'undefined') {
+                    if (NotifHistory.syncDnd && data.settings.alert_dnd !== undefined) {
+                        NotifHistory.syncDnd(data.settings.alert_dnd);
+                    }
+                    if (NotifHistory.syncUI) NotifHistory.syncUI(data.settings);
+                }
+            }
+
             const alerts = data.alerts;
             const currentIds = new Set(alerts.map(a => getAlertId(a)));
             for (const [id] of activeCriticalToasts.entries()) {
@@ -347,11 +377,11 @@ const DashMedGlobalAlerts = (function () {
             }, 800);
         }
 
-        setTimeout(check, 1500);
+        setTimeout(check, 100);
         setInterval(check, CHECK_INTERVAL);
     }
 
-    return { init, checkNow: check };
+    return { init, checkNow: check, syncSettings: syncSettingsWithBackend };
 })();
 
 const NotifHistory = (function () {
@@ -445,11 +475,40 @@ const NotifHistory = (function () {
         const toggle = panel?.querySelector('#notif-panel-dnd');
         if (toggle) toggle.checked = enabled;
         syncProfileToggle(enabled);
+        DashMedGlobalAlerts.syncSettings({ alert_dnd: enabled ? 1 : 0 });
     }
 
     function syncProfileToggle(enabled) {
         const profileToggle = document.getElementById('dnd-dev-toggle');
-        if (profileToggle) profileToggle.checked = enabled;
+        if (profileToggle) profileToggle.checked = enabled === true || enabled === 1 || enabled === 'true';
+    }
+
+    function syncPanelUI(settings) {
+        if (!panel) return;
+        if (settings.alert_volume !== undefined) {
+            const volSlider = panel.querySelector('.notif-volume-slider');
+            if (volSlider) {
+                const val = parseFloat(settings.alert_volume) * 100;
+                volSlider.value = val;
+                // Update icons visually
+                const wave1 = panel.querySelector('.vol-wave-1');
+                const wave2 = panel.querySelector('.vol-wave-2');
+                if (wave1 && wave2) {
+                    wave1.style.opacity = val === 0 ? '0' : '1';
+                    wave2.style.opacity = val < 50 ? '0' : '1';
+                }
+            }
+        }
+        if (settings.alert_duration !== undefined) {
+            const timeOptions = panel.querySelectorAll('.notif-time-option');
+            timeOptions.forEach(opt => {
+                opt.classList.toggle('active', opt.dataset.time === settings.alert_duration.toString());
+            });
+        }
+        if (settings.alert_dnd !== undefined) {
+            const dndToggle = panel.querySelector('#notif-panel-dnd');
+            if (dndToggle) dndToggle.checked = settings.alert_dnd === true || settings.alert_dnd === 1 || settings.alert_dnd === 'true';
+        }
     }
 
     function createPanel() {
@@ -547,8 +606,14 @@ const NotifHistory = (function () {
 
         volSlider.addEventListener('input', (e) => {
             const val = parseInt(e.target.value, 10);
-            localStorage.setItem('dashmed_notif_volume', (val / 100).toString());
+            const floatVal = val / 100;
+            localStorage.setItem('dashmed_notif_volume', floatVal.toString());
             updateVolumeIcon(val);
+        });
+
+        volSlider.addEventListener('change', (e) => {
+            const floatVal = parseInt(e.target.value, 10) / 100;
+            DashMedGlobalAlerts.syncSettings({ alert_volume: floatVal });
         });
 
         const timeBtn = panel.querySelector('.notif-time-btn');
@@ -564,6 +629,7 @@ const NotifHistory = (function () {
                 timeOptions.forEach(o => o.classList.remove('active'));
                 opt.classList.add('active');
                 timeWrapper.classList.remove('active');
+                DashMedGlobalAlerts.syncSettings({ alert_duration: parseInt(val, 10) });
             });
         });
 
@@ -676,7 +742,7 @@ const NotifHistory = (function () {
         }
     }
 
-    return { init, add: addToHistory };
+    return { init, add: addToHistory, syncDnd: syncProfileToggle, syncUI: syncPanelUI };
 })();
 
 if (document.readyState === 'loading') {

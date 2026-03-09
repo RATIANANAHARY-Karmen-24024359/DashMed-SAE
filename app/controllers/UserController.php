@@ -367,6 +367,9 @@ class UserController
                     u.last_name,
                     u.email,
                     u.id_profession AS id_profession,
+                    u.alert_volume,
+                    u.alert_duration,
+                    u.alert_dnd,
                     p.label_profession AS profession_name
                 FROM users u
                 LEFT JOIN professions p
