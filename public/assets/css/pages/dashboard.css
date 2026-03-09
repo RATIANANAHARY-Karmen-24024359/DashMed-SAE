@@ -178,10 +178,15 @@ a {
 .category-filter-btn--custom {
     border-style: dashed;
     transition: all 0.2s ease;
+    border-color: var(--cg-color, #2563eb) !important;
+    color: var(--cg-color, #2563eb) !important;
 }
 
 .category-filter-btn--custom.active {
     border-style: solid;
+    background: var(--cg-color, #2563eb) !important;
+    color: #ffffff !important;
+    border-color: var(--cg-color, #2563eb) !important;
 }
 
 .critical-zone-header {

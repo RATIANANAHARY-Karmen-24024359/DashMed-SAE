@@ -50,7 +50,7 @@ class SysadminView
         $old = isset($_SESSION['old_sysadmin']) && is_array($_SESSION['old_sysadmin']) ? $_SESSION['old_sysadmin'] : [];
         unset($_SESSION['old_sysadmin']);
 
-        $h = static function ($v): string {
+        $h = static function ($v) {
             return htmlspecialchars(is_scalar($v) ? (string) $v : '', ENT_QUOTES, 'UTF-8');
         };
 
@@ -59,19 +59,20 @@ class SysadminView
         $genderFemmeChecked = (isset($old['gender']) && $old['gender'] === 'F') ? 'checked' : '';
 
         $layout = new \modules\views\layout\Layout(
-            title: 'Sysadmin',
-            cssFiles: [
+            'Sysadmin',
+            [
                 'assets/css/components/alerts-toast.css',
                 'assets/css/pages/sysadmin.css',
                 'assets/css/components/password-strength.css',
             ],
-            jsFiles: [
+            [
                 'assets/js/auth/password-strength.js',
                 'assets/js/auth/form.js',
                 'assets/js/pages/dash.js',
             ],
-            showSidebar: true,
-            showAlerts: false
+            '',
+            true,
+            false
         );
 
         $layout->render(function () use ($professions, $users, $rooms, $csrf, $error, $success, $old, $h, $adminNoChecked, $genderHommeChecked, $genderFemmeChecked) {

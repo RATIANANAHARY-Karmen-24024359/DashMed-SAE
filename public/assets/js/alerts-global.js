@@ -81,7 +81,7 @@ const DashMedGlobalAlerts = (function () {
         transitionIn: 'fadeInLeft',
         transitionOut: 'fadeOutRight',
         layout: 1,
-        backgroundColor: 'transparent',
+        backgroundColor: 'var(--theme-color)',
         onOpening: (_, t) => t.querySelector('[data-close]')?.addEventListener('click', () => {
             iziToast.hide({}, t);
         })

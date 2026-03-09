@@ -41,11 +41,16 @@ function openModal(param, value, isCritical) {
  * Toggles the visibility of the modal and manages the body scrolling state.
  */
 function toggleModal() {
+    if (!modal) return;
     modal.classList.toggle("show-modal");
     if (modal.classList.contains("show-modal")) {
         document.body.classList.add("modal-open");
     } else {
         document.body.classList.remove("modal-open");
+        // Clear activeModalCard when closing to resume countdowns
+        if (typeof window.activeModalCard !== 'undefined') {
+            window.activeModalCard = null;
+        }
     }
 }
 
@@ -60,7 +65,9 @@ function windowOnClick(event) {
     }
 }
 
-closeButton.addEventListener("click", toggleModal);
+if (closeButton) {
+    closeButton.addEventListener("click", toggleModal);
+}
 window.addEventListener("click", windowOnClick);
 
 /**

@@ -219,15 +219,46 @@ class MonitorRepository extends BaseRepository
     }
 
     /**
-     * Efficiently retrieves the latest history points for ALL parameters of a patient.
-     * 
-     * Uses a window function (if MySQL 8+) or a specific optimized join strategy 
-     * to avoid loading the entire historical table when only sparklines are needed.
+     * Efficiently retrieves the latest history points for SPECIFIC parameters of a patient.
      *
      * @param int $patientId Patient ID
+     * @param array<int, string> $parameterIds List of parameter IDs
      * @param int $limitPerParam Max points per parameter (default 1000)
      * @return array<int, array{parameter_id: string, value: float|null, timestamp: string, alert_flag: int}>
      */
+    public function getLatestHistoryForSpecificParameters(int $patientId, array $parameterIds, int $limitPerParam = 1000): array
+    {
+        if (empty($parameterIds)) {
+            return [];
+        }
+
+        try {
+            $placeholders = implode(',', array_fill(0, count($parameterIds), '?'));
+
+            $sql = "
+                SELECT parameter_id, value, `timestamp`, alert_flag
+                FROM (
+                    SELECT 
+                        parameter_id, value, `timestamp`, alert_flag,
+                        ROW_NUMBER() OVER(PARTITION BY parameter_id ORDER BY `timestamp` DESC) as rn
+                    FROM {$this->table}
+                    WHERE id_patient = ? AND archived = 0 AND parameter_id IN ($placeholders)
+                ) ranked
+                WHERE rn <= ?
+                ORDER BY parameter_id, `timestamp` ASC
+            ";
+
+            $st = $this->pdo->prepare($sql);
+            $params = array_merge([$patientId], $parameterIds, [$limitPerParam]);
+            $st->execute($params);
+
+            return $st->fetchAll();
+        } catch (\PDOException $e) {
+            error_log("MonitorRepository::getLatestHistoryForSpecificParameters Error: " . $e->getMessage());
+            return [];
+        }
+    }
+
     public function getLatestHistoryForAllParameters(int $patientId, int $limitPerParam = 1000): array
     {
         try {
@@ -359,14 +390,14 @@ class MonitorRepository extends BaseRepository
             $isDateTime = false;
             if ($targetDate !== null) {
                 if (
-                    preg_match('/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/', $targetDate) || 
+                    preg_match('/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/', $targetDate) ||
                     preg_match('/^\d{4}-\d{2}-\d{2}$/', $targetDate)
                 ) {
                     $dateCondition = 'AND `timestamp` <= :targetDateEnd';
                     $isDateTime = true;
                 }
             }
-            
+
             $sql = "
             SELECT parameter_id, value, `timestamp`, alert_flag
             FROM {$this->table}
@@ -377,10 +408,10 @@ class MonitorRepository extends BaseRepository
             // Configure PDO to use unbuffered queries for this statement
             $this->pdo->setAttribute(\PDO::MYSQL_ATTR_USE_BUFFERED_QUERY, false);
             $st = $this->pdo->prepare($sql);
-            
+
             $st->bindValue(':id', $patientId, \PDO::PARAM_INT);
             $st->bindValue(':paramId', $parameterId, \PDO::PARAM_STR);
-            
+
             if ($isDateTime && $targetDate !== null) {
                 $formattedDate = str_replace('T', ' ', $targetDate);
                 if (strlen($formattedDate) === 10) {
@@ -450,15 +481,17 @@ class MonitorRepository extends BaseRepository
 
             $this->pdo->setAttribute(\PDO::MYSQL_ATTR_USE_BUFFERED_QUERY, false);
             $st = $this->pdo->prepare($sql);
-            
+
             $st->bindValue(':id', $patientId, \PDO::PARAM_INT);
             $st->bindValue(':paramId', $parameterId, \PDO::PARAM_STR);
             $st->bindValue(':interval', $intervalSeconds, \PDO::PARAM_INT);
-            
+
             if ($dateCondition && $targetDate !== null) {
                 $formattedDate = str_replace('T', ' ', $targetDate);
-                if (strlen($formattedDate) === 10) $formattedDate .= ' 23:59:59';
-                elseif (strlen($formattedDate) === 16) $formattedDate .= ':59';
+                if (strlen($formattedDate) === 10)
+                    $formattedDate .= ' 23:59:59';
+                elseif (strlen($formattedDate) === 16)
+                    $formattedDate .= ':59';
                 $st->bindValue(':targetDateEnd', $formattedDate, \PDO::PARAM_STR);
             }
 
@@ -497,7 +530,7 @@ class MonitorRepository extends BaseRepository
             $isDateTime = false;
             if ($targetDate !== null) {
                 if (
-                    preg_match('/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/', $targetDate) || 
+                    preg_match('/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/', $targetDate) ||
                     preg_match('/^\d{4}-\d{2}-\d{2}$/', $targetDate)
                 ) {
                     $dateCondition = 'AND `timestamp` <= :targetDateEnd';
@@ -513,11 +546,11 @@ class MonitorRepository extends BaseRepository
               AND archived = 0
               $dateCondition
             ";
-            
+
             $st = $this->pdo->prepare($sql);
             $st->bindValue(':id', $patientId, \PDO::PARAM_INT);
             $st->bindValue(':paramId', $parameterId, \PDO::PARAM_STR);
-            
+
             if ($isDateTime && $targetDate !== null) {
                 $formattedDate = str_replace('T', ' ', $targetDate);
                 if (strlen($formattedDate) === 10) {

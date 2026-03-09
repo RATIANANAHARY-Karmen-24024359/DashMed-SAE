@@ -101,8 +101,8 @@ class MedicalprocedureView
     public function show(): void
     {
         $layout = new \modules\views\layout\Layout(
-            title: 'Dossier Médical',
-            cssFiles: [
+            'Dossier Médical',
+            [
                 'assets/css/pages/medical-procedure.css',
                 'assets/css/components/searchbar/searchbar.css',
                 'assets/css/components/card.css',
@@ -110,12 +110,13 @@ class MedicalprocedureView
                 'assets/css/components/consultation-modal.css',
                 'assets/css/layout/aside/aside.css',
             ],
-            jsFiles: [
+            [
                 'assets/js/consultation-filter.js',
                 'assets/js/consultation-modal.js',
             ],
-            showSidebar: true,
-            showAlerts: true
+            '',
+            true,
+            true
         );
 
         $layout->render(function () {
@@ -125,7 +126,7 @@ class MedicalprocedureView
 
                 <section class="dashboard-content-container">
                     <?php include dirname(__DIR__) . '/partials/_searchbar.php'; ?>
-                    <input type="hidden" id="context-patient-id" value="<?= htmlspecialchars((string)
+                    <input type="hidden" id="context-patient-id" value="<?= htmlspecialchars((string) 
                         $this->patientId) ?>">
 
                     <div id="button-bar">

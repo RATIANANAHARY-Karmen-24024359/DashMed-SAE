@@ -231,6 +231,9 @@ class CustomGroupRepository extends BaseRepository
 
         $results = $st->fetchAll();
         $final = [];
+        $fallbackX = 0;
+        $fallbackY = 0;
+
         foreach ($results as $row) {
             $x = $row['grid_x'] !== null ? $row['grid_x'] : $row['def_x'];
             $y = $row['grid_y'] !== null ? $row['grid_y'] : $row['def_y'];
@@ -242,12 +245,22 @@ class CustomGroupRepository extends BaseRepository
             if ($h === null)
                 $h = 3;
 
+            if ($x === null || $y === null) {
+                $x = $fallbackX;
+                $y = $fallbackY;
+                $fallbackX += (int) $w;
+                if ($fallbackX >= 12) {
+                    $fallbackX = 0;
+                    $fallbackY += (int) $h;
+                }
+            }
+
             $final[] = [
                 'id' => $row['id'],
                 'name' => $row['name'],
                 'category' => $row['category'],
-                'x' => $x !== null ? (int) $x : null,
-                'y' => $y !== null ? (int) $y : null,
+                'x' => (int) $x,
+                'y' => (int) $y,
                 'w' => (int) $w,
                 'h' => (int) $h
             ];

@@ -51,8 +51,8 @@ class MonitoringView
     public function show(): void
     {
         $layout = new \modules\views\layout\Layout(
-            title: 'Monitoring',
-            cssFiles: [
+            'Monitoring',
+            [
                 'https://cdn.jsdelivr.net/npm/izitoast@1.4.0/dist/css/iziToast.min.css',
                 'assets/css/pages/monitoring.css',
                 'assets/css/components/card.css',
@@ -62,15 +62,22 @@ class MonitoringView
                 'assets/css/components/modal.css',
                 'assets/css/components/alerts-toast.css',
             ],
-            jsFiles: [
-                'https://cdn.jsdelivr.net/npm/chart.js',
+            [
+                'https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js',
+                'https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js',
+                'https://cdn.jsdelivr.net/npm/moment@2.30.1/moment.min.js',
+                'https://cdn.jsdelivr.net/npm/moment@2.30.1/locale/fr.js',
+                'https://cdn.jsdelivr.net/npm/chartjs-adapter-moment@1.0.1/dist/chartjs-adapter-moment.min.js',
+                'https://cdn.jsdelivr.net/npm/hammerjs@2.0.8',
+                'https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1/dist/chartjs-plugin-zoom.min.js',
                 'assets/js/component/modal/chart.js',
                 'assets/js/component/charts/card-sparklines.js',
                 'assets/js/component/modal/navigation.js',
                 'assets/js/component/modal/modal.js',
             ],
-            showSidebar: true,
-            showAlerts: true
+            '',
+            true,
+            true
         );
 
         $layout->render(function () {

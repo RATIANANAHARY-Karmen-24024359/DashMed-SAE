@@ -39,21 +39,22 @@ class ProfileView
         }
         $_SESSION['csrf_profile'] = bin2hex(random_bytes(16));
 
-        $h = static function ($v): string {
+        $h = static function ($v) {
             return htmlspecialchars((string) ($v ?? ''), ENT_QUOTES, 'UTF-8');
         };
 
         $layout = new \modules\views\layout\Layout(
-            title: 'Mon profil',
-            cssFiles: [
+            'Mon profil',
+            [
                 'assets/css/components/alerts-toast.css',
                 'assets/css/pages/profile.css',
             ],
-            jsFiles: [
+            [
                 'assets/js/pages/dash.js',
             ],
-            showSidebar: true,
-            showAlerts: true
+            '',
+            true,
+            true
         );
 
         $layout->render(function () use ($user, $professions, $msg, $h) {

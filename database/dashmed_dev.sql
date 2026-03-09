@@ -167,6 +167,7 @@ CREATE TABLE `custom_groups` (
                                  `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
                                  PRIMARY KEY (`id`),
+                                 UNIQUE KEY `ux_user_group_name` (`user_id`, `name`),
 
                                  CONSTRAINT `fk_custom_groups_user`
                                      FOREIGN KEY (`user_id`) REFERENCES `users` (`id_user`)

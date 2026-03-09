@@ -17,7 +17,7 @@ class PatientrecordView
 {
     /** @var array<string, mixed> Patient medical/admin data */
     private array $patientData;
-    
+
     /** @var array<int, \modules\models\entities\Consultation> Past consultations */
     private array $pastConsultations;
 
@@ -82,17 +82,18 @@ class PatientrecordView
         $h = fn($s) => htmlspecialchars((string) $s, ENT_QUOTES, 'UTF-8');
 
         $layout = new \modules\views\layout\Layout(
-            title: 'Dossier Patient',
-            cssFiles: [
+            'Dossier Patient',
+            [
                 'assets/css/pages/patient-record.css',
                 'assets/css/components/searchbar/searchbar.css',
             ],
-            jsFiles: [
+            [
                 'assets/js/pages/dash.js',
                 'assets/js/pages/dossier_patient.js',
             ],
-            showSidebar: true,
-            showAlerts: true
+            '',
+            true,
+            true
         );
 
         $layout->render(function () use ($h, $csrfToken) {

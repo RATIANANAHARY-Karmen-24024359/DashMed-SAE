@@ -89,39 +89,31 @@ class MonitoringService
 
             if (!$showAll) {
                 $isHidden = !empty($orderPrefs[$pid]['is_hidden']);
-                if ($isHidden) {
-                    if ($prio >= 1) {
-                        $m->setForceShown(true);
-                    } else {
-                        continue;
-                    }
+                if ($isHidden && $prio >= 1) {
+                    $m->setForceShown(true);
                 }
             }
 
-            // Assign chart preferences.
-            // The modal chart type gracefully falls back to the card's assigned chart type, 
-            // which itself falls back to the system-defined default for this metric.
             $userChart = $chartPrefs[$pid]['chart_type'] ?? null;
             $userModalChart = $chartPrefs[$pid]['modal_chart_type'] ?? null;
             $userDuration = $chartPrefs[$pid]['display_duration'] ?? '0.0333';
             $userCardDuration = $chartPrefs[$pid]['card_display_duration'] ?? '0.0333';
-            
+
             $defaultChart = $m->getDefaultChart();
             $m->setChartType($userChart ?: $defaultChart);
             $m->setModalChartType($userModalChart ?: ($userChart ?: $defaultChart));
-            
+
             $order = $orderPrefs[$pid]['display_order'] ?? 9999;
             $m->setDisplayOrder(is_numeric($order) ? (int) $order : 9999);
 
             $viewData = $this->prepareViewData($m);
             $viewData['display_duration'] = $userDuration;
             $viewData['card_display_duration'] = $userCardDuration;
-            
-            // Re-generate chart_config to include the card duration
+
             $chartConfig = json_decode($viewData['chart_config'], true);
-            $chartConfig['initialZoomMs'] = (float)$userCardDuration * 3600 * 1000;
+            $chartConfig['initialZoomMs'] = (float) $userCardDuration * 3600 * 1000;
             $viewData['chart_config'] = json_encode($chartConfig);
-            
+
             $m->setViewData($viewData);
 
             $processed[] = $m;
@@ -234,10 +226,10 @@ class MonitoringService
             $ts = $hItem['timestamp'] ?? null;
             $tsStr = is_string($ts) ? $ts : '';
             $rawTsStr = ($tsStr !== '' && strpos($tsStr, '+') === false && strpos($tsStr, 'Z') === false) ? $tsStr . ' UTC' : $tsStr;
-            
+
             $rawHVal = $hItem['value'] ?? '';
             $rawHFlag = $hItem['alert_flag'] ?? 0;
-            
+
             $viewData['history_html_data'][] = [
                 'time_iso' => $tsStr !== '' ? date('c', (int) strtotime($rawTsStr)) : '',
                 'value' => is_numeric($rawHVal) || is_string($rawHVal) ? (string) $rawHVal : '',
