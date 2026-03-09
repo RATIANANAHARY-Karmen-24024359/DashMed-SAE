@@ -34,6 +34,7 @@ class MonitoringView
      * @param array<int, \modules\models\entities\Indicator> $patientMetrics Processed metrics
      * @param array<string, string> $chartTypes Available charts
      * @param int|null $patientId Patient ID for search context
+
      */
     public function __construct(array $patientMetrics = [], array $chartTypes = [], ?int $patientId = null)
     {
@@ -74,7 +75,6 @@ class MonitoringView
 
         $layout->render(function () {
             ?>
-
             <main class="container">
                 <section class="dashboard-content-container">
 
@@ -113,7 +113,6 @@ class MonitoringView
                     <div id="modalDetails"></div>
                 </div>
             </div>
-
             <script>
                 document.addEventListener('DOMContentLoaded', () => {
                     const hash = window.location.hash;
@@ -126,5 +125,6 @@ class MonitoringView
 
             <?php
         });
+
     }
 }

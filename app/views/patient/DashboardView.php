@@ -142,12 +142,8 @@ class DashboardView
             jsFiles: [
                 'assets/js/consultation-filter.js',
                 'assets/js/pages/dash.js',
-                'https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js',
-                'https://cdn.jsdelivr.net/npm/moment@2.30.1/moment.min.js',
-                'https://cdn.jsdelivr.net/npm/moment@2.30.1/locale/fr.js',
-                'https://cdn.jsdelivr.net/npm/chartjs-adapter-moment@1.0.1/dist/chartjs-adapter-moment.min.js',
-                'https://cdn.jsdelivr.net/npm/hammerjs@2.0.8',
-                'https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1/dist/chartjs-plugin-zoom.min.js',
+                'https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js',
+                'assets/js/service/stream.js?v=' . time(),
                 'assets/js/component/modal/chart.js?v=' . time(),
                 'assets/js/component/modal/navigation.js',
                 'assets/js/component/charts/card-sparklines.js?v=' . time(),
@@ -193,10 +189,10 @@ class DashboardView
                     sort($uniqueCategories);
                     ?>
 
-                    <?php if (!empty($uniqueCategories)) : ?>
+                    <?php if (!empty($uniqueCategories)): ?>
                         <div class="category-filters">
                             <button class="category-filter-btn active" data-filter="all">Toutes</button>
-                            <?php foreach ($uniqueCategories as $cat) : ?>
+                            <?php foreach ($uniqueCategories as $cat): ?>
                                 <button class="category-filter-btn" data-filter="<?= htmlspecialchars($cat, ENT_QUOTES, 'UTF-8') ?>">
                                     <?= htmlspecialchars($cat, ENT_QUOTES, 'UTF-8') ?>
                                 </button>
@@ -417,6 +413,7 @@ class DashboardView
                     </div>
                 </div>
 
+
                 <script>
                     document.addEventListener('DOMContentLoaded', () => {
                         if (typeof ConsultationManager !== 'undefined') {
@@ -509,7 +506,7 @@ class DashboardView
                                 const card = entry.target;
                                 const state = cardStates.get(card);
                                 if (!state || !state.isCountingDown || state.hidden) continue;
-                                
+
                                 state.svgAnim = buildSVG(card, state.lastAlertColor || 'var(--text-muted, #999)', state.remaining);
                                 if (state.svgAnim && state.isHovered) {
                                     state.svgAnim.pause();
@@ -551,15 +548,15 @@ class DashboardView
                             state.remaining = HIDE_DELAY;
                             state.lastTick = Date.now();
                             state.isPaused = false;
-                            
+
                             state.svgAnim = buildSVG(card, color, state.remaining);
-                            
+
                             const isModalOpened = (activeModalCard === card && document.body.classList.contains('modal-open'));
                             if (state.isHovered || isModalOpened) {
                                 state.isPaused = true;
                                 if (state.svgAnim) state.svgAnim.pause();
                             }
-                            
+
                             resizeObserver.observe(card);
                         }
 
@@ -588,7 +585,7 @@ class DashboardView
                                 const state = cardStates.get(card);
                                 if (state) state.isHovered = true;
                             });
-                            
+
                             card.addEventListener('mouseleave', () => {
                                 const state = cardStates.get(card);
                                 if (state) state.isHovered = false;
@@ -629,7 +626,7 @@ class DashboardView
                                     } else {
                                         const isModalOpened = (activeModalCard === card && isModalGloballyOpen);
                                         const shouldBePaused = state.isHovered || isModalOpened;
-                                        
+
                                         if (shouldBePaused && !state.isPaused) {
                                             state.isPaused = true;
                                             if (state.svgAnim) state.svgAnim.pause();
@@ -646,7 +643,7 @@ class DashboardView
                                         if (state.remaining <= 0) {
                                             state.isCountingDown = false;
                                             resizeObserver.unobserve(card);
-                                            
+
                                             state.animating = true;
                                             const prog = card.querySelector('.hide-progress');
                                             if (prog) prog.remove();

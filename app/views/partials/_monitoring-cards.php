@@ -39,8 +39,8 @@ $escape = static fn(mixed $value): string => htmlspecialchars(
     'UTF-8'
 );
 
-if (!empty($patientMetrics)) : ?>
-    <?php foreach ($patientMetrics as $row) : ?>
+if (!empty($patientMetrics)): ?>
+    <?php foreach ($patientMetrics as $row): ?>
         <?php
         if ($row instanceof \modules\models\entities\Indicator) {
             $viewData = $row->getViewData();
@@ -112,8 +112,8 @@ if (!empty($patientMetrics)) : ?>
         ?>
 
         <article id="indicateurs-<?= $escape($parameterId) ?>" class="card <?= $stateClass ?>" style="<?= $gridStyle ?>"
-                 data-category="<?= $escape($category) ?>"
-            data-display="<?= $escape($display) ?>" data-value="<?= $escape($value) ?>" data-crit="<?= $critFlag ? '1' : '0' ?>"
+            data-category="<?= $escape($category) ?>" data-display="<?= $escape($display) ?>"
+            data-value="<?= $escape($value) ?>" data-crit="<?= $critFlag ? '1' : '0' ?>"
             data-detail-id="<?= $escape($idPrefix . 'detail-' . $slug) ?>" data-slug="<?= $escape($slug) ?>"
             data-chart='<?= $escape($chartConfig) ?>' data-chart-type="<?= $escape($chartType) ?>"
             data-max="<?= $escape($gaugeMax) ?>" data-dmin="<?= $escape($viewData['view_limits']['min'] ?? '') ?>"
@@ -121,16 +121,38 @@ if (!empty($patientMetrics)) : ?>
             data-nmin="<?= $escape($viewData['thresholds']['nmin'] ?? '') ?>"
             data-nmax="<?= $escape($viewData['thresholds']['nmax'] ?? '') ?>"
             data-cmin="<?= $escape($viewData['thresholds']['cmin'] ?? '') ?>"
-            data-cmax="<?= $escape($viewData['thresholds']['cmax'] ?? '') ?>">
+            data-cmax="<?= $escape($viewData['thresholds']['cmax'] ?? '') ?>"
+            data-display-duration="<?= $escape($viewData['display_duration'] ?? '0.0333') ?>"
+            data-card-display-duration="<?= $escape($viewData['card_display_duration'] ?? '0.0333') ?>">
+
 
             <div class="card-header">
                 <h3>
-                    <?= $escape($display) ?><br>
+                    <?= $escape($display) ?>
                 </h3>
-                <p class="value" style="display: <?= $isValueOnly ? 'none' : 'flex' ?>; align-items: center; gap: 6px;">
-                    <span><?= $escape($value) ?></span>
-                    <span class="unit"><?= $unit !== '' ? ' ' . $escape($unit) : '' ?></span>
 
+                <div
+                    style="flex: 0 0 auto; display: flex; align-items: center; justify-content: center; height: 100%; padding: 0 4px;">
+                    <select class="card-interval-select" title="Durée d'affichage">
+                        <?php
+                        $cardDuration = (string) ($viewData['card_display_duration'] ?? '0.0333');
+                        $cardOptions = [
+                            '0.0333' => '2m',
+                            'all' => 'Tout',
+                            '1' => '1H',
+                            '24' => '24H'
+                        ];
+                        foreach ($cardOptions as $val => $lab): ?>
+                            <option value="<?= $val ?>" <?= $cardDuration === $val ? 'selected' : '' ?>><?= $lab ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+
+                <p class="value"
+                    style="flex: 1; text-align: right; display: <?= $isValueOnly ? 'none' : 'flex' ?>; justify-content: flex-end; align-items: center; gap: 3px; margin: 0; line-height: 1;">
+                    <span style="font-size: 0.95rem; font-weight: 700; color: var(--text-main);"><?= $escape($value) ?></span>
+                    <span class="unit"
+                        style="font-size: 0.7rem; color: var(--text-muted);"><?= $unit !== '' ? ' ' . $escape($unit) : '' ?></span>
                     <span class="value-status-icon status-critical" title="Critique"
                         style="color: var(--color-critical, #EF4444); display: <?= str_contains($stateClass, 'card--alert') ? 'flex' : 'none' ?>;">
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
@@ -154,7 +176,6 @@ if (!empty($patientMetrics)) : ?>
                 </p>
 
             </div>
-
 
             <div class="card-value-only-container"
                 style="display: <?= $isValueOnly ? 'flex' : 'none' ?>; flex-direction: column; justify-content: center; align-items: center; height: 100%;">
@@ -220,9 +241,22 @@ if (!empty($patientMetrics)) : ?>
                         </p>
                     </div>
 
-                    <div class="modal-header-center">
+                    <div class="modal-header-center" style="display: flex; align-items: center; gap: 10px;">
                         <input type="datetime-local" class="modal-input modal-date-picker"
                             title="Sélectionner une date et heure (fast travel)" max="<?= date('Y-m-d\TH:i') ?>">
+
+                        <a href="#" class="btn-csv-download" title="Télécharger toutes les données (CSV)"
+                            style="display: flex; align-items: center; justify-content: center; padding: 8px; border-radius: 6px; background: rgba(255,255,255,0.05); border: 1px solid var(--border-color); color: var(--text-primary); transition: all 0.2s;"
+                            onmouseover="this.style.background='rgba(255,255,255,0.1)'"
+                            onmouseout="this.style.background='rgba(255,255,255,0.05)'">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+                                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v4"></path>
+                                <polyline points="7 10 12 15 17 10"></polyline>
+                                <line x1="12" y1="15" x2="12" y2="3"></line>
+                            </svg>
+                            <span style="font-size: 0.75rem; margin-left: 6px; font-weight: 500;">CSV</span>
+                        </a>
                     </div>
 
                     <div class="modal-chart-types-container"
@@ -232,18 +266,27 @@ if (!empty($patientMetrics)) : ?>
                                 style="font-size: 0.65rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; font-weight: 700;">Modale</span>
                             <select class="modal-interval-select"
                                 style="font-size: 0.65rem; padding: 1px 4px; border-radius: 4px; border: 1px solid var(--border-color); background: rgba(0,0,0,0.2); color: var(--text-primary); cursor: pointer; outline: none; width: auto; max-width: 80px;">
-                                <option value="all">Tout</option>
-                                <option value="0.0833">5m</option>
-                                <option value="0.25">15m</option>
-                                <option value="0.5">30m</option>
-                                <option value="1">1H</option>
-                                <option value="12">12H</option>
-                                <option value="24">24H</option>
-                                <option value="168">7J</option>
-                                <option value="720">30J</option>
-                            </select>
+                                <?php
+                                $currentDuration = (string) ($viewData['display_duration'] ?? '0.0333');
+                                $options = [
+                                    '0.0333' => '2m',
+                                    'all' => 'Tout',
+                                    '0.0833' => '5m',
+                                    '0.25' => '15m',
+                                    '0.5' => '30m',
+                                    '1' => '1H',
+                                    '12' => '12H',
+                                    '24' => '24H',
+                                    '168' => '7J',
+                                    '720' => '30J'
+                                ];
+                                foreach ($options as $val => $lab): ?>
+                                    <option value="<?= $val ?>" <?= $currentDuration === $val ? 'selected' : '' ?>><?= $lab ?>
+                                    </option>
+                                <?php endforeach; ?>
                             </select>
                             <div class="chart-type-group" style="padding: 2px;">
+
                                 <?php foreach ($chartAllowed as $allowedType):
                                     $icon = '';
                                     switch ($allowedType) {
@@ -299,6 +342,7 @@ viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-li
                                 <input type="hidden" name="parameter_id" value="<?= $escape($parameterId) ?>">
                                 <input type="hidden" name="chart_pref_submit" value="1">
                                 <div class="chart-type-group" style="padding: 2px;">
+
                                     <?php foreach ($chartAllowed as $allowedType):
                                         $icon = '';
                                         switch ($allowedType) {
@@ -363,8 +407,9 @@ viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-li
                             <circle class="modal-chart-loader-circle" cx="25" cy="25" r="20" />
                         </svg>
                     </div>
-                    <canvas class="modal-chart chart-<?= $escape($chartType) ?>" tabindex="-1"
-                        data-id="<?= $escape($idPrefix) ?>modal-chart-<?= $escape($slug) ?>"></canvas>
+                    <div class="modal-chart chart-<?= $escape($chartType) ?>" tabindex="-1"
+                        data-id="<?= $escape($idPrefix) ?>modal-chart-<?= $escape($slug) ?>" style="width: 100%; height: 100%;">
+                    </div>
                 </div>
 
                 <div class="modal-no-data-placeholder" style="display:none;">

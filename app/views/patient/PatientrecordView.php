@@ -17,6 +17,12 @@ class PatientrecordView
 {
     /** @var array<string, mixed> Patient medical/admin data */
     private array $patientData;
+    
+    /** @var array<int, \modules\models\entities\Consultation> Past consultations */
+    private array $pastConsultations;
+
+    /** @var array<int, \modules\models\entities\Consultation> Future consultations */
+    private array $futureConsultations;
 
     /** @var array<int, array{
      *   id_user: int,
@@ -52,10 +58,11 @@ class PatientrecordView
         array $doctors = [],
         ?array $msg = null
     ) {
+        $this->pastConsultations = $consultationsPassees;
+        $this->futureConsultations = $consultationsFutures;
         $this->patientData = $patientData;
         $this->doctors = $doctors;
         $this->msg = $msg;
-        unset($consultationsPassees, $consultationsFutures);
     }
 
     /**
