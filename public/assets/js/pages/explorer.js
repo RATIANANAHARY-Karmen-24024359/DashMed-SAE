@@ -10,6 +10,8 @@
     let currentData = []; // [[timestamp, value], ...]
     let indicatorsMetadata = {}; // { parameter_id: { thresholds: {nmin, nmax, cmin, cmax}, unit, display_name } }
     let currentParamId = null;
+    let currentTheme = 'dark';
+    let currentChartType = 'line';
 
     document.addEventListener('DOMContentLoaded', () => {
         initChart();
@@ -17,15 +19,20 @@
         loadPatientParameters();
     });
 
-    function initChart() {
+    function initChart(theme = 'dark') {
         const container = document.getElementById('explorer-chart');
         if (!container) return;
 
-        // Clear placeholder if any
-        container.innerHTML = '';
+        if (chart) {
+            chart.dispose();
+        }
 
-        chart = echarts.init(container);
+        chart = echarts.init(container, theme);
         window.addEventListener('resize', () => chart && chart.resize());
+
+        if (currentData.length) {
+            renderChart();
+        }
     }
 
     function setupEventListeners() {
@@ -45,6 +52,22 @@
                 e.preventDefault();
                 dropZone.style.background = '';
                 handleFiles(e.dataTransfer.files);
+            };
+        }
+
+        const typeSelector = document.getElementById('chart-type-selector');
+        if (typeSelector) {
+            typeSelector.onchange = () => {
+                currentChartType = typeSelector.value;
+                if (currentData.length) renderChart();
+            };
+        }
+
+        const themeSelector = document.getElementById('theme-selector');
+        if (themeSelector) {
+            themeSelector.onchange = () => {
+                currentTheme = themeSelector.value;
+                initChart(currentTheme);
             };
         }
 
@@ -76,14 +99,14 @@
 
         try {
             selector.innerHTML = '<option value="">-- Chargement... --</option>';
-            
+
             const res = await fetch(`${window.location.origin}/api_live_metrics?patient_id=${patientId}`);
             const metrics = await res.json();
-            
+
             if (metrics.error) throw new Error(metrics.error);
 
             selector.innerHTML = '<option value="">-- Charger depuis le patient --</option>';
-            
+
             // Store metadata (thresholds, unit)
             indicatorsMetadata = {};
             metrics.forEach(m => {
@@ -138,9 +161,9 @@
     function handleFiles(files) {
         if (!files.length) return;
         const file = files[0];
-        
+
         currentParamId = null; // Reset current param metadata for imported files
-        
+
         const dropText = document.getElementById('drop-text');
         if (dropText) dropText.textContent = file.name;
 
@@ -155,7 +178,7 @@
     function parseCSV(text) {
         const lines = text.split(/\r?\n/);
         const data = [];
-        
+
         // Detect delimiter: , or ;
         const firstLine = lines[0] || "";
         const delimiter = firstLine.includes(';') ? ';' : ',';
@@ -193,12 +216,17 @@
 
     function renderChart() {
         if (!chart) return;
-        
+
         const angle = document.getElementById('analysis-angle').value;
         let displayData = [...currentData];
 
         if (angle === 'ma-5') displayData = movingAverage(currentData, 5);
         if (angle === 'ma-20') displayData = movingAverage(currentData, 20);
+
+        if (currentChartType === 'heatmap') {
+            renderHeatmap();
+            return;
+        }
 
         // Thresholds logic
         const meta = currentParamId ? indicatorsMetadata[currentParamId] : null;
@@ -208,7 +236,7 @@
 
         if (meta && meta.thresholds) {
             const { nmin, nmax, cmin, cmax } = meta.thresholds;
-            
+
             // Visual Map for coloring the dynamic line
             visualMap = {
                 show: false,
@@ -233,31 +261,55 @@
             if (nmax !== null) markLines.push({ yAxis: nmax, lineStyle: { color: '#fbbf24', type: 'dashed' }, label: { position: 'end', formatter: 'Max Normal' } });
         }
 
+        let seriesType = 'line';
+        let smooth = false;
+        let step = false;
+        let areaStyle = null;
+
+        if (currentChartType === 'smooth-line') {
+            seriesType = 'line';
+            smooth = true;
+        } else if (currentChartType === 'step-line') {
+            seriesType = 'line';
+            step = 'end';
+        } else if (currentChartType === 'area') {
+            seriesType = 'line';
+            areaStyle = { opacity: 0.3 };
+        } else if (currentChartType === 'smooth-area') {
+            seriesType = 'line';
+            smooth = true;
+            areaStyle = { opacity: 0.3 };
+        } else if (currentChartType === 'bar') {
+            seriesType = 'bar';
+        } else if (currentChartType === 'scatter') {
+            seriesType = 'scatter';
+        } else if (currentChartType === 'effectScatter') {
+            seriesType = 'effectScatter';
+        }
+
         const option = {
-            animation: false,
+            animation: currentChartType === 'effectScatter',
             tooltip: { trigger: 'axis', axisPointer: { type: 'cross' } },
             grid: { left: '3%', right: '4%', bottom: '10%', containLabel: true },
             xAxis: { type: 'time', splitLine: { show: false } },
             yAxis: { type: 'value', scale: true, splitLine: { lineStyle: { type: 'dashed' } } },
             visualMap: visualMap,
             dataZoom: [
-                { type: 'inside', start: 0, end: 100 },
+                { type: 'inside', start: 0, end: 100, orient: 'horizontal' },
+                { type: 'inside', orient: 'vertical' }, // 2D Zoom
                 { type: 'slider', start: 0, end: 100 }
             ],
             series: [{
                 name: meta ? meta.display_name : 'Valeur',
-                type: 'line',
-                smooth: angle.startsWith('ma'),
-                symbol: 'none',
+                type: seriesType,
+                smooth: smooth,
+                step: step,
+                symbol: seriesType === 'line' ? 'none' : 'circle',
+                symbolSize: seriesType === 'scatter' ? 8 : (seriesType === 'effectScatter' ? 12 : 4),
                 connectNulls: true,
                 data: displayData,
                 lineStyle: { width: 3 },
-                areaStyle: {
-                    color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-                        { offset: 0, color: 'rgba(39, 90, 254, 0.1)' },
-                        { offset: 1, color: 'rgba(39, 90, 254, 0)' }
-                    ])
-                },
+                areaStyle: areaStyle,
                 markArea: { data: markAreas[0] ? markAreas[0].data : [] },
                 markLine: {
                     silent: true,
@@ -275,10 +327,84 @@
         }
 
         chart.setOption(option, true);
-        
+
         // Listen for zoom to update stats
         chart.off('datazoom');
         chart.on('datazoom', () => updateStats());
+    }
+
+    function renderHeatmap() {
+        const heatmapData = transformToHeatmapData(currentData);
+        const days = heatmapData.days;
+        const hours = Array.from({ length: 24 }, (_, i) => i + "h");
+        const data = heatmapData.data;
+
+        const option = {
+            tooltip: { position: 'top' },
+            grid: { height: '80%', top: '10%' },
+            xAxis: { type: 'category', data: hours, splitArea: { show: true } },
+            yAxis: { type: 'category', data: days, splitArea: { show: true } },
+            visualMap: {
+                min: heatmapData.min,
+                max: heatmapData.max,
+                calculable: true,
+                orient: 'horizontal',
+                left: 'center',
+                bottom: '5%',
+                inRange: { color: ['#313695', '#4575b4', '#74add1', '#abd9e9', '#e0f3f8', '#ffffbf', '#fee090', '#fdae61', '#f46d43', '#d73027', '#a50026'] }
+            },
+            series: [{
+                name: 'Intensité',
+                type: 'heatmap',
+                data: data,
+                label: { show: false },
+                emphasis: { itemStyle: { shadowBlur: 10, shadowColor: 'rgba(0, 0, 0, 0.5)' } }
+            }]
+        };
+
+        chart.setOption(option, true);
+    }
+
+    function transformToHeatmapData(data) {
+        if (!data.length) return { days: [], data: [], min: 0, max: 0 };
+
+        const map = new Map(); // "YYYY-MM-DD" -> { hour: sum, count }
+        let minVal = Infinity, maxVal = -Infinity;
+
+        data.forEach(([ts, val]) => {
+            if (val === null) return;
+            const d = new Date(ts);
+            const dateStr = d.toISOString().split('T')[0];
+            const hour = d.getHours();
+
+            if (!map.has(dateStr)) map.set(dateStr, Array.from({ length: 24 }, () => ({ sum: 0, count: 0 })));
+
+            const dayData = map.get(dateStr);
+            dayData[hour].sum += val;
+            dayData[hour].count++;
+        });
+
+        const dayList = Array.from(map.keySet()).sort();
+        const heatmapData = [];
+
+        dayList.forEach((day, dayIndex) => {
+            const dayData = map.get(day);
+            dayData.forEach((h, hourIndex) => {
+                if (h.count > 0) {
+                    const avg = h.sum / h.count;
+                    heatmapData.push([hourIndex, dayIndex, parseFloat(avg.toFixed(2))]);
+                    if (avg < minVal) minVal = avg;
+                    if (avg > maxVal) maxVal = avg;
+                }
+            });
+        });
+
+        return {
+            days: dayList,
+            data: heatmapData,
+            min: minVal === Infinity ? 0 : minVal,
+            max: maxVal === -Infinity ? 100 : maxVal
+        };
     }
 
     function movingAverage(data, period) {
@@ -317,7 +443,7 @@
         if (!opt || !opt.dataZoom) return;
 
         const dz = opt.dataZoom[0];
-        
+
         const allTs = currentData.map(d => d[0]);
         const minTs = Math.min(...allTs);
         const maxTs = Math.max(...allTs);
