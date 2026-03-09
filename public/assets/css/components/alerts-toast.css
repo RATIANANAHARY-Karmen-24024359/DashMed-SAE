@@ -602,7 +602,7 @@
     flex-direction: column !important;
     align-items: flex-end !important;
     pointer-events: none;
-    transition: right 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    transition: right 0.4s cubic-bezier(0.16, 1, 0.3, 1), top 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .iziToast-wrapper-topRight .iziToast {
@@ -619,6 +619,10 @@ body.notif-panel-open .iziToast-wrapper-topRight {
 
 body.aside-collapsed.notif-panel-open .iziToast-wrapper-topRight {
     right: 350px !important;
+}
+
+body.profile-menu-open .iziToast-wrapper-topRight {
+    top: 275px !important;
 }
 
 @media (max-width: 780px) {
