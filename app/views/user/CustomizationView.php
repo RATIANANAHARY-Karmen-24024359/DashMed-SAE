@@ -52,11 +52,13 @@ final class CustomizationView
                 'assets/css/pages/dashboard-customize.css',
                 'assets/css/pages/customization.css',
                 'https://cdn.jsdelivr.net/npm/gridstack@10/dist/gridstack.min.css',
-                'assets/css/pages/medical-procedure.css'
+                'assets/css/pages/medical-procedure.css',
+                'assets/css/layout/aside/aside.css'
             ],
             [
                 'https://cdn.jsdelivr.net/npm/gridstack@10/dist/gridstack-all.js',
                 'assets/js/pages/customization-grid.js',
+                'assets/js/pages/dash.js',
             ],
             '',
             true,
@@ -90,11 +92,11 @@ final class CustomizationView
             }, $existingGroups);
             ?>
 
-            <main class="container nav-space">
+            <main class="container nav-space" id="customization-main">
                 <section class="dashboard-content-container">
                     <?php include dirname(__DIR__) . '/partials/_searchbar.php'; ?>
                     <div class="skeleton-wrapper" id="skeleton-customization" data-skeleton-for="real-customization"
-                        data-skeleton-auto data-skeleton-delay="400">
+                        data-skeleton-auto data-skeleton-delay="400" style="width: 100%;">
                         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
                             <div style="display: flex; flex-direction: column; gap: 6px;">
                                 <div class="skeleton skeleton-text skeleton-text--xl" style="width: 300px;"></div>
@@ -124,7 +126,7 @@ final class CustomizationView
                         </div>
                     </div>
 
-                    <div id="real-customization" style="display: none;">
+                    <div id="real-customization" style="display: none; width: 100%;">
 
                         <section class="dm-customize">
                             <div class="dm-customize-header">
@@ -161,6 +163,12 @@ final class CustomizationView
                                     </svg>
                                     Ajouter un groupe
                                 </button>
+                                <?php if ($editGroupData !== null): ?>
+                                    <button type="button" class="dm-tab-label <?= $activeTab === 'edit_group' ? 'active' : '' ?>"
+                                        data-target="tab-edit_group" style="display:none;">
+                                        Modifier le groupe
+                                    </button>
+                                <?php endif; ?>
                             </div>
                             <?php if ($groupMsg !== null): ?>
                                 <div class="dm-alert dm-alert--<?= $groupMsg['type'] === 'success' ? 'success' : 'error' ?>">
@@ -244,73 +252,10 @@ final class CustomizationView
                             </div>
 
                             <div id="tab-add_group" class="dm-tab-content" <?= $activeTab !== 'add_group' ? 'style="display:none;"' : '' ?>>
-                                <div class="dm-group-form-wrap">
-                                    <form method="POST" action="/?page=custom_group" id="create-group-form" class="dm-form-card"
-                                        novalidate>
-                                        <input type="hidden" name="action" value="create_group">
-                                        <h2>Créer un nouveau groupe</h2>
-
-                                        <div class="dm-form-group">
-                                            <label for="group_name">Nom du groupe</label>
-                                            <div class="dm-input-wrap">
-                                                <svg class="dm-input-icon" viewBox="0 0 24 24">
-                                                    <path stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"
-                                                        stroke-linejoin="round"
-                                                        d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
-                                                </svg>
-                                                <input type="text" id="group_name" name="group_name" maxlength="100"
-                                                    autocomplete="off" placeholder="Ex : Cardio avancé" required>
-                                            </div>
-                                            <span class="dm-field-error" id="name-error"></span>
-                                        </div>
-
-                                        <div class="dm-form-group">
-                                            <label for="group_color">Couleur de l'onglet</label>
-                                            <div class="dm-color-picker-wrap">
-                                                <span class="dm-color-swatch" id="color-swatch-create"
-                                                    style="background:#2563eb;"></span>
-                                                <input type="color" id="group_color" name="group_color" value="#2563eb"
-                                                    class="dm-color-input-hidden">
-                                                <span class="dm-color-label" id="color-label-create">#2563eb</span>
-                                            </div>
-                                        </div>
-
-                                        <div class="dm-form-group">
-                                            <label>Indicateurs du groupe</label>
-                                            <div class="dm-hidden-list" style="margin-bottom: 15px;">
-                                                <div class="dm-hidden-list-title">Indicateurs sélectionnés</div>
-                                                <div class="dm-hidden-list-items" id="selected-indicators-list">
-                                                    <p class="dm-no-groups" id="no-indicators-msg"
-                                                        style="margin: 0; padding: 5px 0; font-size: 0.85rem;">Aucun indicateur
-                                                        sélectionné.</p>
-                                                </div>
-                                            </div>
-                                            <label>Indicateurs disponibles</label>
-                                            <div class="dm-indicators-library">
-                                                <?php foreach ($groupsByCategory as $cat => $params): ?>
-                                                    <div class="dm-indicator-category">
-                                                        <span class="dm-indicator-cat-label">
-                                                            <?= $h($cat) ?>
-                                                        </span>
-                                                        <div class="dm-hidden-list-items" style="margin-top: 8px;">
-                                                            <?php foreach ($params as $param): ?>
-                                                                <span class="dm-hidden-chip indicator-available-chip"
-                                                                    data-id="<?= $h($param['parameter_id']) ?>"
-                                                                    data-name="<?= $h($param['display_name']) ?>">
-                                                                    <?= $h($param['display_name']) ?>
-                                                                    <button type="button" class="add-indicator-btn">+</button>
-                                                                </span>
-                                                            <?php endforeach; ?>
-                                                        </div>
-                                                    </div>
-                                                <?php endforeach; ?>
-                                            </div>
-                                            <span class="dm-field-error" id="indicators-error"></span>
-                                            <div id="hidden-inputs-container"></div>
-                                        </div>
-
-                                        <button type="submit" class="dm-submit-btn" id="create-group-btn">Créer le groupe</button>
-                                    </form>
+                                <div class="dm-layout-section">
+                                    <label>Disposition au sein du nouveau groupe</label>
+                                    <p>Réorganisez l'affichage des widgets pour ce groupe en les déplaçant ci-dessous.</p>
+                                    <div class="grid-stack dm-grid" id="add-group-grid"></div>
                                 </div>
                             </div>
 
@@ -380,79 +325,7 @@ final class CustomizationView
                                 ?>
                                 <div id="tab-edit_group" class="dm-tab-content" <?= $activeTab !== 'edit_group' ? 'style="display:none;"' : '' ?>>
 
-                                    <div class="dm-group-form-wrap">
-                                        <form method="POST" action="/?page=custom_group" id="edit-group-form" class="dm-form-card"
-                                            novalidate>
-                                            <input type="hidden" name="action" value="edit_group">
-                                            <input type="hidden" name="group_id" value="<?= $h($eg['id']) ?>">
-                                            <input type="hidden" name="layout_data" id="edit-layout-data">
-                                            <h2>Modifier
-                                                <?= $h($eg['name']) ?>
-                                            </h2>
 
-                                            <div class="dm-form-group">
-                                                <label for="edit_group_name">Nom du groupe</label>
-                                                <div class="dm-input-wrap">
-                                                    <svg class="dm-input-icon" viewBox="0 0 24 24">
-                                                        <path stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"
-                                                            stroke-linejoin="round"
-                                                            d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
-                                                    </svg>
-                                                    <input type="text" id="edit_group_name" name="group_name" maxlength="100"
-                                                        autocomplete="off" value="<?= $h($eg['name']) ?>" required>
-                                                </div>
-                                                <span class="dm-field-error" id="edit-name-error"></span>
-                                            </div>
-
-                                            <div class="dm-form-group">
-                                                <label for="edit_group_color">Couleur de l'onglet</label>
-                                                <div class="dm-color-picker-wrap">
-                                                    <span class="dm-color-swatch" id="color-swatch-edit"
-                                                        style="background:<?= $h($eg['color']) ?>;"></span>
-                                                    <input type="color" id="edit_group_color" name="group_color"
-                                                        value="<?= $h($eg['color']) ?>" class="dm-color-input-hidden">
-                                                    <span class="dm-color-label" id="color-label-edit">
-                                                        <?= $h($eg['color']) ?>
-                                                    </span>
-                                                </div>
-                                            </div>
-
-                                            <div class="dm-form-group">
-                                                <label>Indicateurs du groupe</label>
-                                                <div class="dm-hidden-list" style="margin-bottom: 15px;">
-                                                    <div class="dm-hidden-list-title">Indicateurs sélectionnés</div>
-                                                    <div class="dm-hidden-list-items" id="edit-selected-indicators-list">
-                                                        <p class="dm-no-groups" id="edit-no-indicators-msg"
-                                                            style="margin: 0; padding: 5px 0; font-size: 0.85rem;">Aucun indicateur
-                                                            sélectionné.</p>
-                                                    </div>
-                                                </div>
-                                                <label>Indicateurs disponibles</label>
-                                                <div class="dm-indicators-library">
-                                                    <?php foreach ($groupsByCategory as $cat => $params): ?>
-                                                        <div class="dm-indicator-category">
-                                                            <span class="dm-indicator-cat-label">
-                                                                <?= $h($cat) ?>
-                                                            </span>
-                                                            <div class="dm-hidden-list-items" style="margin-top: 8px;">
-                                                                <?php foreach ($params as $param): ?>
-                                                                    <span class="dm-hidden-chip edit-indicator-available-chip"
-                                                                        data-id="<?= $h($param['parameter_id']) ?>"
-                                                                        data-name="<?= $h($param['display_name']) ?>"
-                                                                        data-cat="<?= $h($cat) ?>">
-                                                                        <?= $h($param['display_name']) ?>
-                                                                        <button type="button" class="edit-add-indicator-btn">+</button>
-                                                                    </span>
-                                                                <?php endforeach; ?>
-                                                            </div>
-                                                        </div>
-                                                    <?php endforeach; ?>
-                                                </div>
-                                                <span class="dm-field-error" id="edit-indicators-error"></span>
-                                                <div id="edit-hidden-inputs-container"></div>
-                                            </div>
-                                        </form>
-                                    </div>
 
                                     <div class="dm-layout-section">
                                         <label>Disposition au sein du groupe</label>
@@ -517,6 +390,160 @@ final class CustomizationView
 
                     </div>
                 </section>
+
+                <button id="aside-restore-btn" onclick="toggleDesktopAside()" title="Afficher / Masquer le menu">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M15 18l-6-6 6-6" />
+                    </svg>
+                </button>
+                <button id="aside-show-btn" onclick="toggleAside()">☰</button>
+                <aside id="aside">
+                    <div id="aside-add-group" style="display:none;">
+                        <div class="dm-group-form-wrap" style="padding:15px; margin:0; width:100%;">
+                            <form method="POST" action="/?page=custom_group" id="create-group-form" class="dm-form-card" novalidate>
+                                <input type="hidden" name="action" value="create_group">
+                                <input type="hidden" name="layout_data" id="add-layout-data">
+                                <h2>Créer un nouveau groupe</h2>
+
+                                <div class="dm-form-group">
+                                    <label for="group_name">Nom du groupe</label>
+                                    <div class="dm-input-wrap">
+                                        <svg class="dm-input-icon" viewBox="0 0 24 24">
+                                            <path stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"
+                                                stroke-linejoin="round"
+                                                d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
+                                        </svg>
+                                        <input type="text" id="group_name" name="group_name" maxlength="100" autocomplete="off"
+                                            placeholder="Ex : Cardio avancé" required>
+                                    </div>
+                                    <span class="dm-field-error" id="name-error"></span>
+                                </div>
+
+                                <div class="dm-form-group">
+                                    <label for="group_color">Couleur de l'onglet</label>
+                                    <div class="dm-color-picker-wrap">
+                                        <span class="dm-color-swatch" id="color-swatch-create" style="background:#2563eb;"></span>
+                                        <input type="color" id="group_color" name="group_color" value="#2563eb"
+                                            class="dm-color-input-hidden">
+                                        <span class="dm-color-label" id="color-label-create">#2563eb</span>
+                                    </div>
+                                </div>
+
+                                <div class="dm-form-group">
+                                    <label>Indicateurs du groupe</label>
+                                    <div class="dm-hidden-list" style="margin-bottom: 15px;">
+                                        <div class="dm-hidden-list-title">Indicateurs sélectionnés</div>
+                                        <div class="dm-hidden-list-items" id="selected-indicators-list">
+                                            <p class="dm-no-groups" id="no-indicators-msg"
+                                                style="margin: 0; padding: 5px 0; font-size: 0.85rem;">Aucun indicateur
+                                                sélectionné.</p>
+                                        </div>
+                                    </div>
+                                    <label>Indicateurs disponibles</label>
+                                    <div class="dm-indicators-library">
+                                        <?php foreach ($groupsByCategory as $cat => $params): ?>
+                                            <div class="dm-indicator-category">
+                                                <span class="dm-indicator-cat-label">
+                                                    <?= $h($cat) ?>
+                                                </span>
+                                                <div class="dm-hidden-list-items" style="margin-top: 8px;">
+                                                    <?php foreach ($params as $param): ?>
+                                                        <span class="dm-hidden-chip indicator-available-chip" data-cat="<?= $h($cat) ?>"
+                                                            data-id="<?= $h($param['parameter_id']) ?>"
+                                                            data-name="<?= $h($param['display_name']) ?>">
+                                                            <?= $h($param['display_name']) ?>
+                                                            <button type="button" class="add-indicator-btn">+</button>
+                                                        </span>
+                                                    <?php endforeach; ?>
+                                                </div>
+                                            </div>
+                                        <?php endforeach; ?>
+                                    </div>
+                                    <span class="dm-field-error" id="indicators-error"></span>
+                                    <div id="hidden-inputs-container"></div>
+                                </div>
+
+                                <button type="submit" class="dm-submit-btn" id="create-group-btn">Créer le groupe</button>
+                            </form>
+                        </div>
+                    </div>
+                    <?php if ($editGroupData !== null): ?>
+                        <div id="aside-edit-group" style="display:none;">
+                            <div class="dm-group-form-wrap" style="padding:15px; margin:0; width:100%;">
+                                <form method="POST" action="/?page=custom_group" id="edit-group-form" class="dm-form-card" novalidate>
+                                    <input type="hidden" name="action" value="edit_group">
+                                    <input type="hidden" name="group_id" value="<?= $h($eg['id']) ?>">
+                                    <input type="hidden" name="layout_data" id="edit-layout-data">
+                                    <h2>Modifier
+                                        <?= $h($eg['name']) ?>
+                                    </h2>
+
+                                    <div class="dm-form-group">
+                                        <label for="edit_group_name">Nom du groupe</label>
+                                        <div class="dm-input-wrap">
+                                            <svg class="dm-input-icon" viewBox="0 0 24 24">
+                                                <path stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round"
+                                                    stroke-linejoin="round"
+                                                    d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
+                                            </svg>
+                                            <input type="text" id="edit_group_name" name="group_name" maxlength="100" autocomplete="off"
+                                                value="<?= $h($eg['name']) ?>" required>
+                                        </div>
+                                        <span class="dm-field-error" id="edit-name-error"></span>
+                                    </div>
+
+                                    <div class="dm-form-group">
+                                        <label for="edit_group_color">Couleur de l'onglet</label>
+                                        <div class="dm-color-picker-wrap">
+                                            <span class="dm-color-swatch" id="color-swatch-edit"
+                                                style="background:<?= $h($eg['color']) ?>;"></span>
+                                            <input type="color" id="edit_group_color" name="group_color" value="<?= $h($eg['color']) ?>"
+                                                class="dm-color-input-hidden">
+                                            <span class="dm-color-label" id="color-label-edit">
+                                                <?= $h($eg['color']) ?>
+                                            </span>
+                                        </div>
+                                    </div>
+
+                                    <div class="dm-form-group">
+                                        <label>Indicateurs du groupe</label>
+                                        <div class="dm-hidden-list" style="margin-bottom: 15px;">
+                                            <div class="dm-hidden-list-title">Indicateurs sélectionnés</div>
+                                            <div class="dm-hidden-list-items" id="edit-selected-indicators-list">
+                                                <p class="dm-no-groups" id="edit-no-indicators-msg"
+                                                    style="margin: 0; padding: 5px 0; font-size: 0.85rem;">Aucun indicateur
+                                                    sélectionné.</p>
+                                            </div>
+                                        </div>
+                                        <label>Indicateurs disponibles</label>
+                                        <div class="dm-indicators-library">
+                                            <?php foreach ($groupsByCategory as $cat => $params): ?>
+                                                <div class="dm-indicator-category">
+                                                    <span class="dm-indicator-cat-label">
+                                                        <?= $h($cat) ?>
+                                                    </span>
+                                                    <div class="dm-hidden-list-items" style="margin-top: 8px;">
+                                                        <?php foreach ($params as $param): ?>
+                                                            <span class="dm-hidden-chip edit-indicator-available-chip"
+                                                                data-id="<?= $h($param['parameter_id']) ?>"
+                                                                data-name="<?= $h($param['display_name']) ?>" data-cat="<?= $h($cat) ?>">
+                                                                <?= $h($param['display_name']) ?>
+                                                                <button type="button" class="edit-add-indicator-btn">+</button>
+                                                            </span>
+                                                        <?php endforeach; ?>
+                                                    </div>
+                                                </div>
+                                            <?php endforeach; ?>
+                                        </div>
+                                        <span class="dm-field-error" id="edit-indicators-error"></span>
+                                        <div id="edit-hidden-inputs-container"></div>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    <?php endif; ?>
+                </aside>
+
             </main>
 
             <div id="unsaved-bar" class="unsaved-bar" style="display:none;">
@@ -556,6 +583,32 @@ final class CustomizationView
                             if (unsavedBar) {
                                 unsavedBar.style.display = 'none';
                             }
+
+                            const mainContainer = document.getElementById('customization-main');
+                            const aside = document.getElementById('aside');
+                            const asideAdd = document.getElementById('aside-add-group');
+                            const asideEdit = document.getElementById('aside-edit-group');
+                            const asideShowBtn = document.getElementById('aside-show-btn');
+                            const asideRestoreBtn = document.getElementById('aside-restore-btn');
+
+                            if (mainContainer && aside) {
+                                if (targetId === 'tab-add_group' || targetId === 'tab-edit_group') {
+                                    mainContainer.classList.add('aside-space');
+                                    aside.style.display = '';
+                                    if (asideRestoreBtn) asideRestoreBtn.style.display = '';
+                                    if (asideShowBtn) asideShowBtn.style.display = '';
+
+                                    if (asideAdd) asideAdd.style.display = targetId === 'tab-add_group' ? 'block' : 'none';
+                                    if (asideEdit) asideEdit.style.display = targetId === 'tab-edit_group' ? 'block' : 'none';
+
+                                    setTimeout(() => window.dispatchEvent(new Event('resize')), 50);
+                                } else {
+                                    mainContainer.classList.remove('aside-space');
+                                    aside.style.display = 'none';
+                                    if (asideRestoreBtn) asideRestoreBtn.style.display = 'none';
+                                    if (asideShowBtn) asideShowBtn.style.display = 'none';
+                                }
+                            }
                         });
                     });
 
@@ -564,17 +617,26 @@ final class CustomizationView
                     if (tabParam) {
                         const targetLabel = document.querySelector(`.dm-tab-label[data-target="tab-${tabParam}"]`);
                         if (targetLabel) targetLabel.click();
+                    } else {
+                        const activeLabel = document.querySelector('.dm-tab-label.active');
+                        if (activeLabel) activeLabel.click();
                     }
 
                     document.getElementById('save-changes-btn')?.addEventListener('click', (e) => {
                         e.preventDefault();
                         const editGroupTab = document.getElementById('tab-edit_group');
                         const isEditGroupActive = editGroupTab && editGroupTab.style.display !== 'none';
+                        const addGroupTab = document.getElementById('tab-add_group');
+                        const isAddGroupActive = addGroupTab && addGroupTab.style.display !== 'none';
 
                         if (isEditGroupActive) {
                             const editForm = document.getElementById('edit-group-form');
                             if (window._editGridManager) window._editGridManager.updateLayout();
                             if (editForm) editForm.requestSubmit();
+                        } else if (isAddGroupActive) {
+                            const addForm = document.getElementById('create-group-form');
+                            if (window._addGridManager) window._addGridManager.updateLayout();
+                            if (addForm) addForm.requestSubmit();
                         } else {
                             if (window._mainGridManager) window._mainGridManager.updateLayout();
                             document.getElementById('customize-form')?.submit();
@@ -594,24 +656,39 @@ final class CustomizationView
 
                     let selectedIndicators = new Map();
 
+                    window.removeIndicatorFromAddGroup = function (removeId) {
+                        if (!selectedIndicators.has(removeId)) return;
+                        selectedIndicators.delete(removeId);
+
+                        const available = document.querySelector(`.indicator-available-chip[data-id="${removeId}"]`);
+                        if (available) {
+                            available.style.opacity = '1';
+                            available.style.pointerEvents = 'auto';
+                            available.querySelector('.add-indicator-btn').style.display = 'inline-block';
+                        }
+                        updateSelectedIndicators();
+                    };
+
                     availableChips.forEach(chip => {
                         const btn = chip.querySelector('.add-indicator-btn');
-                        btn.addEventListener('click', () => {
+                        btn.addEventListener('click', (e) => {
+                            e.preventDefault();
                             const id = chip.getAttribute('data-id');
                             const name = chip.getAttribute('data-name');
+                            const cat = chip.getAttribute('data-cat');
 
                             if (selectedIndicators.has(id)) return;
 
-                            selectedIndicators.set(id, name);
+                            selectedIndicators.set(id, { name, cat });
                             chip.style.opacity = '0.5';
                             chip.style.pointerEvents = 'none';
                             chip.querySelector('.add-indicator-btn').style.display = 'none';
 
-                            updateSelectedIndicators();
+                            updateSelectedIndicators(id);
                         });
                     });
 
-                    function updateSelectedIndicators() {
+                    function updateSelectedIndicators(addedId = null) {
                         if (selectedIndicators.size === 0) {
                             noIndicatorsMsg.style.display = 'block';
                         } else {
@@ -622,10 +699,10 @@ final class CustomizationView
                         chips.forEach(c => c.remove());
                         hiddenInputsContainer.innerHTML = '';
 
-                        selectedIndicators.forEach((name, id) => {
+                        selectedIndicators.forEach((data, id) => {
                             const chip = document.createElement('span');
                             chip.className = 'dm-hidden-chip';
-                            chip.innerHTML = `${name} <button type="button" class="remove-indicator-btn" data-id="${id}">×</button>`;
+                            chip.innerHTML = `${data.name} <button type="button" class="remove-indicator-btn" data-id="${id}">×</button>`;
                             selectedList.appendChild(chip);
 
                             const input = document.createElement('input');
@@ -635,18 +712,29 @@ final class CustomizationView
                             hiddenInputsContainer.appendChild(input);
 
                             chip.querySelector('.remove-indicator-btn').addEventListener('click', (e) => {
+                                e.preventDefault();
                                 const removeId = e.target.getAttribute('data-id');
-                                selectedIndicators.delete(removeId);
+                                window.removeIndicatorFromAddGroup(removeId);
 
-                                const available = document.querySelector(`.indicator-available-chip[data-id="${removeId}"]`);
-                                if (available) {
-                                    available.style.opacity = '1';
-                                    available.style.pointerEvents = 'auto';
-                                    available.querySelector('.add-indicator-btn').style.display = 'inline-block';
+                                if (window._addGridManager) {
+                                    const addGridEl = document.getElementById('add-group-grid');
+                                    if (addGridEl) {
+                                        const gridItem = addGridEl.querySelector(`.group-grid-item[data-widget-id="${removeId}"]`);
+                                        if (gridItem) window._addGridManager.grid.removeWidget(gridItem);
+                                    }
                                 }
-
-                                updateSelectedIndicators();
                             });
+
+                            if (addedId === id && window._addGridManager && window.DmGrid) {
+                                const el = window._addGridManager.addWidget({
+                                    w: 4, h: 3, minW: 4, minH: 3,
+                                    content: window.DmGrid.createWidgetContent(data.name, data.cat, true)
+                                });
+                                if (el) {
+                                    el.dataset.widgetId = id;
+                                    el.classList.add('group-grid-item');
+                                }
+                            }
                         });
                     }
 
@@ -725,17 +813,21 @@ final class CustomizationView
                                 editHiddenInputsContainer.appendChild(input);
 
                                 chip.querySelector('.remove-indicator-btn').addEventListener('click', (e) => {
+                                    e.preventDefault();
                                     const removeId = e.target.getAttribute('data-id');
                                     window.removeIndicatorFromGroup(removeId);
 
-                                    if (editGridManager && editGridEl) {
-                                        const gridItem = editGridEl.querySelector(`.group-grid-item[data-widget-id="${removeId}"]`);
-                                        if (gridItem) editGridManager.grid.removeWidget(gridItem);
+                                    if (window._editGridManager) {
+                                        const editGridEl = document.getElementById('edit-group-grid');
+                                        if (editGridEl) {
+                                            const gridItem = editGridEl.querySelector(`.group-grid-item[data-widget-id="${removeId}"]`);
+                                            if (gridItem) window._editGridManager.grid.removeWidget(gridItem);
+                                        }
                                     }
                                 });
 
-                                if (!isPreloading && addedId === id && editGridManager && window.DmGrid) {
-                                    const el = editGridManager.addWidget({
+                                if (!isPreloading && addedId === id && window._editGridManager && window.DmGrid) {
+                                    const el = window._editGridManager.addWidget({
                                         w: 4, h: 3, minW: 4, minH: 3,
                                         content: window.DmGrid.createWidgetContent(data.name, data.cat, true)
                                     });
@@ -762,7 +854,8 @@ final class CustomizationView
 
                         editAvailableChips.forEach(chip => {
                             const btn = chip.querySelector('.edit-add-indicator-btn');
-                            btn.addEventListener('click', () => {
+                            btn.addEventListener('click', (e) => {
+                                e.preventDefault();
                                 const id = chip.getAttribute('data-id');
                                 const name = chip.getAttribute('data-name');
                                 const cat = chip.getAttribute('data-cat');

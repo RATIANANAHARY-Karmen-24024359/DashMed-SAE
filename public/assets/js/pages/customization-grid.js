@@ -120,7 +120,7 @@ document.addEventListener("DOMContentLoaded", () => {
       layoutInput.value = serializeLayout();
     };
 
-    const isEditGroup = gridSelector === "#edit-group-grid";
+    const isEditGroup = gridSelector === "#edit-group-grid" || gridSelector === "#add-group-grid";
 
     const removeWidgetCompletely = (item) => {
       if (!item) return;
@@ -208,7 +208,8 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
     hiddenList?.querySelectorAll(".dm-hidden-chip button").forEach((btn) => {
-      btn.addEventListener("click", () => {
+      btn.addEventListener("click", (e) => {
+        e.preventDefault();
         const chip = btn.closest(".dm-hidden-chip");
         const name = chip.textContent.trim().replace(/\s*\+$/, "");
         restoreWidget(chip.dataset.widgetId, name);
@@ -291,6 +292,22 @@ document.addEventListener("DOMContentLoaded", () => {
 
     if (editManager) {
       window._editGridManager = editManager;
+    }
+  }
+
+  const addGridEl = document.getElementById("add-group-grid");
+  if (addGridEl) {
+    const addManager = initGridManager(
+      "#add-group-grid",
+      "add-layout-data",
+      null,
+      "create-group-form",
+      "unsaved-bar",
+      null,
+    );
+
+    if (addManager) {
+      window._addGridManager = addManager;
     }
   }
 
