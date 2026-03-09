@@ -356,12 +356,30 @@ class ExplorerView
                                             <option value="area">Aire</option>
                                             <option value="smooth-area">Aire Lissée</option>
                                         </optgroup>
-                                        <optgroup label="Distribution">
-                                            <option value="bar">Histogramme (Barres)</option>
+                                        <optgroup label="Distribution & Statistiques">
+                                            <option value="histogram">Histogramme (Fréquence)</option>
+                                            <option value="boxplot">Boîte à moustaches (Quartiles)</option>
+                                            <option value="candlestick">Bougies Médicales (O-H-L-C)</option>
+                                            <option value="density">Courbe de Densité</option>
+                                        </optgroup>
+                                        <optgroup label="Points & Alertes">
+                                            <option value="bar">Histogramme (Barres temporelles)</option>
                                             <option value="scatter">Nuage de Points</option>
                                             <option value="effectScatter">Points Pulsantes (Alertes)</option>
                                             <option value="heatmap">Heatmap Temporelle</option>
                                         </optgroup>
+                                    </select>
+                                </div>
+
+                                <div class="control-group" id="candlestick-granularity-group" style="display: none;">
+                                    <label>Granularité des Bougies</label>
+                                    <select id="candlestick-granularity">
+                                        <option value="auto">Auto (Points distribués)</option>
+                                        <option value="1">Toutes les minutes</option>
+                                        <option value="5">Toutes les 5 minutes</option>
+                                        <option value="15">Toutes les 15 minutes</option>
+                                        <option value="60">Toutes les heures</option>
+                                        <option value="1440">Tous les jours</option>
                                     </select>
                                 </div>
 

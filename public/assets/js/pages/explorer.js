@@ -61,7 +61,16 @@
         if (typeSelector) {
             typeSelector.onchange = () => {
                 currentChartType = typeSelector.value;
+                const candleGroup = document.getElementById('candlestick-granularity-group');
+                if (candleGroup) candleGroup.style.display = (currentChartType === 'candlestick') ? 'block' : 'none';
                 if (currentData.length) renderChart();
+            };
+        }
+
+        const candleGranularity = document.getElementById('candlestick-granularity');
+        if (candleGranularity) {
+            candleGranularity.onchange = () => {
+                if (currentData.length) renderCandlestick();
             };
         }
 
@@ -270,8 +279,23 @@
         if (angle === 'ma-5') displayData = movingAverage(currentData, 5);
         if (angle === 'ma-20') displayData = movingAverage(currentData, 20);
 
-        if (currentChartType === 'heatmap') {
-            renderHeatmap();
+        if (currentChartType === 'histogram') {
+            renderHistogram();
+            return;
+        }
+
+        if (currentChartType === 'boxplot') {
+            renderBoxplot();
+            return;
+        }
+
+        if (currentChartType === 'candlestick') {
+            renderCandlestick();
+            return;
+        }
+
+        if (currentChartType === 'density') {
+            renderDensityChart();
             return;
         }
 
@@ -444,6 +468,199 @@
             }]
         };
 
+        chart.setOption(option, true);
+    }
+
+    function renderHistogram() {
+        const values = currentData.map(d => d[1]).filter(v => v !== null);
+        if (!values.length) return;
+
+        const min = Math.min(...values);
+        const max = Math.max(...values);
+        const binCount = 30;
+        const binWidth = (max - min) / binCount;
+        const bins = Array.from({ length: binCount }, (_, i) => ({
+            min: min + i * binWidth,
+            max: min + (i + 1) * binWidth,
+            count: 0
+        }));
+
+        values.forEach(v => {
+            let idx = Math.floor((v - min) / binWidth);
+            if (idx >= binCount) idx = binCount - 1;
+            if (idx < 0) idx = 0;
+            bins[idx].count++;
+        });
+
+        const option = {
+            tooltip: { trigger: 'axis', axisPointer: { type: 'shadow' } },
+            grid: { left: '3%', right: '4%', bottom: '15%', containLabel: true },
+            xAxis: { type: 'category', data: bins.map(b => b.min.toFixed(2)), name: 'Valeur' },
+            yAxis: { type: 'value', name: 'Fréquence' },
+            dataZoom: [
+                { type: 'inside', start: 0, end: 100 },
+                { type: 'slider', start: 0, end: 100, bottom: 10 }
+            ],
+            series: [{
+                name: 'Fréquence',
+                type: 'bar',
+                barWidth: '95%',
+                data: bins.map(b => b.count),
+                itemStyle: { color: '#275afe' }
+            }]
+        };
+        chart.setOption(option, true);
+    }
+
+    function renderBoxplot() {
+        const values = currentData.map(d => d[1]).filter(v => v !== null);
+        if (!values.length) return;
+
+        const sorted = [...values].sort((a, b) => a - b);
+        const q1 = sorted[Math.floor(sorted.length * 0.25)];
+        const median = sorted[Math.floor(sorted.length * 0.5)];
+        const q3 = sorted[Math.floor(sorted.length * 0.75)];
+        const min = sorted[0];
+        const max = sorted[sorted.length - 1];
+
+        const option = {
+            tooltip: { trigger: 'item', axisPointer: { type: 'shadow' } },
+            grid: { left: '3%', right: '4%', bottom: '15%', containLabel: true },
+            xAxis: { type: 'category', data: ['Distribution'], splitArea: { show: true } },
+            yAxis: { type: 'value', splitLine: { show: true } },
+            dataZoom: [
+                { type: 'inside', start: 0, end: 100 },
+                { type: 'slider', start: 0, end: 100, bottom: 10 }
+            ],
+            series: [{
+                name: 'Boîte à moustaches',
+                type: 'boxplot',
+                data: [[min, q1, median, q3, max]],
+                tooltip: {
+                    formatter: (param) => [
+                        'Max: ' + param.data[5],
+                        'Q3: ' + param.data[4],
+                        'Median: ' + param.data[3],
+                        'Q1: ' + param.data[2],
+                        'Min: ' + param.data[1]
+                    ].join('<br/>')
+                }
+            }]
+        };
+        chart.setOption(option, true);
+    }
+
+    function renderCandlestick() {
+        if (!currentData.length) return;
+
+        // Group data by time buckets (e.g., 24 buckets across the whole range)
+        const times = currentData.map(d => d[0]);
+        const minT = Math.min(...times);
+        const maxT = Math.max(...times);
+        const span = maxT - minT;
+
+        let bucketWidth;
+        const granularityVal = document.getElementById('candlestick-granularity')?.value || 'auto';
+
+        if (granularityVal === 'auto') {
+            bucketWidth = span / 24;
+        } else {
+            // value is in minutes, convert to ms
+            bucketWidth = parseInt(granularityVal) * 60 * 1000;
+        }
+
+        const bucketCount = Math.ceil(span / bucketWidth) + 1;
+        const buckets = Array.from({ length: bucketCount }, () => []);
+
+        currentData.forEach(([ts, val]) => {
+            if (val === null) return;
+            let idx = Math.floor((ts - minT) / bucketWidth);
+            if (idx >= bucketCount) idx = bucketCount - 1;
+            buckets[idx].push(val);
+        });
+
+        const candleData = [];
+        const xAxisData = [];
+
+        buckets.forEach((vals, i) => {
+            if (vals.length === 0) return;
+            const open = vals[0];
+            const close = vals[vals.length - 1];
+            const low = Math.min(...vals);
+            const high = Math.max(...vals);
+            candleData.push([open, close, low, high]);
+            xAxisData.push(new Date(minT + i * bucketWidth).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }));
+        });
+
+        const option = {
+            tooltip: { trigger: 'axis', axisPointer: { type: 'cross' } },
+            grid: { left: '3%', right: '4%', bottom: '15%', containLabel: true },
+            xAxis: { type: 'category', data: xAxisData, boundaryGap: true, axisTick: { alignWithLabel: true } },
+            yAxis: { type: 'value', scale: true },
+            dataZoom: [
+                { type: 'inside', start: 0, end: 100 },
+                { type: 'slider', start: 0, end: 100, bottom: 10 }
+            ],
+            series: [{
+                type: 'candlestick',
+                data: candleData,
+                itemStyle: {
+                    color: '#275afe',
+                    color0: '#ef4444',
+                    borderColor: '#275afe',
+                    borderColor0: '#ef4444'
+                }
+            }]
+        };
+        chart.setOption(option, true);
+    }
+
+    function renderDensityChart() {
+        const values = currentData.map(d => d[1]).filter(v => v !== null);
+        if (!values.length) return;
+
+        const min = Math.min(...values);
+        const max = Math.max(...values);
+        const range = max - min;
+        const step = range / 100;
+
+        // Simple Histogram + Smoothing for Density estimation
+        const binCount = 50;
+        const binWidth = range / binCount;
+        const bins = Array.from({ length: binCount }, () => 0);
+
+        values.forEach(v => {
+            let idx = Math.floor((v - min) / binWidth);
+            if (idx >= binCount) idx = binCount - 1;
+            bins[idx]++;
+        });
+
+        // Convert to percentage density
+        const total = values.length;
+        const densityData = bins.map((count, i) => [
+            min + i * binWidth + binWidth / 2,
+            (count / total) / binWidth
+        ]);
+
+        const option = {
+            tooltip: { trigger: 'axis' },
+            grid: { left: '3%', right: '4%', bottom: '15%', containLabel: true },
+            xAxis: { type: 'value', name: 'Valeur', scale: true },
+            yAxis: { type: 'value', name: 'Densité' },
+            dataZoom: [
+                { type: 'inside', start: 0, end: 100 },
+                { type: 'slider', start: 0, end: 100, bottom: 10 }
+            ],
+            series: [{
+                name: 'Densité',
+                type: 'line',
+                smooth: true,
+                symbol: 'none',
+                areaStyle: { opacity: 0.3, color: '#275afe' },
+                lineStyle: { color: '#275afe', width: 3 },
+                data: densityData
+            }]
+        };
         chart.setOption(option, true);
     }
 
