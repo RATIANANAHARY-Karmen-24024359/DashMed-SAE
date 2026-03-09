@@ -587,11 +587,35 @@ class DashboardView
                         function hideCard(card) {
                             const state = cardStates.get(card);
                             if (!state) return;
+
+                            const siblings = Array.from(mainGrid.querySelectorAll('.card')).filter(c => {
+                                const s = cardStates.get(c);
+                                return s && !s.hidden && c !== card;
+                            });
+                            const firstPositions = new Map();
+                            siblings.forEach(c => firstPositions.set(c, c.getBoundingClientRect()));
+
                             state.hidden = true;
                             card.style.display = 'none';
                             card.style.gridColumn = '0';
                             card.style.gridRow = '0';
                             card.style.order = String(state.baseOrder);
+
+                            requestAnimationFrame(() => {
+                                siblings.forEach(c => {
+                                    const first = firstPositions.get(c);
+                                    if (!first) return;
+                                    const last = c.getBoundingClientRect();
+                                    const dx = first.left - last.left;
+                                    const dy = first.top - last.top;
+                                    if (Math.abs(dx) > 1 || Math.abs(dy) > 1) {
+                                        c.animate([
+                                            { transform: `translate(${dx}px, ${dy}px)` },
+                                            { transform: 'translate(0, 0)' }
+                                        ], { duration: 400, easing: 'cubic-bezier(0.4, 0, 0.2, 1)' });
+                                    }
+                                });
+                            });
                         }
 
                         function syncCard(card, options = {}) {
@@ -608,13 +632,13 @@ class DashboardView
                             let compact = false;
 
                             if (filter === 'urgent') {
-                                shouldShow = isAlert && !state.dismissed;
+                                shouldShow = state.isUrgentlyVisible && !state.dismissed;
                                 prioritize = shouldShow;
                                 compact = shouldShow;
                             } else if (filter === 'all') {
                                 shouldShow = state.inLayout;
                             } else {
-                                shouldShow = state.inLayout && category === filter;
+                                shouldShow = (category === filter);
                                 compact = shouldShow;
                             }
 
@@ -644,6 +668,8 @@ class DashboardView
                                 isPaused: false,
                                 dismissed: false,
                                 isCountingDown: false,
+                                countdownComplete: false,
+                                isUrgentlyVisible: isAlertCard(card),
                                 remaining: 0,
                                 lastTick: Date.now(),
                                 svgAnim: null,
@@ -665,10 +691,12 @@ class DashboardView
                                     if (!isUrgentFilter()) return;
 
                                     const state = cardStates.get(card);
-                                    if (!state || state.animating || !isAlertCard(card)) return;
+                                    if (!state || state.animating) return;
+                                    if (isAlertCard(card) || state.isCountingDown) return;
 
                                     state.dismissed = true;
                                     state.animating = true;
+                                    state.isUrgentlyVisible = false;
 
                                     const anim = card.animate([
                                         { transform: 'scale(1)', opacity: 1 },
@@ -677,7 +705,9 @@ class DashboardView
 
                                     anim.onfinish = () => {
                                         state.animating = false;
-                                        syncCard(card);
+                                        card.classList.remove('card--alert', 'card--warn');
+                                        state.lastAlertColor = null;
+                                        hideCard(card);
                                         if (typeof activeModalCard !== 'undefined' && activeModalCard === card) {
                                             activeModalCard = null;
                                         }
@@ -688,6 +718,13 @@ class DashboardView
                             card.addEventListener('mouseenter', () => {
                                 const state = cardStates.get(card);
                                 if (state) state.isHovered = true;
+                                if (dismissBtn && isUrgentFilter()) {
+                                    if (!isAlertCard(card) && !state.isCountingDown && state.isUrgentlyVisible && !state.hidden) {
+                                        dismissBtn.style.opacity = '1';
+                                        dismissBtn.style.pointerEvents = 'auto';
+                                        dismissBtn.style.transform = 'scale(1)';
+                                    }
+                                }
                             });
 
                             card.addEventListener('mouseleave', () => {
@@ -712,6 +749,11 @@ class DashboardView
                                     if (!isUrgentFilter()) {
                                         state.dismissed = false;
                                         if (state.isCountingDown) stopCooldown(card);
+                                    } else {
+                                        if (!isAlertCard(card)) {
+                                            state.isUrgentlyVisible = false;
+                                            state.countdownComplete = false;
+                                        }
                                     }
                                 });
 
@@ -734,7 +776,11 @@ class DashboardView
                                 const isAlert = isAlertCard(card);
                                 const dismissBtn = card.querySelector('.card-dismiss-btn');
 
-                                if (isAlert) activeAlertsCount++;
+                                if (isAlert && !state.dismissed) {
+                                    activeAlertsCount++;
+                                } else if ((state.isCountingDown || state.isUrgentlyVisible) && !state.dismissed) {
+                                    activeAlertsCount++;
+                                }
 
                                 if (urgentActive) {
                                     if (isAlert) {
@@ -742,9 +788,11 @@ class DashboardView
                                         state.lastAlertColor = getAlertColor(card);
                                         state.lastTick = now;
                                         state.dismissed = false;
+                                        state.countdownComplete = false;
+                                        state.isUrgentlyVisible = true;
                                         if (state.hidden) showCard(card, { animate: true, prioritize: true, compact: true });
                                     } else if (!state.hidden && !state.animating) {
-                                        if (!state.isCountingDown && state.lastAlertColor) {
+                                        if (!state.isCountingDown && !state.countdownComplete && state.lastAlertColor) {
                                             startCooldown(card, state.lastAlertColor);
                                         } else if (state.isCountingDown) {
                                             const isModalOpen = activeModalCard === card && isModalGlobalOpen;
@@ -761,14 +809,18 @@ class DashboardView
                                             rebuildSVGIfStale(card, state);
                                             if (state.remaining <= 0) {
                                                 stopCooldown(card);
-                                                card.classList.remove('card--alert', 'card--warn');
+                                                if (!isAlertCard(card)) {
+                                                    card.classList.remove('card--alert', 'card--warn');
+                                                }
                                                 state.lastAlertColor = null;
-                                                hideCard(card);
+                                                state.countdownComplete = true;
                                             }
                                         }
                                     }
+
+                                    const canDismiss = !isAlert && !state.isCountingDown && state.isUrgentlyVisible && !state.hidden;
                                     if (dismissBtn) {
-                                        if (isAlert && !state.hidden && state.isHovered) {
+                                        if (canDismiss && state.isHovered) {
                                             dismissBtn.style.opacity = '1';
                                             dismissBtn.style.pointerEvents = 'auto';
                                             dismissBtn.style.transform = 'scale(1)';
@@ -785,6 +837,8 @@ class DashboardView
                                     } else {
                                         state.dismissed = false;
                                         state.lastAlertColor = null;
+                                        state.isUrgentlyVisible = false;
+                                        state.countdownComplete = false;
                                     }
                                     syncCard(card);
                                     if (dismissBtn) {
