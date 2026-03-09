@@ -57,34 +57,29 @@ class SysadminView
         $adminNoChecked = (!isset($old['admin_status']) || $old['admin_status'] === '0') ? 'checked' : '';
         $genderHommeChecked = (isset($old['gender']) && $old['gender'] === 'M') ? 'checked' : '';
         $genderFemmeChecked = (isset($old['gender']) && $old['gender'] === 'F') ? 'checked' : '';
-        ?>
-        <!DOCTYPE html>
-        <html lang="fr">
 
-        <head>
-            <meta charset="UTF-8">
-            <title>DashMed - Sysadmin</title>
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <meta name="robots" content="noindex, nofollow">
-            <meta name="author" content="DashMed Team">
-            <link rel="stylesheet" href="assets/css/base/style.css">
-            <link id="theme-style" rel="stylesheet" href="/assets/css/themes/light.css">
-            <link rel="stylesheet" href="/assets/css/themes/dark.css">
+        $layout = new \modules\views\layout\Layout(
+            title: 'Sysadmin',
+            cssFiles: [
+                'assets/css/components/alerts-toast.css',
+                'assets/css/pages/sysadmin.css',
+                'assets/css/components/password-strength.css',
+            ],
+            jsFiles: [
+                'assets/js/auth/password-strength.js',
+                'assets/js/auth/form.js',
+                'assets/js/pages/dash.js',
+            ],
+            showSidebar: true,
+            showAlerts: false
+        );
 
-            <link rel="stylesheet" href="assets/css/layout/sidebar.css">
-            <link rel="stylesheet" href="assets/css/components/alerts-toast.css">
-
-            <link rel="stylesheet" href="assets/css/pages/sysadmin.css">
-            <link rel="stylesheet" href="assets/css/components/password-strength.css">
-
-            <link rel="icon" type="image/svg+xml" href="assets/img/logo.svg">
-        </head>
-
-        <body>
-            <?php include dirname(__DIR__) . '/partials/_sidebar.php'; ?>
+        $layout->render(function () use ($professions, $users, $rooms, $csrf, $error, $success, $old, $h, $adminNoChecked, $genderHommeChecked, $genderFemmeChecked) {
+            ?>
 
             <main class="container nav-space">
                 <section class="dashboard-content-container">
+                    <?php include dirname(__DIR__) . '/partials/_searchbar.php'; ?>
                     <h1>Administrateur système</h1>
 
                     <?php if (!empty($error)): ?>
@@ -99,7 +94,40 @@ class SysadminView
                         </div>
                     <?php endif; ?>
 
-                    <!-- Section Switcher -->
+                    <div class="skeleton-wrapper" id="skeleton-admin" data-skeleton-for="real-admin" data-skeleton-auto data-skeleton-delay="300">
+                        <div style="display: flex; gap: 12px; margin-bottom: 1.5rem;">
+                            <div class="skeleton skeleton-rect" style="width: 200px; height: 44px;"></div>
+                            <div class="skeleton skeleton-rect" style="width: 200px; height: 44px;"></div>
+                        </div>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;">
+                            <div class="skeleton-form">
+                                <div class="skeleton skeleton-text skeleton-text--lg" style="width: 160px;"></div>
+                                <?php for ($sf = 0; $sf < 5; $sf++): ?>
+                                    <div class="skeleton-form-group">
+                                        <div class="skeleton skeleton-text skeleton-text--sm" style="width: 80px;"></div>
+                                        <div class="skeleton skeleton-input"></div>
+                                    </div>
+                                <?php endfor; ?>
+                                <div class="skeleton skeleton-btn" style="width: 100%;"></div>
+                            </div>
+                            <div class="skeleton-form">
+                                <div class="skeleton skeleton-text skeleton-text--lg" style="width: 180px;"></div>
+                                <div class="skeleton skeleton-input"></div>
+                                <?php for ($sp = 0; $sp < 4; $sp++): ?>
+                                    <div class="skeleton-profile-card">
+                                        <div class="skeleton skeleton-circle" style="width: 40px; height: 40px;"></div>
+                                        <div class="skeleton-profile-text">
+                                            <div class="skeleton skeleton-text" style="width: 70%;"></div>
+                                            <div class="skeleton skeleton-text skeleton-text--sm" style="width: 50%;"></div>
+                                        </div>
+                                    </div>
+                                <?php endfor; ?>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="real-admin" style="display: none;">
+
                     <div class="section-switcher">
                         <button type="button" class="section-switcher-btn active" data-target="panel-comptes" id="tab-comptes">
                             <svg viewBox="0 0 24 24">
@@ -502,10 +530,10 @@ class SysadminView
                                     </div>
 
                                     <div class="form-group">
-                                        <label for="admission_reason">Raison d’admission</label>
+                                        <label for="admission_reason">Raison d'admission</label>
                                         <div class="input-wrapper">
                                         <textarea id="admission_reason" name="admission_reason" rows="4" required
-                                                  placeholder="Décrivez brièvement la raison de l’admission..."><?= $h($old['admission_reason'] ?? '') ?></textarea>
+                                                  placeholder="Décrivez brièvement la raison de l'admission..."><?= $h($old['admission_reason'] ?? '') ?></textarea>
                                         </div>
                                     </div>
 
@@ -543,6 +571,8 @@ class SysadminView
                         </div>
                     </div>
 
+                    </div>
+
                 </section>
 
                 <div id="delete-modal" class="delete-modal-overlay" style="display:none;">
@@ -571,9 +601,6 @@ class SysadminView
                     </div>
                 </div>
 
-                <script src="assets/js/auth/password-strength.js"></script>
-                <script src="assets/js/auth/form.js"></script>
-                <script src="assets/js/pages/dash.js"></script>
                 <script>
                     document.addEventListener('DOMContentLoaded', function () {
                         const switcherBtns = document.querySelectorAll('.section-switcher-btn');
@@ -723,9 +750,8 @@ class SysadminView
                     });
                 </script>
             </main>
-        </body>
 
-        </html>
         <?php
+        });
     }
 }

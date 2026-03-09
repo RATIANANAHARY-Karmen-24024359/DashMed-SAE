@@ -114,9 +114,7 @@ class PatientController
         [$processedMetrics, $userLayout] = $this->loadMonitoringData($userId, $patientId);
         $chartTypes = $this->monitorModel->getAllChartTypes();
 
-        /** @var array<int, \modules\models\entities\Consultation> $pastCons */
         $pastCons = array_values($pastConsultations);
-        /** @var array<int, \modules\models\entities\Consultation> $futCons */
         $futCons = array_values($futureConsultations);
 
         $view = new DashboardView(
@@ -181,7 +179,7 @@ class PatientController
 
             $chartTypes = $this->monitorModel->getAllChartTypes();
 
-            $view = new MonitoringView($processedMetrics, $chartTypes);
+            $view = new MonitoringView($processedMetrics, $chartTypes, $patientId);
             $view->show();
         } catch (\Exception $e) {
             error_log("PatientController::monitoring Error: " . $e->getMessage());
@@ -736,11 +734,12 @@ class PatientController
             $parameterId = (string) ($_POST['parameter_id'] ?? '');
             $chartType = (string) ($_POST['chart_type'] ?? '');
             $isModal = isset($_POST['is_modal_pref']) && $_POST['is_modal_pref'] === '1';
+            $prefType = (string) ($_POST['preference_type'] ?? ($isModal ? 'modal_chart' : 'chart'));
 
             if (is_numeric($userId) && $parameterId !== '' && $chartType !== '') {
-                $this->prefModel->saveUserChartPreference((int) $userId, $parameterId, $chartType, $isModal);
+                $this->prefModel->saveUserChartPreference((int) $userId, $parameterId, $chartType, $prefType);
 
-                if ($isModal) {
+                if ($isModal || $prefType === 'duration') {
                     header('Content-Type: application/json');
                     echo json_encode(['success' => true]);
                     exit();
@@ -754,6 +753,7 @@ class PatientController
         }
     }
 
+
     /**
      * Retrieves historical data for a specific medical parameter.
      *
@@ -766,11 +766,10 @@ class PatientController
      */
     public function apiHistory(): void
     {
-        header('Content-Type: application/json');
-
         try {
             $userId = $_SESSION['user_id'] ?? null;
             if (!$userId && !isset($_GET["debug"]) && !isset($_GET["debug_stream"])) {
+                header('Content-Type: application/json');
                 echo json_encode(['error' => 'Non autorisé']);
                 return;
             }
@@ -789,6 +788,7 @@ class PatientController
             }
 
             if (!$patientId) {
+                header('Content-Type: application/json');
                 echo json_encode(['error' => 'Patient introuvable']);
                 return;
             }
@@ -799,87 +799,98 @@ class PatientController
             $targetDate = is_string($rawTargetDate) ? $rawTargetDate : null;
 
             if ($parameterId === '') {
+                header('Content-Type: application/json');
                 echo json_encode(['error' => 'Paramètre manquant']);
                 return;
             }
 
-            $limit = isset($_GET['limit']) && is_numeric($_GET['limit']) ? (int) $_GET['limit'] : 2000;
+            $isRaw = isset($_GET['raw']) && $_GET['raw'] === '1';
+            $isCsv = isset($_GET['format']) && $_GET['format'] === 'csv';
 
-            $cacheDir = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'dashmed_cache';
-            if (!is_dir($cacheDir)) {
-                mkdir($cacheDir, 0777, true);
-            }
-            $cacheKey = md5("history_{$patientId}_{$parameterId}_{$limit}_{$targetDate}");
-            $cacheFile = $cacheDir . DIRECTORY_SEPARATOR . $cacheKey . '.json';
-            $cacheTTL = 30;
+            if ($isRaw) {
+                if ($isCsv) {
+                    header('Content-Type: text/csv');
+                    header('Content-Disposition: attachment; filename="history_' . $parameterId . '.csv"');
+                    $out = fopen('php://output', 'w');
+                    fputcsv($out, ['timestamp', 'value', 'alert_flag']);
 
-            if (file_exists($cacheFile) && (time() - filemtime($cacheFile) < $cacheTTL)) {
-                $cachedData = file_get_contents($cacheFile);
-                if ($cachedData) {
-                    echo $cachedData;
-                    return;
-                }
-            }
-
-            if ($limit === 0 || $limit > 10000) {
-                $totalRows = $this->monitorModel->countRawHistoryByParameter($patientId, $parameterId, $targetDate);
-
-                if ($totalRows > 50000) {
-                    $interval = (int) ceil($totalRows / 5000);
-                    $stream = $this->monitorModel->streamPreAggregatedHistoryByParameter($patientId, $parameterId, $interval, $targetDate);
-                    $totalRows = (int) ceil($totalRows / $interval);
+                    $stream = $this->monitorModel->streamRawHistoryByParameter($patientId, $parameterId, $targetDate, 0);
+                    foreach ($stream as $row) {
+                        fputcsv($out, [$row['timestamp'], $row['value'], $row['alert_flag']]);
+                    }
+                    fclose($out);
                 } else {
-                    $stream = $this->monitorModel->streamRawHistoryByParameter($patientId, $parameterId, $targetDate, $limit);
+                    header('Content-Type: application/json');
+                    echo '[';
+                    $stream = $this->monitorModel->streamRawHistoryByParameter($patientId, $parameterId, $targetDate, 0);
+                    $first = true;
+                    foreach ($stream as $row) {
+                        if (!$first) echo ',';
+                        echo json_encode([
+                            'time_iso' => date('c', (int)strtotime($row['timestamp'] . ' UTC')),
+                            'value' => (string)round((float)$row['value'], 2),
+                            'flag' => (string)$row['alert_flag']
+                        ]);
+                        $first = false;
+                    }
+                    echo ']';
                 }
+                return;
+            }
 
-                $formatter = function (\Generator $source) {
-                    foreach ($source as $itemRaw) {
-                        /** @var array{timestamp?: string, value?: numeric|null, alert_flag?: int|string} $itemRaw */
-                        $ts = $itemRaw['timestamp'] ?? '';
-                        $val = $itemRaw['value'] ?? null;
-                        $flag = $itemRaw['alert_flag'] ?? 0;
-                        $rawTs = ($ts !== '' && strpos((string)$ts, '+') === false && strpos((string)$ts, 'Z') === false) ? $ts . ' UTC' : (string)$ts;
+            header('Content-Type: application/json');
+
+            $cacheKey = md5("history_v2_{$patientId}_{$parameterId}_{$targetDate}");
+            $cacheFile = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'dashmed_cache' . DIRECTORY_SEPARATOR . $cacheKey . '.json';
+
+            if (file_exists($cacheFile) && (time() - filemtime($cacheFile) < 30)) {
+                echo file_get_contents($cacheFile);
+                return;
+            }
+
+            $count = $this->monitorModel->countRawHistoryByParameter($patientId, $parameterId, $targetDate);
+            $threshold = 5000;
+
+            if ($count > $threshold) {
+                $monitorModel = $this->monitorModel;
+                $stream = $monitorModel->streamRawHistoryByParameter($patientId, $parameterId, $targetDate, 0);
+                $downsampling = new \modules\services\DownsamplingService();
+
+                $formattedStream = function() use ($stream) {
+                    foreach ($stream as $row) {
+                        $rawTs = (strpos($row['timestamp'], '+') === false && strpos($row['timestamp'], 'Z') === false)
+                            ? $row['timestamp'] . ' UTC' : $row['timestamp'];
                         yield [
-                            'time_iso' => $ts !== '' ? date('c', (int) strtotime($rawTs)) : '',
-                            'value' => $val !== null ? (string) round((float)$val, 2) : '',
-                            'flag' => ($flag == 1) ? '1' : '0'
+                            'time_iso' => date('c', (int)strtotime($rawTs)),
+                            'value' => (string)round((float)$row['value'], 2),
+                            'flag' => (string)$row['alert_flag']
                         ];
                     }
                 };
 
-                $downsampler = new \modules\services\DownsamplingService();
-                $formatted = $downsampler->downsampleLTTBStream($formatter($stream), $totalRows, 5000);
-
-                $jsonResult = json_encode($formatted);
-                file_put_contents($cacheFile, $jsonResult);
-                echo $jsonResult;
-                return;
-            }
-
-            $history = $this->monitorModel->getRawHistoryByParameter($patientId, $parameterId, $targetDate, $limit);
-
-            $formatted = [];
-            foreach ($history as $hItem) {
-                $ts = $hItem['timestamp'];
-                $val = $hItem['value'];
-                $flag = $hItem['alert_flag'];
-
-                $rawTs = (strpos($ts, '+') === false && strpos($ts, 'Z') === false) ? $ts . ' UTC' : $ts;
-                $formatted[] = [
-                    'time_iso' => $ts !== '' ? date('c', (int) strtotime($rawTs)) : '',
-                    'value' => $val !== null ? (string) round((float)$val, 2) : '',
-                    'flag' => ($flag == 1) ? '1' : '0'
-                ];
-            }
-
-            if (count($formatted) > 5000) {
-                $downsampler = new \modules\services\DownsamplingService();
-                $formatted = $downsampler->downsampleLTTB($formatted, 5000);
+                $generator = $formattedStream();
+                $formatted = $downsampling->downsampleLTTBStream(new \IteratorIterator($generator), $count, $threshold);
+            } else {
+                $history = $this->monitorModel->getRawHistoryByParameter($patientId, $parameterId, $targetDate, 0);
+                $formatted = [];
+                foreach ($history as $hItem) {
+                    $ts = $hItem['timestamp'];
+                    $rawTs = (strpos($ts, '+') === false && strpos($ts, 'Z') === false) ? $ts . ' UTC' : $ts;
+                    $formatted[] = [
+                        'time_iso' => date('c', (int)strtotime($rawTs)),
+                        'value' => $hItem['value'] !== null ? (string)round((float)$hItem['value'], 2) : '',
+                        'flag' => (string)$hItem['alert_flag']
+                    ];
+                }
             }
 
             $jsonResult = json_encode($formatted);
+
+            if (!is_dir(dirname($cacheFile))) mkdir(dirname($cacheFile), 0777, true);
             file_put_contents($cacheFile, $jsonResult);
+
             echo $jsonResult;
+
         } catch (\Exception $e) {
             error_log('[PatientController] apiHistory error: ' . $e->getMessage());
             echo json_encode(['error' => 'Erreur interne']);
@@ -1073,7 +1084,16 @@ class PatientController
 
         try {
             $metrics = $this->monitorModel->getLatestMetrics($patientId);
-            $rawHistory = $this->monitorModel->getRawHistory($patientId);
+            
+            /**
+             * PERFORMANCE OPTIMIZATION:
+             * Instead of loading the entire history table for all parameters (O(N)),
+             * we fetch only the last 1000 points per parameter (O(Params * 1000)).
+             * This prevents memory exhaustion on the initial page load while 
+             * keeping sparklines perfectly accurate.
+             */
+            $rawHistory = $this->monitorModel->getLatestHistoryForAllParameters($patientId, 1000);
+            
             $prefs = $this->prefModel->getUserPreferences($userId);
             /** @var array<int, array<string, mixed>> */
             $processedMetrics = $this->monitoringService->processMetrics($metrics, $rawHistory, $prefs);
@@ -1116,6 +1136,138 @@ class PatientController
             return $today->diff($birthDate)->y;
         } catch (\Exception $e) {
             return 0;
+        }
+    }
+
+    /**
+     * Streams real-time metrics for the current patient using SSE (Server-Sent Events).
+     *
+     * @return void
+     */
+    public function apiStream(): void
+    {
+        // Increase execution time for long-polling/SSE
+        set_time_limit(0);
+        ignore_user_abort(false);
+
+        header('Content-Type: text/event-stream');
+        header('Cache-Control: no-cache');
+        header('Connection: keep-alive');
+        header('X-Accel-Buffering: no'); // Disable Nginx buffering
+
+        try {
+            $userId = $_SESSION['user_id'] ?? null;
+            if (!$userId && empty($_GET["debug"])) {
+                echo "data: " . json_encode(['error' => 'Non autorisé']) . "\n\n";
+                if (ob_get_level() > 0) ob_flush();
+                flush();
+                return;
+            }
+
+            session_write_close();
+
+            $roomId = $this->getRoomId();
+            $patientId = null;
+
+            if ($roomId) {
+                $patientId = $this->patientRepo->getPatientIdByRoom($roomId);
+            }
+            if (!$patientId) {
+                $this->contextService->handleRequest();
+                $patientId = $this->contextService->getCurrentPatientId();
+            }
+
+            if (!$patientId) {
+                echo "data: " . json_encode(['error' => 'Patient introuvable']) . "\n\n";
+                if (ob_get_level() > 0) ob_flush();
+                flush();
+                return;
+            }
+
+            $rawUserId = $_SESSION['user_id'] ?? 0;
+            $prefs = $this->prefModel->getUserPreferences(is_numeric($rawUserId) ? (int) $rawUserId : 0);
+
+            /** @var \modules\models\entities\Indicator[] $indicators */
+            $indicators = $this->monitorModel->getLatestMetrics($patientId);
+            $indicatorsById = [];
+            $lastSentTimestamp = '1970-01-01 00:00:00';
+
+            foreach ($indicators as $ind) {
+                if ($ind instanceof \modules\models\entities\Indicator) {
+                    $indicatorsById[$ind->getId()] = $ind;
+                    if ($ind->getTimestamp() > $lastSentTimestamp) {
+                        $lastSentTimestamp = $ind->getTimestamp();
+                    }
+                }
+            }
+
+            /**
+             * Continuous streaming loop.
+             * Tracks the last sent timestamp from the DB to avoid time drift
+             * and ensures no data points are skipped between polling intervals.
+             */
+            while (true) {
+                if (connection_aborted()) {
+                    break;
+                }
+                
+                // Fetch ALL data since $lastSentTimestamp for all indicators
+                $allNewHistory = $this->monitorModel->getRawHistory($patientId, 0, $lastSentTimestamp);
+                
+                if (!empty($allNewHistory)) {
+                    $formatted = [];
+                    foreach ($allNewHistory as $hItem) {
+                        $pid = $hItem['parameter_id'];
+                        $ts = $hItem['timestamp'];
+                        $val = $hItem['value'];
+                        $flag = $hItem['alert_flag'];
+
+                        if ($ts > $lastSentTimestamp) {
+                            $lastSentTimestamp = $ts;
+                        }
+
+                        $indicator = $indicatorsById[$pid] ?? null;
+                        if ($indicator) {
+                            /**
+                             * Synchronize indicator state with the historical record
+                             * to generate correct metadata (color, slug, etc).
+                             */
+                            $indicator->setValue($val !== null && $val !== '' ? (float)$val : null);
+                            $indicator->setTimestamp($ts);
+                            $indicator->setAlertFlag((int)$flag);
+
+                            $vd = $this->monitoringService->prepareViewData($indicator);
+                            $rawTs = (strpos($ts, '+') === false && strpos($ts, 'Z') === false) ? $ts . ' UTC' : $ts;
+
+                            $formatted[] = [
+                                'parameter_id' => $pid,
+                                'slug' => $vd['slug'] ?? 'param',
+                                'value' => $vd['value'] ?? '',
+                                'unit' => $vd['unit'] ?? '',
+                                'state_class' => $vd['card_class'] ?? '',
+                                'is_crit_flag' => (bool)($vd['is_crit_flag'] ?? false),
+                                'time_iso' => date('c', (int)strtotime($rawTs)),
+                                'display_name' => $vd['display_name'] ?? ''
+                            ];
+                        }
+                    }
+
+                    if (!empty($formatted)) {
+                        echo "data: " . json_encode($formatted) . "\n\n";
+                        if (ob_get_level() > 0) ob_flush();
+                        flush();
+                    }
+                }
+
+                sleep(1);
+            }
+        } catch (\Exception $e) {
+            error_log('[PatientController] apiStream error: ' . $e->getMessage());
+            echo "data: " . json_encode(['error' => 'Erreur interne']) . "\n\n";
+            if (ob_get_level() > 0) {
+                ob_flush();
+            }
+            flush();
         }
     }
 }

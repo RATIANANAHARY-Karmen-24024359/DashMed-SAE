@@ -436,3 +436,61 @@
 body.modal-open {
     overflow: hidden;
 }
+
+.modal-chart-loader {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2;
+    background: var(--card-bg);
+    transition: opacity 0.4s ease, visibility 0.4s ease;
+}
+
+.modal-chart-loader.hidden {
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+}
+
+.modal-chart-loader-svg {
+    width: 60px;
+    height: 60px;
+    filter: drop-shadow(0 0 8px rgba(37, 91, 254, 0.15));
+}
+
+.modal-chart-loader-circle {
+    fill: none;
+    stroke: var(--text-primary);
+    stroke-width: 3;
+    stroke-linecap: round;
+    stroke-dasharray: 126;
+    stroke-dashoffset: 126;
+    transform-origin: center;
+    animation: modal-loader-dash 1.4s ease-in-out infinite, modal-loader-rotate 1.8s linear infinite;
+}
+
+@keyframes modal-loader-dash {
+    0% {
+        stroke-dashoffset: 126;
+    }
+
+    50% {
+        stroke-dashoffset: 30;
+    }
+
+    100% {
+        stroke-dashoffset: 126;
+    }
+}
+
+@keyframes modal-loader-rotate {
+    0% {
+        transform: rotate(0deg);
+    }
+
+    100% {
+        transform: rotate(360deg);
+    }
+}
