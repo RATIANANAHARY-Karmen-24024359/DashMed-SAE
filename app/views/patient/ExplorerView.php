@@ -34,7 +34,7 @@ class ExplorerView
     {
         ?>
         <!DOCTYPE html>
-        <html lang="fr">
+        <html lang="fr" data-theme="dark">
         <head>
             <meta charset="UTF-8">
             <title>DashMed - Explorateur de données</title>
@@ -53,11 +53,11 @@ class ExplorerView
             <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/theme/shine.js"></script>
             <style>
                 :root {
-                    --explorer-glass: rgba(255, 255, 255, 0.05);
-                    --explorer-glass-stroke: rgba(255, 255, 255, 0.12);
-                    --explorer-accent: #275afe;
-                    --explorer-accent-glow: rgba(39, 90, 254, 0.4);
-                    --explorer-card-bg: rgba(18, 18, 23, 0.7);
+                    --explorer-glass: var(--explorer-glass);
+                    --explorer-glass-stroke: var(--explorer-glass-stroke);
+                    --explorer-accent: var(--explorer-accent);
+                    --explorer-accent-glow: var(--explorer-accent-glow);
+                    --explorer-card-bg: var(--explorer-card-bg);
                 }
 
                 body { font-family: 'Outfit', sans-serif; }
@@ -87,7 +87,7 @@ class ExplorerView
                 .explorer-title h1 { 
                     font-size: 1.8rem; 
                     font-weight: 700; 
-                    background: linear-gradient(135deg, var(--text-primary) 0%, rgba(255,255,255,0.7) 100%);
+                    background: var(--explorer-header-gradient);
                     -webkit-background-clip: text;
                     -webkit-text-fill-color: transparent;
                     margin: 0; 
@@ -102,24 +102,27 @@ class ExplorerView
                     border-radius: 16px; 
                     border: 1px solid var(--explorer-glass-stroke); 
                     padding: 24px; 
-                    box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+                    box-shadow: var(--shadow-md);
                     transition: all 0.3s ease;
                 }
                 
                 .explorer-card:hover {
-                    border-color: rgba(39, 90, 254, 0.4);
-                    box-shadow: 0 12px 48px rgba(0,0,0,0.5), 0 0 30px rgba(39, 90, 254, 0.1);
+                    border-color: var(--explorer-accent);
+                    box-shadow: var(--shadow-lg);
                     transform: translateY(-2px);
                 }
 
                 .drop-zone { 
                     border: 1.5px dashed var(--explorer-glass-stroke); 
                     border-radius: 12px; 
-                    padding: 40px 20px; 
+                    padding: 30px 15px; 
                     text-align: center; 
                     cursor: pointer; 
                     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-                    background: rgba(255, 255, 255, 0.02);
+                    background: var(--explorer-input-bg);
+                    width: 100%;
+                    box-sizing: border-box;
+                    overflow: hidden;
                 }
                 
                 .drop-zone:hover { 
@@ -128,7 +131,15 @@ class ExplorerView
                     transform: scale(1.02);
                 }
                 
-                .drop-zone p { font-size: 0.9rem; color: var(--text-secondary); margin-top: 15px; }
+                .drop-zone p { 
+                    font-size: 0.85rem; 
+                    color: var(--text-secondary); 
+                    margin-top: 15px; 
+                    overflow-wrap: anywhere;
+                    word-break: break-all;
+                    line-height: 1.4;
+                    padding: 0 5px;
+                }
                 
                 .chart-viewer { 
                     height: calc(100vh - 200px); 
@@ -140,7 +151,7 @@ class ExplorerView
                     border-radius: 20px; 
                     border: 1px solid var(--explorer-glass-stroke); 
                     overflow: hidden; 
-                    box-shadow: 0 12px 40px rgba(0,0,0,0.3);
+                    box-shadow: var(--shadow-lg);
                     transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
                 }
 
@@ -178,9 +189,9 @@ class ExplorerView
                     width: 100%; 
                     padding: 12px 15px; 
                     border-radius: 10px; 
-                    background: rgba(0, 0, 0, 0.2); 
+                    background: var(--explorer-input-bg); 
                     border: 1px solid var(--explorer-glass-stroke); 
-                    color: var(--text-primary); 
+                    color: var(--text-main); 
                     cursor: pointer; 
                     font-size: 0.95rem; 
                     transition: all 0.2s;
@@ -207,6 +218,7 @@ class ExplorerView
                     gap: 12px; 
                     font-size: 0.95rem;
                     box-shadow: 0 4px 15px var(--explorer-accent-glow);
+                    border: 1px solid var(--explorer-accent);
                 }
                 
                 .btn-primary:hover { 
@@ -218,7 +230,7 @@ class ExplorerView
                 .btn-primary:active { transform: translateY(0); }
 
                 .stats-panel-inner {
-                    background: rgba(0,0,0,0.25);
+                    background: var(--explorer-input-bg);
                     border-radius: 12px;
                     padding: 18px;
                     border: 1px solid var(--explorer-glass-stroke);
@@ -234,9 +246,9 @@ class ExplorerView
                 }
 
                 .chart-btn {
-                    background: rgba(255, 255, 255, 0.08);
-                    border: 1px solid rgba(255, 255, 255, 0.1);
-                    color: white;
+                    background: var(--explorer-glass);
+                    border: 1px solid var(--explorer-accent);
+                    color: var(--text-main);
                     padding: 8px 12px;
                     border-radius: 8px;
                     cursor: pointer;
@@ -263,7 +275,7 @@ class ExplorerView
                     display: flex; 
                     justify-content: space-between; 
                     padding: 10px 0; 
-                    border-bottom: 1px solid rgba(255,255,255,0.05); 
+                    border-bottom: 1px solid var(--explorer-stat-row-border); 
                 }
                 
                 .stat-row:last-child { border-bottom: none; }
@@ -288,12 +300,17 @@ class ExplorerView
 
                 <!-- Hidden context -->
                 <input type="hidden" id="context-patient-id" value="<?= htmlspecialchars((string)$this->patientData['id_patient']) ?>">
+                <input type="hidden" id="context-patient-name" value="<?= htmlspecialchars((string)($this->patientData['first_name'] . ' ' . $this->patientData['last_name'])) ?>">
 
                 <div class="explorer-main-content">
                     <div class="explorer-header">
                         <div class="explorer-title">
                             <h1>Explorateur & Viewer CSV</h1>
                             <p style="color: var(--text-secondary); font-size: 0.95rem; margin-top: 5px;">Analyse bidirectionnelle et visualisation haute performance</p>
+                        </div>
+                        <div id="explorer-context-display" style="text-align: right; background: var(--explorer-glass); padding: 10px 18px; border-radius: 12px; border: 1px solid var(--explorer-glass-stroke); backdrop-filter: blur(8px); display: none; max-width: 450px; overflow-wrap: anywhere; word-break: break-all;">
+                            <span style="font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 700; color: var(--text-secondary); display: block; margin-bottom: 6px; opacity: 0.8;">Analyse en cours</span>
+                            <div id="current-context-name" style="font-weight: 600; color: var(--explorer-accent); font-size: 0.9rem; line-height: 1.5;">-</div>
                         </div>
                     </div>
 

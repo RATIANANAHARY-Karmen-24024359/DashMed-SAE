@@ -727,14 +727,20 @@ class PatientController
              */
             if ($isRaw) {
                 if ($isCsv) {
+                    $timestamp = date('Ymd_His');
                     header('Content-Type: text/csv');
-                    header('Content-Disposition: attachment; filename="history_' . $parameterId . '.csv"');
+                    header('Content-Disposition: attachment; filename="export_patient_' . $patientId . '_' . $parameterId . '_' . $timestamp . '.csv"');
                     $out = fopen('php://output', 'w');
-                    fputcsv($out, ['timestamp', 'value', 'alert_flag']);
+                    fputcsv($out, ['timestamp', 'value']);
                     
                     $stream = $this->monitorModel->streamRawHistoryByParameter($patientId, $parameterId, $targetDate, 0);
                     foreach ($stream as $row) {
-                        fputcsv($out, [$row['timestamp'], $row['value'], $row['alert_flag']]);
+                        $rawTs = (strpos($row['timestamp'], '+') === false && strpos($row['timestamp'], 'Z') === false) 
+                            ? $row['timestamp'] . ' UTC' : $row['timestamp'];
+                        fputcsv($out, [
+                            date('c', (int)strtotime($rawTs)),
+                            $row['value'] !== null ? round((float)$row['value'], 2) : ''
+                        ]);
                     }
                     fclose($out);
                 } else {
@@ -1208,6 +1214,49 @@ class PatientController
                 ob_flush();
             }
             flush();
+        }
+    }
+    /**
+     * Retrieves the name of a patient by their ID.
+     *
+     * @return void
+     */
+    public function apiPatientName(): void
+    {
+        try {
+            $userId = $_SESSION['user_id'] ?? null;
+            if (!$userId && !isset($_GET["debug"])) {
+                header('Content-Type: application/json');
+                echo json_encode(['error' => 'Non autorisé']);
+                return;
+            }
+
+            $rawId = $_GET['id'] ?? '';
+            $patientId = is_numeric($rawId) ? (int)$rawId : 0;
+
+            if ($patientId <= 0) {
+                header('Content-Type: application/json');
+                echo json_encode(['error' => 'ID invalide']);
+                return;
+            }
+
+            $patient = $this->patientRepo->findById($patientId);
+            if (!$patient) {
+                header('Content-Type: application/json');
+                echo json_encode(['error' => 'Patient introuvable']);
+                return;
+            }
+
+            header('Content-Type: application/json');
+            echo json_encode([
+                'id_patient' => $patient['id_patient'],
+                'first_name' => $patient['first_name'],
+                'last_name' => $patient['last_name']
+            ]);
+        } catch (\Exception $e) {
+            error_log('[PatientController] apiPatientName error: ' . $e->getMessage());
+            header('Content-Type: application/json');
+            echo json_encode(['error' => 'Erreur interne']);
         }
     }
 }

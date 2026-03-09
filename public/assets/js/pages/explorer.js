@@ -14,7 +14,15 @@
     let currentChartType = 'line';
 
     document.addEventListener('DOMContentLoaded', () => {
-        initChart();
+        const themeSelector = document.getElementById('theme-selector');
+        if (themeSelector) {
+            currentTheme = themeSelector.value;
+            // Ensure page theme matches selector on load
+            if (currentTheme === 'light' || currentTheme === 'dark') {
+                document.documentElement.setAttribute('data-theme', currentTheme);
+            }
+        }
+        initChart(currentTheme);
         setupEventListeners();
         loadPatientParameters();
     });
@@ -78,6 +86,17 @@
         if (themeSelector) {
             themeSelector.onchange = () => {
                 currentTheme = themeSelector.value;
+
+                // Update page theme if it's light or dark
+                if (currentTheme === 'light' || currentTheme === 'dark') {
+                    document.documentElement.setAttribute('data-theme', currentTheme);
+                } else {
+                    // For other themes (vintage, etc.), we might want to default to light or dark page base
+                    // or keep the current one. Let's default to dark for "vintage" etc. as they are often dark-ish
+                    // or just leave it as is if it's already one of them.
+                    // For now, let's just ensure we have a valid data-theme for the base UI
+                }
+
                 initChart(currentTheme);
             };
         }
@@ -88,6 +107,8 @@
                 if (val) {
                     currentParamId = val;
                     loadParameterData(val);
+                    const patientName = document.getElementById('context-patient-name')?.value;
+                    updateContextDisplay(false, patientName);
                 }
             };
         }
@@ -222,6 +243,8 @@
 
         const dropText = document.getElementById('drop-text');
         if (dropText) dropText.textContent = file.name;
+
+        updateContextDisplay(true, file.name);
 
         const reader = new FileReader();
         reader.onload = (e) => {
@@ -870,6 +893,37 @@
         document.getElementById('stat-min').textContent = min.toFixed(2);
     }
 
+    async function updateContextDisplay(isImported, name) {
+        const container = document.getElementById('explorer-context-display');
+        const nameEl = document.getElementById('current-context-name');
+        if (!container || !nameEl) return;
+
+        container.style.display = name ? 'block' : 'none';
+
+        if (isImported) {
+            // Try to extract patient ID from filename (e.g., export_patient_8_...)
+            const match = name.match(/export_patient_(\d+)_/);
+            let displayValue = `<span style="display:block; opacity:0.6; font-size:0.75rem; font-weight:400;">Fichier importé</span><span style="display:block; margin-bottom:6px; color:var(--text-main); font-size:0.85rem;">${name}</span>`;
+
+            if (match && match[1]) {
+                const patientId = match[1];
+                try {
+                    const res = await fetch(`${window.location.origin}/api_patient_name?id=${patientId}`);
+                    const data = await res.json();
+                    if (data && !data.error) {
+                        displayValue += `<span style="display:block; padding-top:6px; border-top:1px solid rgba(255,255,255,0.08); font-weight:400; opacity:0.8; font-size:0.8rem;">Patient détecté : <strong style="color:var(--explorer-accent); font-weight:600;">${data.first_name} ${data.last_name}</strong></span>`;
+                    }
+                } catch (e) {
+                    console.error("Failed to fetch patient name", e);
+                }
+            }
+
+            nameEl.innerHTML = displayValue;
+        } else {
+            nameEl.innerHTML = `<span style="display:block; opacity:0.6; font-size:0.75rem; font-weight:400;">Patient sélectionné</span><span style="display:block; font-weight:600; color:var(--explorer-accent); font-size:1rem;">${name}</span>`;
+        }
+    }
+
     function exportSegment() {
         if (!currentData.length || !chart) return;
 
@@ -889,11 +943,14 @@
             csv += `${new Date(d[0]).toISOString()},${d[1] === null ? '' : d[1]}\n`;
         });
 
+        const patientId = document.getElementById('context-patient-id')?.value || 'unknown';
+        const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
+
         const blob = new Blob([csv], { type: 'text/csv' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `segment_export_${new Date().getTime()}.csv`;
+        a.download = `export_patient_${patientId}_segment_${timestamp}.csv`;
         a.click();
     }
 
