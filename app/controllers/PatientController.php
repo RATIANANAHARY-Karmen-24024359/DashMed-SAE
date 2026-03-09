@@ -853,7 +853,13 @@ class PatientController
             $roomId = $this->getRoomId();
             $patientId = null;
 
-            if ($roomId) {
+            // Priority to explicit parameter for API tools/Explorer
+            $getPatientId = $_GET['patient_id'] ?? null;
+            if ($getPatientId && is_numeric($getPatientId)) {
+                $patientId = (int)$getPatientId;
+            }
+
+            if (!$patientId && $roomId) {
                 $patientId = $this->patientRepo->getPatientIdByRoom($roomId);
             }
             if (!$patientId) {
@@ -898,7 +904,8 @@ class PatientController
                         'is_crit_flag' => (bool)($viewData['is_crit_flag'] ?? false),
                         'time_iso' => $timeRaw ? date('c', (int) strtotime($rawTs)) : ($latestTimeIso),
                         'chart_type' => $viewData['chart_type'] ?? 'line',
-                        'display_name' => $viewData['display_name'] ?? ''
+                        'display_name' => $viewData['display_name'] ?? '',
+                        'thresholds' => $viewData['thresholds'] ?? null
                     ];
                 }
             }

@@ -8,6 +8,8 @@
 (function () {
     let chart = null;
     let currentData = []; // [[timestamp, value], ...]
+    let indicatorsMetadata = {}; // { parameter_id: { thresholds: {nmin, nmax, cmin, cmax}, unit, display_name } }
+    let currentParamId = null;
 
     document.addEventListener('DOMContentLoaded', () => {
         initChart();
@@ -18,6 +20,10 @@
     function initChart() {
         const container = document.getElementById('explorer-chart');
         if (!container) return;
+
+        // Clear placeholder if any
+        container.innerHTML = '';
+
         chart = echarts.init(container);
         window.addEventListener('resize', () => chart && chart.resize());
     }
@@ -29,31 +35,38 @@
         const angleSelector = document.getElementById('analysis-angle');
         const exportBtn = document.getElementById('export-segment-btn');
 
-        // CSV Upload
-        dropZone.onclick = () => fileInput.click();
-        fileInput.onchange = (e) => handleFiles(e.target.files);
+        if (dropZone && fileInput) {
+            dropZone.onclick = () => fileInput.click();
+            fileInput.onchange = (e) => handleFiles(e.target.files);
 
-        dropZone.ondragover = (e) => { e.preventDefault(); dropZone.style.background = 'rgba(39, 90, 254, 0.1)'; };
-        dropZone.ondragleave = () => { dropZone.style.background = ''; };
-        dropZone.ondrop = (e) => {
-            e.preventDefault();
-            dropZone.style.background = '';
-            handleFiles(e.dataTransfer.files);
-        };
+            dropZone.ondragover = (e) => { e.preventDefault(); dropZone.style.background = 'rgba(39, 90, 254, 0.1)'; };
+            dropZone.ondragleave = () => { dropZone.style.background = ''; };
+            dropZone.ondrop = (e) => {
+                e.preventDefault();
+                dropZone.style.background = '';
+                handleFiles(e.dataTransfer.files);
+            };
+        }
 
-        // Parameter Selector
-        paramSelector.onchange = () => {
-            const val = paramSelector.value;
-            if (val) loadParameterData(val);
-        };
+        if (paramSelector) {
+            paramSelector.onchange = () => {
+                const val = paramSelector.value;
+                if (val) {
+                    currentParamId = val;
+                    loadParameterData(val);
+                }
+            };
+        }
 
-        // Analysis Angle
-        angleSelector.onchange = () => {
-            if (currentData.length) renderChart();
-        };
+        if (angleSelector) {
+            angleSelector.onchange = () => {
+                if (currentData.length) renderChart();
+            };
+        }
 
-        // Export Segment
-        exportBtn.onclick = () => exportSegment();
+        if (exportBtn) {
+            exportBtn.onclick = () => exportSegment();
+        }
     }
 
     async function loadPatientParameters() {
@@ -62,32 +75,50 @@
         if (!patientId || !selector) return;
 
         try {
-            // Reusing existing API to get slugs/parameters
-            // For now we'll assume we know some common ones or fetch from a hypothetical endpoint
-            // In a real scenario, we might have a dedicated endpoint for this.
-            const params = [
-                { id: '1', name: 'Fréquence Cardiaque (FC)', slug: 'frequence-cardiaque' },
-                { id: '2', name: 'SpO2', slug: 'spo2' },
-                { id: '3', name: 'Température', slug: 'temperature' },
-                { id: '4', name: 'Pression Artérielle (Systolique)', slug: 'pression-arterielle-systolique' },
-                { id: '5', name: 'Glycémie', slug: 'glycemie' }
-            ];
+            selector.innerHTML = '<option value="">-- Chargement... --</option>';
+            
+            const res = await fetch(`${window.location.origin}/api_live_metrics?patient_id=${patientId}`);
+            const metrics = await res.json();
+            
+            if (metrics.error) throw new Error(metrics.error);
 
-            params.forEach(p => {
+            selector.innerHTML = '<option value="">-- Charger depuis le patient --</option>';
+            
+            // Store metadata (thresholds, unit)
+            indicatorsMetadata = {};
+            metrics.forEach(m => {
+                indicatorsMetadata[m.parameter_id] = {
+                    thresholds: m.thresholds,
+                    unit: m.unit,
+                    display_name: m.display_name
+                };
+            });
+
+            // Sort metrics by display name
+            metrics.sort((a, b) => a.display_name.localeCompare(b.display_name));
+
+            metrics.forEach(m => {
                 const opt = document.createElement('option');
-                opt.value = p.id;
-                opt.textContent = p.name;
+                opt.value = m.parameter_id;
+                opt.textContent = m.display_name + (m.unit ? ` (${m.unit})` : '');
                 selector.appendChild(opt);
             });
         } catch (e) {
             console.error("Failed to load parameters", e);
+            selector.innerHTML = '<option value="">-- Erreur de chargement --</option>';
         }
     }
 
     async function loadParameterData(paramId) {
+        const patientId = document.getElementById('context-patient-id')?.value;
+        if (!patientId) return;
+
         try {
-            const res = await fetch(`${window.location.origin}/api_history?param=${paramId}&raw=1`);
+            chart.showLoading();
+            const res = await fetch(`${window.location.origin}/api_history?patient_id=${patientId}&param=${paramId}&raw=1`);
             const data = await res.json();
+            chart.hideLoading();
+
             if (data.error) throw new Error(data.error);
 
             currentData = data.map(item => [
@@ -98,7 +129,8 @@
             renderChart();
             updateStats();
         } catch (e) {
-            alert("Erreur lors du chargement des données.");
+            chart.hideLoading();
+            alert("Erreur lors du chargement des données patient.");
             console.error(e);
         }
     }
@@ -106,10 +138,11 @@
     function handleFiles(files) {
         if (!files.length) return;
         const file = files[0];
-        if (file.type !== "text/csv" && !file.name.endsWith(".csv")) {
-            alert("Veuillez sélectionner un fichier CSV.");
-            return;
-        }
+        
+        currentParamId = null; // Reset current param metadata for imported files
+        
+        const dropText = document.getElementById('drop-text');
+        if (dropText) dropText.textContent = file.name;
 
         const reader = new FileReader();
         reader.onload = (e) => {
@@ -120,21 +153,37 @@
     }
 
     function parseCSV(text) {
-        const lines = text.split('\n');
+        const lines = text.split(/\r?\n/);
         const data = [];
+        
+        // Detect delimiter: , or ;
+        const firstLine = lines[0] || "";
+        const delimiter = firstLine.includes(';') ? ';' : ',';
 
-        // Simple CSV parser (assuming timestamp, value, flag)
         // Skip header
         for (let i = 1; i < lines.length; i++) {
-            const cols = lines[i].split(',');
+            const cols = lines[i].split(delimiter);
             if (cols.length < 2) continue;
 
-            const ts = new Date(cols[0].trim()).getTime();
-            const val = cols[1].trim() === '' ? null : parseFloat(cols[1]);
+            const rawTs = cols[0].trim();
+            const rawVal = cols[1].trim();
 
-            if (!isNaN(ts)) {
+            if (!rawTs) continue;
+
+            // Handle ISO, Unix, or common formats
+            let ts = new Date(rawTs).getTime();
+            if (isNaN(ts) && /^\d+$/.test(rawTs)) ts = parseInt(rawTs) * 1000; // Assume Unix if numeric
+
+            const val = rawVal === '' ? null : parseFloat(rawVal.replace(',', '.'));
+
+            if (!isNaN(ts) && (val === null || !isNaN(val))) {
                 data.push([ts, val]);
             }
+        }
+
+        if (data.length === 0) {
+            alert("Aucune donnée valide trouvée dans le CSV. Format attendu : timestamp,valeur");
+            return;
         }
 
         currentData = data.sort((a, b) => a[0] - b[0]);
@@ -143,11 +192,46 @@
     }
 
     function renderChart() {
+        if (!chart) return;
+        
         const angle = document.getElementById('analysis-angle').value;
         let displayData = [...currentData];
 
         if (angle === 'ma-5') displayData = movingAverage(currentData, 5);
         if (angle === 'ma-20') displayData = movingAverage(currentData, 20);
+
+        // Thresholds logic
+        const meta = currentParamId ? indicatorsMetadata[currentParamId] : null;
+        let visualMap = null;
+        let markAreas = [];
+        let markLines = [];
+
+        if (meta && meta.thresholds) {
+            const { nmin, nmax, cmin, cmax } = meta.thresholds;
+            
+            // Visual Map for coloring the dynamic line
+            visualMap = {
+                show: false,
+                dimension: 1,
+                pieces: [
+                    { gt: nmax || 999999, color: '#ef4444' }, // Critical high
+                    { gt: nmin || -999999, lte: nmax || 999999, color: '#22c55e' }, // Normal
+                    { lte: nmin || -999999, color: '#ef4444' } // Critical low
+                ]
+            };
+
+            // Add background zones for better visibility
+            if (nmin !== null && nmax !== null) {
+                markAreas.push({
+                    itemStyle: { color: 'rgba(34, 197, 94, 0.05)' },
+                    data: [[{ yAxis: nmin }, { yAxis: nmax }]]
+                });
+            }
+
+            // Reference lines
+            if (nmin !== null) markLines.push({ yAxis: nmin, lineStyle: { color: '#fbbf24', type: 'dashed' }, label: { position: 'end', formatter: 'Min Normal' } });
+            if (nmax !== null) markLines.push({ yAxis: nmax, lineStyle: { color: '#fbbf24', type: 'dashed' }, label: { position: 'end', formatter: 'Max Normal' } });
+        }
 
         const option = {
             animation: false,
@@ -155,23 +239,30 @@
             grid: { left: '3%', right: '4%', bottom: '10%', containLabel: true },
             xAxis: { type: 'time', splitLine: { show: false } },
             yAxis: { type: 'value', scale: true, splitLine: { lineStyle: { type: 'dashed' } } },
+            visualMap: visualMap,
             dataZoom: [
                 { type: 'inside', start: 0, end: 100 },
                 { type: 'slider', start: 0, end: 100 }
             ],
             series: [{
-                name: 'Valeur',
+                name: meta ? meta.display_name : 'Valeur',
                 type: 'line',
                 smooth: angle.startsWith('ma'),
                 symbol: 'none',
                 connectNulls: true,
                 data: displayData,
-                lineStyle: { color: '#275afe', width: 2 },
+                lineStyle: { width: 3 },
                 areaStyle: {
                     color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-                        { offset: 0, color: 'rgba(39, 90, 254, 0.2)' },
+                        { offset: 0, color: 'rgba(39, 90, 254, 0.1)' },
                         { offset: 1, color: 'rgba(39, 90, 254, 0)' }
                     ])
+                },
+                markArea: { data: markAreas[0] ? markAreas[0].data : [] },
+                markLine: {
+                    silent: true,
+                    data: markLines,
+                    label: { show: true }
                 }
             }]
         };
@@ -184,8 +275,9 @@
         }
 
         chart.setOption(option, true);
-
+        
         // Listen for zoom to update stats
+        chart.off('datazoom');
         chart.on('datazoom', () => updateStats());
     }
 
@@ -219,23 +311,29 @@
     }
 
     function updateStats() {
-        if (!currentData.length) return;
+        if (!currentData.length || !chart) return;
 
-        // Get visible range from chart
         const opt = chart.getOption();
-        const dz = opt.dataZoom[0];
-        let startTs, endTs;
+        if (!opt || !opt.dataZoom) return;
 
+        const dz = opt.dataZoom[0];
+        
         const allTs = currentData.map(d => d[0]);
         const minTs = Math.min(...allTs);
         const maxTs = Math.max(...allTs);
         const range = maxTs - minTs;
 
-        startTs = minTs + (range * dz.start / 100);
-        endTs = minTs + (range * dz.end / 100);
+        const startTs = minTs + (range * dz.start / 100);
+        const endTs = minTs + (range * dz.end / 100);
 
         const visible = currentData.filter(d => d[0] >= startTs && d[0] <= endTs && d[1] !== null);
-        if (!visible.length) return;
+        if (!visible.length) {
+            document.getElementById('stat-count').textContent = '0';
+            document.getElementById('stat-avg').textContent = '-';
+            document.getElementById('stat-max').textContent = '-';
+            document.getElementById('stat-min').textContent = '-';
+            return;
+        }
 
         const values = visible.map(d => d[1]);
         const count = values.length;
@@ -251,9 +349,8 @@
     }
 
     function exportSegment() {
-        if (!currentData.length) return;
+        if (!currentData.length || !chart) return;
 
-        // Similar to interactive export but for visible segment
         const opt = chart.getOption();
         const dz = opt.dataZoom[0];
         const allTs = currentData.map(d => d[0]);
