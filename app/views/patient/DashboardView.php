@@ -445,6 +445,21 @@ class DashboardView
                         const cardStates = new WeakMap();
                         let nextAlertOrder = 1;
 
+                        function getActiveFilter() {
+                            const btn = document.querySelector('.category-filter-btn.active');
+                            return btn ? btn.getAttribute('data-filter') : 'all';
+                        }
+
+                        function isUrgentFilter() {
+                            return getActiveFilter() === 'urgent';
+                        }
+
+                        function getAlertColor(card) {
+                            if (card.classList.contains('card--alert')) return 'var(--color-critical, #EF4444)';
+                            if (card.classList.contains('card--warn')) return 'var(--color-warning, #F59E0B)';
+                            return 'var(--text-muted, #999)';
+                        }
+
                         function getSpan(card) {
                             const colMatch = (card.style.gridColumn || '').match(/span\s+(\d+)/);
                             const rowMatch = (card.style.gridRow || '').match(/span\s+(\d+)/);
@@ -454,21 +469,15 @@ class DashboardView
                             };
                         }
 
-                        function getAlertColor(card) {
-                            if (card.classList.contains('card--alert')) return 'var(--color-critical, #EF4444)';
-                            if (card.classList.contains('card--warn')) return 'var(--color-warning, #F59E0B)';
-                            return 'var(--text-muted, #999)';
-                        }
-
                         function buildSVG(card, color, remaining) {
                             const old = card.querySelector('.hide-progress');
                             if (old) old.remove();
 
                             const w = card.offsetWidth;
                             const h = card.offsetHeight;
-                            if (w === 0 || h === 0) return null;
-                            const inset = 2;
-                            const rx = 12;
+                            if (w < 10 || h < 10) return null;
+
+                            const inset = 2, rx = 12;
                             const rw = w - inset * 2;
                             const rh = h - inset * 2;
                             const perimeter = 2 * (rw + rh) - (8 - 2 * Math.PI) * rx;
@@ -492,10 +501,13 @@ class DashboardView
                             rect.setAttribute('stroke-dasharray', perimeter);
                             rect.setAttribute('stroke-dashoffset', '0');
                             rect.setAttribute('stroke-linecap', 'round');
-
                             svg.appendChild(rect);
+
                             card.style.position = 'relative';
                             card.appendChild(svg);
+
+                            svg.dataset.w = w;
+                            svg.dataset.h = h;
 
                             const safeRemaining = Math.max(1, remaining);
                             const startOffset = ((HIDE_DELAY - safeRemaining) / HIDE_DELAY) * perimeter;
@@ -508,44 +520,51 @@ class DashboardView
                             return anim;
                         }
 
+                        function rebuildSVGIfStale(card, state) {
+                            if (!state.isCountingDown || state.hidden) return;
+                            const svg = card.querySelector('.hide-progress');
+                            const currentW = card.offsetWidth;
+                            const currentH = card.offsetHeight;
+                            if (!svg || Math.abs(currentW - Number(svg.dataset.w)) > 2 || Math.abs(currentH - Number(svg.dataset.h)) > 2) {
+                                state.svgAnim = buildSVG(card, state.lastAlertColor || '#999', state.remaining);
+                                if (state.svgAnim && state.isPaused) state.svgAnim.pause();
+                            }
+                        }
+
                         const resizeObserver = new ResizeObserver(entries => {
                             for (const entry of entries) {
                                 const card = entry.target;
                                 const state = cardStates.get(card);
                                 if (!state || !state.isCountingDown || state.hidden) continue;
-
-                                state.svgAnim = buildSVG(card, state.lastAlertColor || 'var(--text-muted, #999)', state.remaining);
-                                if (state.svgAnim && (state.isHovered || state.isPaused)) {
-                                    state.svgAnim.pause();
-                                }
+                                rebuildSVGIfStale(card, state);
                             }
                         });
 
                         function startCooldown(card, color) {
                             const state = cardStates.get(card);
                             if (!state || state.hidden || state.isCountingDown || state.animating) return;
-
                             state.isCountingDown = true;
                             state.remaining = HIDE_DELAY;
                             state.lastTick = Date.now();
                             state.isPaused = false;
                             state.lastAlertColor = color;
-
                             state.svgAnim = buildSVG(card, color, state.remaining);
-
-                            const isModalOpened = (activeModalCard === card && document.body.classList.contains('modal-open'));
-                            if (state.isHovered || isModalOpened) {
-                                state.isPaused = true;
-                                if (state.svgAnim) state.svgAnim.pause();
-                            }
-
                             resizeObserver.observe(card);
+                        }
+
+                        function stopCooldown(card) {
+                            const state = cardStates.get(card);
+                            if (!state || !state.isCountingDown) return;
+                            state.isCountingDown = false;
+                            resizeObserver.unobserve(card);
+                            const prog = card.querySelector('.hide-progress');
+                            if (prog) prog.remove();
+                            state.svgAnim = null;
                         }
 
                         function showCard(card) {
                             const state = cardStates.get(card);
                             if (!state) return;
-
                             if (state.hidden) {
                                 state.hidden = false;
                                 const span = state.span;
@@ -554,7 +573,6 @@ class DashboardView
                                 card.style.display = 'flex';
                                 card.style.order = nextAlertOrder++;
                             }
-
                             if (!state.animating) {
                                 state.animating = true;
                                 const anim = card.animate([
@@ -570,7 +588,7 @@ class DashboardView
                             const span = getSpan(card);
 
                             cardStates.set(card, {
-                                hidden: !isAlert,
+                                hidden: false,
                                 animating: false,
                                 isCountingDown: false,
                                 isHovered: false,
@@ -582,186 +600,146 @@ class DashboardView
                                 lastAlertColor: isAlert ? getAlertColor(card) : null
                             });
 
-                            card.addEventListener('click', () => {
-                                activeModalCard = card;
-                            });
+                            card.addEventListener('click', () => { activeModalCard = card; });
 
                             const dismissBtn = card.querySelector('.card-dismiss-btn');
                             if (dismissBtn) {
                                 dismissBtn.addEventListener('click', (e) => {
                                     e.stopPropagation();
+                                    if (!isUrgentFilter()) return;
                                     const st = cardStates.get(card);
-                                    if (st && !st.animating) {
-                                        st.animating = true;
+                                    if (!st || st.animating) return;
 
-                                        // Stop any running cooldown
-                                        if (st.isCountingDown) {
-                                            st.isCountingDown = false;
-                                            resizeObserver.unobserve(card);
-                                            const prog = card.querySelector('.hide-progress');
-                                            if (prog) prog.remove();
-                                        }
+                                    st.animating = true;
+                                    stopCooldown(card);
 
-                                        // FLIP: record positions of all visible sibling cards
-                                        const siblings = Array.from(mainGrid.querySelectorAll('.card')).filter(c => {
-                                            const s = cardStates.get(c);
-                                            return s && !s.hidden && c !== card;
-                                        });
-                                        const firstPositions = new Map();
-                                        siblings.forEach(c => firstPositions.set(c, c.getBoundingClientRect()));
+                                    const siblings = Array.from(mainGrid.querySelectorAll('.card')).filter(c => {
+                                        const s = cardStates.get(c);
+                                        return s && !s.hidden && c !== card;
+                                    });
+                                    const firstPositions = new Map();
+                                    siblings.forEach(c => firstPositions.set(c, c.getBoundingClientRect()));
 
-                                        const anim = card.animate([
-                                            { transform: 'scale(1)', opacity: 1 },
-                                            { transform: 'scale(0.5)', opacity: 0 }
-                                        ], { duration: 300, easing: 'cubic-bezier(0.4, 0, 0.2, 1)' });
+                                    const anim = card.animate([
+                                        { transform: 'scale(1)', opacity: 1 },
+                                        { transform: 'scale(0.5)', opacity: 0 }
+                                    ], { duration: 300, easing: 'cubic-bezier(0.4, 0, 0.2, 1)' });
 
-                                        anim.onfinish = () => {
-                                            card.style.display = 'none';
-                                            card.style.gridColumn = '0';
-                                            card.style.gridRow = '0';
-                                            st.hidden = true;
-                                            st.animating = false;
-                                            st.lastAlertColor = null;
-                                            if (typeof activeModalCard !== 'undefined' && activeModalCard === card) activeModalCard = null;
+                                    anim.onfinish = () => {
+                                        card.style.display = 'none';
+                                        card.style.gridColumn = '0';
+                                        card.style.gridRow = '0';
+                                        st.hidden = true;
+                                        st.animating = false;
+                                        st.lastAlertColor = null;
+                                        if (typeof activeModalCard !== 'undefined' && activeModalCard === card) activeModalCard = null;
 
-                                            // FLIP: animate siblings to their new positions
-                                            requestAnimationFrame(() => {
-                                                siblings.forEach(c => {
-                                                    const first = firstPositions.get(c);
-                                                    const last = c.getBoundingClientRect();
-                                                    const dx = first.left - last.left;
-                                                    const dy = first.top - last.top;
-                                                    if (Math.abs(dx) > 1 || Math.abs(dy) > 1) {
-                                                        c.animate([
-                                                            { transform: `translate(${dx}px, ${dy}px)` },
-                                                            { transform: 'translate(0, 0)' }
-                                                        ], { duration: 400, easing: 'cubic-bezier(0.4, 0, 0.2, 1)' });
-                                                    }
-                                                });
+                                        requestAnimationFrame(() => {
+                                            siblings.forEach(c => {
+                                                const first = firstPositions.get(c);
+                                                const last = c.getBoundingClientRect();
+                                                const dx = first.left - last.left;
+                                                const dy = first.top - last.top;
+                                                if (Math.abs(dx) > 1 || Math.abs(dy) > 1) {
+                                                    c.animate([
+                                                        { transform: `translate(${dx}px, ${dy}px)` },
+                                                        { transform: 'translate(0, 0)' }
+                                                    ], { duration: 400, easing: 'cubic-bezier(0.4, 0, 0.2, 1)' });
+                                                }
                                             });
-                                        };
-                                    }
+                                        });
+                                    };
                                 });
                             }
 
                             card.addEventListener('mouseenter', () => {
                                 const st = cardStates.get(card);
                                 if (st) st.isHovered = true;
-
-                                const isAlert = card.classList.contains('card--alert') || card.classList.contains('card--warn');
-                                if (!isAlert && dismissBtn) {
-                                    dismissBtn.style.opacity = '1';
-                                    dismissBtn.style.pointerEvents = 'auto';
-                                    dismissBtn.style.transform = 'scale(1)';
-                                }
                             });
 
                             card.addEventListener('mouseleave', () => {
                                 const st = cardStates.get(card);
                                 if (st) st.isHovered = false;
-
                                 if (dismissBtn) {
                                     dismissBtn.style.opacity = '0';
                                     dismissBtn.style.pointerEvents = 'none';
                                     dismissBtn.style.transform = 'scale(0)';
                                 }
                             });
-
-                            if (isAlert) {
-                                card.style.gridColumn = `auto / span ${span.w}`;
-                                card.style.gridRow = `auto / span ${span.h}`;
-                            } else {
-                                card.style.display = 'none';
-                                card.style.gridColumn = '0';
-                                card.style.gridRow = '0';
-                            }
                         });
-
 
                         setInterval(() => {
                             const now = Date.now();
-                            const isModalGloballyOpen = document.body.classList.contains("modal-open");
+                            const isModalGlobalOpen = document.body.classList.contains('modal-open');
+                            const urgentActive = isUrgentFilter();
                             let activeAlertsCount = 0;
-
-                            const activeFilterBtn = document.querySelector('.category-filter-btn.active');
-                            const activeFilter = activeFilterBtn ? activeFilterBtn.getAttribute('data-filter') : 'all';
-                            const isUrgentOrAll = activeFilter === 'urgent' || activeFilter === 'all';
 
                             Array.from(mainGrid.querySelectorAll('.card')).forEach(card => {
                                 const state = cardStates.get(card);
                                 if (!state) return;
 
                                 const isAlert = card.classList.contains('card--alert') || card.classList.contains('card--warn');
-
                                 const dismissBtn = card.querySelector('.card-dismiss-btn');
-                                if (isAlert) {
-                                    activeAlertsCount++;
 
-                                    // Cancel any running cooldown — it's back in alert
-                                    if (state.isCountingDown) {
-                                        state.isCountingDown = false;
-                                        resizeObserver.unobserve(card);
-                                        const prog = card.querySelector('.hide-progress');
-                                        if (prog) prog.remove();
+                                if (isAlert && !state.hidden) activeAlertsCount++;
+
+                                if (urgentActive) {
+                                    if (isAlert) {
+                                        if (state.isCountingDown) stopCooldown(card);
+                                        state.lastAlertColor = getAlertColor(card);
+                                        state.lastTick = now;
+                                        if (state.hidden) showCard(card);
+                                        if (dismissBtn) {
+                                            dismissBtn.style.opacity = '0';
+                                            dismissBtn.style.pointerEvents = 'none';
+                                            dismissBtn.style.transform = 'scale(0)';
+                                        }
+                                    } else if (!state.hidden && !state.animating) {
+                                        if (!state.isCountingDown && state.lastAlertColor) {
+                                            startCooldown(card, state.lastAlertColor);
+                                        } else if (state.isCountingDown) {
+                                            const isModalOpen = activeModalCard === card && isModalGlobalOpen;
+                                            const shouldBePaused = state.isHovered || isModalOpen;
+                                            if (shouldBePaused && !state.isPaused) {
+                                                state.isPaused = true;
+                                                if (state.svgAnim) state.svgAnim.pause();
+                                            } else if (!shouldBePaused && state.isPaused) {
+                                                state.isPaused = false;
+                                                if (state.svgAnim) state.svgAnim.play();
+                                            }
+                                            if (!state.isPaused) state.remaining -= (now - state.lastTick);
+                                            state.lastTick = now;
+                                            rebuildSVGIfStale(card, state);
+                                            if (state.remaining <= 0) {
+                                                stopCooldown(card);
+                                                card.classList.remove('card--alert', 'card--warn');
+                                                state.lastAlertColor = null;
+                                            }
+                                        }
+                                        if (dismissBtn) {
+                                            if (state.isHovered) {
+                                                dismissBtn.style.opacity = '1';
+                                                dismissBtn.style.pointerEvents = 'auto';
+                                                dismissBtn.style.transform = 'scale(1)';
+                                            } else {
+                                                dismissBtn.style.opacity = '0';
+                                                dismissBtn.style.pointerEvents = 'none';
+                                                dismissBtn.style.transform = 'scale(0)';
+                                            }
+                                        }
                                     }
-                                    state.lastAlertColor = getAlertColor(card);
-
-                                    if (state.hidden && isUrgentOrAll) {
-                                        showCard(card);
-                                    }
-
-                                    // Hide dismiss button on alert cards
+                                } else {
+                                    if (state.isCountingDown) stopCooldown(card);
                                     if (dismissBtn) {
                                         dismissBtn.style.opacity = '0';
                                         dismissBtn.style.pointerEvents = 'none';
                                         dismissBtn.style.transform = 'scale(0)';
                                     }
-                                    state.lastTick = now;
-                                } else if (!state.hidden && !state.animating) {
-                                    // Card was alert, now it's not — start cooldown if not started
-                                    if (!state.isCountingDown && state.lastAlertColor) {
-                                        startCooldown(card, state.lastAlertColor);
-                                    } else if (state.isCountingDown) {
-                                        // Manage pause/resume
-                                        const isModalOpened = (activeModalCard === card && isModalGloballyOpen);
-                                        const shouldBePaused = state.isHovered || isModalOpened;
-
-                                        if (shouldBePaused && !state.isPaused) {
-                                            state.isPaused = true;
-                                            if (state.svgAnim) state.svgAnim.pause();
-                                        } else if (!shouldBePaused && state.isPaused) {
-                                            state.isPaused = false;
-                                            if (state.svgAnim) state.svgAnim.play();
-                                        }
-
-                                        if (!state.isPaused) {
-                                            state.remaining -= (now - state.lastTick);
-                                        }
-                                        state.lastTick = now;
-
-                                        // Cooldown finished — just remove the border, card stays visible
-                                        if (state.remaining <= 0) {
-                                            state.isCountingDown = false;
-                                            resizeObserver.unobserve(card);
-                                            const prog = card.querySelector('.hide-progress');
-                                            if (prog) prog.remove();
-                                            state.lastAlertColor = null;
-                                        }
-                                    }
-
-                                    // Show dismiss button on non-alert hovered cards
-                                    if (state.isHovered && dismissBtn) {
-                                        dismissBtn.style.opacity = '1';
-                                        dismissBtn.style.pointerEvents = 'auto';
-                                        dismissBtn.style.transform = 'scale(1)';
-                                    }
                                 }
                             });
 
                             const badge = document.getElementById('urgent-badge');
-                            if (badge) {
-                                badge.textContent = activeAlertsCount;
-                            }
+                            if (badge) badge.textContent = activeAlertsCount;
                         }, 50);
                     });
                 </script>

@@ -338,6 +338,39 @@
         });
     });
 
+    document.addEventListener('click', function (e) {
+        const btn = e.target.closest('.card-chart-btn');
+        if (!btn || !btn.dataset.cardChartType) return;
+
+        e.preventDefault();
+
+        const panel = btn.closest('.modal-grid');
+        if (!panel) return;
+
+        const group = btn.closest('.chart-type-group');
+        if (group) {
+            group.querySelectorAll('.card-chart-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+        }
+
+        const newType = btn.dataset.cardChartType;
+        const paramId = panel.dataset.paramId;
+
+        const card = document.querySelector(`article.card[data-slug="${panel.id.replace(/^.*panel-/, '')}"]`);
+        if (card) {
+            card.dataset.chartType = newType;
+            window.renderSparkline(card);
+        }
+
+        if (paramId) {
+            const formData = new FormData();
+            formData.append('parameter_id', paramId);
+            formData.append('chart_type', newType);
+            formData.append('chart_pref_submit', '1');
+            fetch(window.location.href, { method: 'POST', body: formData }).catch(console.error);
+        }
+    });
+
     document.addEventListener('change', function (e) {
         if (e.target.classList.contains('card-interval-select')) {
             const select = e.target;
@@ -347,10 +380,8 @@
             const val = select.value;
             const slug = card.dataset.slug;
 
-            // Update local value
             card.dataset.cardDisplayDuration = val;
 
-            // Persist preference for this specific card
             const formData = new FormData();
             formData.append('parameter_id', slug);
             formData.append('chart_type', val);
@@ -358,7 +389,6 @@
             formData.append('preference_type', 'card_duration');
             fetch(window.location.href, { method: 'POST', body: formData }).catch(console.error);
 
-            // Update chart zoom
             const canvas = card.querySelector(".card-spark-canvas");
             if (canvas && canvas.chartInstance) {
                 const chart = canvas.chartInstance;
@@ -381,10 +411,6 @@
     });
 
     window.addEventListener('DashMedDurationChange', function (e) {
-        // This event comes from the MODAL select.
-        // User says: 'quand je change le temps de la modale ça... change aussi celui de la card mais lui ça le mémorise'
-        // Actually, if we want them independent, the modal change SHOULD NOT affect the card.
-        // I'll comment this out or make it only update open modals.
     });
 
 
@@ -453,10 +479,6 @@
                             li.dataset.value = metric.value;
                             li.dataset.flag = metric.is_crit_flag ? '1' : '0';
 
-                            /**
-                             * Append new data point to the DOM for synchronization.
-                             * Maintaining full history as per user requirements.
-                             */
                             dataList.appendChild(li);
 
                             if (canvas && canvas.chartInstance) {

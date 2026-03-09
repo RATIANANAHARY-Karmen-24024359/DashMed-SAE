@@ -355,58 +355,55 @@ viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-li
                         <div class="modal-chart-types" style="display: flex; align-items: center; gap: 6px;">
                             <span class="chart-type-label"
                                 style="font-size: 0.65rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; font-weight: 700;">Carte</span>
-                            <form method="POST" action="" class="chart-type-form">
-                                <input type="hidden" name="parameter_id" value="<?= $escape($parameterId) ?>">
-                                <input type="hidden" name="chart_pref_submit" value="1">
-                                <div class="chart-type-group" style="padding: 2px;">
+                            <div class="chart-type-group" style="padding: 2px;">
 
-                                    <?php foreach ($chartAllowed as $allowedType):
-                                        $icon = '';
-                                        switch ($allowedType) {
-                                            case 'line':
-                                                $icon = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" 
+                                <?php foreach ($chartAllowed as $allowedType):
+                                    $icon = '';
+                                    switch ($allowedType) {
+                                        case 'line':
+                                            $icon = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" 
 viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
 <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>';
-                                                break;
-                                            case 'bar':
-                                                $icon = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" 
+                                            break;
+                                        case 'bar':
+                                            $icon = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" 
 viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
 <line x1="12" y1="20" x2="12" y2="10"></line><line x1="18" y1="20" x2="18" y2="4">
 </line><line x1="6" y1="20" x2="6" y2="16"></line></svg>';
-                                                break;
-                                            case 'scatter':
-                                                $icon = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" 
+                                            break;
+                                        case 'scatter':
+                                            $icon = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" 
 viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
 <circle cx="7.5" cy="7.5" r="2.5"/><circle cx="16.5" cy="16.5" r="2.5"/><circle cx="7.5" cy="16.5" r="2.5"/>
 <circle cx="16.5" cy="7.5" r="2.5"/></svg>';
-                                                break;
-                                            case 'pie':
-                                            case 'doughnut':
-                                                $icon = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" 
+                                            break;
+                                        case 'pie':
+                                        case 'doughnut':
+                                            $icon = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" 
 viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
 <path d="M21.21 15.89A10 10 0 1 1 8 2.83"></path><path d="M22 12A10 10 0 0 0 12 2v10z"></path></svg>';
-                                                break;
-                                            case 'value':
-                                                $icon = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" 
+                                            break;
+                                        case 'value':
+                                            $icon = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" 
 viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-<rect x="4" y="4" width="16" height="16" rx="2" ry="2"></rect><path d="M12 8v8"></path><path d="M10 10l2-2"></path>
+<rect x="4" y="4" width="16" height="16" rx="2" ry="2"></rect><path d="M12 8v8"></path><path d="M10 10l2-2">
+</path>
 </svg>';
-                                                break;
-                                            default:
-                                                $icon = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" 
+                                            break;
+                                        default:
+                                            $icon = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" 
 viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
 <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect></svg>';
-                                        }
-                                        ?>
-                                        <button type="submit" name="chart_type" value="<?= $escape($allowedType) ?>"
-                                            class="chart-type-btn <?= $allowedType === $chartType ? 'active' : '' ?>"
-                                            style="padding: 4px;"
-                                            title="Carte : <?= $escape($chartTypes[$allowedType] ?? ucfirst($allowedType)) ?>">
-                                            <?= $icon ?>
-                                        </button>
-                                    <?php endforeach; ?>
-                                </div>
-                            </form>
+                                    }
+                                    ?>
+                                    <button type="button" data-card-chart-type="<?= $escape($allowedType) ?>"
+                                        class="chart-type-btn card-chart-btn <?= $allowedType === $chartType ? 'active' : '' ?>"
+                                        style="padding: 4px;"
+                                        title="Carte : <?= $escape($chartTypes[$allowedType] ?? ucfirst($allowedType)) ?>">
+                                        <?= $icon ?>
+                                    </button>
+                                <?php endforeach; ?>
+                            </div>
                         </div>
                     </div>
                 </div>
