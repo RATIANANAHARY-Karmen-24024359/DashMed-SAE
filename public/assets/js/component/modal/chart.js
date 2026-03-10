@@ -1,7 +1,6 @@
 const historyCache = {};
 
 function applyThemeColors(chartInstance) {
-    // ECharts handles theme partly through initialization, but we can set option
     if (!chartInstance) return;
     const style = getComputedStyle(document.body || document.documentElement);
     const gridColor = style.getPropertyValue('--chart-grid-color').trim();
@@ -250,46 +249,98 @@ function createEChart(type, title, rawData, target, color, thresholds, view, ext
     const tooltipBorder = resolveColor("var(--chart-tooltip-border)") || '#e5e7eb';
 
     let options = {};
-    const eType = type === 'scatter' ? 'scatter' : (type === 'bar' ? 'bar' : 'line');
 
-    if (type === 'pie' || type === 'doughnut') {
-        const currentVal = rawData[0][1];
-        const max = extra.max || 100;
-        const remaining = Math.max(0, max - currentVal);
-        const radius = type === 'doughnut' ? ['40%', '70%'] : '70%';
+    const eType = (type === 'line' || type === 'step')
+        ? 'line'
+        : (type === 'bar' ? 'bar' : 'scatter');
+
+    const isStep = type === 'step';
+
+    const bMin = view.min !== undefined && view.min !== null && !isNaN(view.min)
+        ? view.min
+        : 0;
+
+    const bMax = view.max !== undefined && view.max !== null && !isNaN(view.max)
+        ? view.max
+        : 250;
+
+    const xMin = extra.initialZoomMs && rawData.length > 0
+        ? rawData[rawData.length - 1][0] - extra.initialZoomMs
+        : undefined;
+
+    if (type === 'radar') {
+        options = {
+            grid: { top: 10, bottom: 10, left: 10, right: 10, containLabel: true },
+            radar: {
+                indicator: [{ name: 'Valeur', max: bMax }],
+                radius: '70%',
+                splitNumber: 4,
+                axisName: { color: tickColor },
+                splitLine: { lineStyle: { color: gridColor, opacity: 0.5 } },
+                splitArea: { show: false },
+                axisLine: { lineStyle: { color: gridColor, opacity: 0.5 } }
+            },
+            series: [{
+                type: 'radar',
+                data: [{ value: [rawData.length > 0 ? rawData[rawData.length - 1][1] : 0], name: 'Dernière Valeur' }],
+                itemStyle: { color: chartColor },
+                areaStyle: {
+                    color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                        { offset: 0, color: chartColor + '66' },
+                        { offset: 1, color: chartColor + '00' }
+                    ])
+                }
+            }]
+        };
+    } else if (type === 'gauge') {
+
+        const lastVal = rawData.length > 0
+            ? rawData[rawData.length - 1][1]
+            : 0;
+
+        let cMax = Number.isFinite(bMax)
+            ? bMax
+            : (lastVal > 0 ? lastVal * 1.5 : 100);
+
+        let gaugeColors = [];
+
+        if (Number.isFinite(thresholds.nmin) && Number.isFinite(thresholds.nmax) && cMax > bMin) {
+
+            let nminP = (thresholds.nmin - bMin) / (cMax - bMin);
+            let nmaxP = (thresholds.nmax - bMin) / (cMax - bMin);
+
+            nminP = Math.max(0, Math.min(1, nminP));
+            nmaxP = Math.max(0, Math.min(1, nmaxP));
+
+            const c_yellow = resolveColor('var(--chart-band-yellow)') || '#f59e0b';
+            const c_green = resolveColor('var(--chart-band-green)') || '#10b981';
+            const c_red = resolveColor('var(--chart-band-red)') || '#ef4444';
+
+            if (nminP > 0) gaugeColors.push([nminP, c_yellow]);
+            if (nmaxP > nminP) gaugeColors.push([nmaxP, c_green]);
+            if (nmaxP < 1) gaugeColors.push([1, c_red]);
+
+        } else {
+
+            gaugeColors = [[1, chartColor]];
+
+        }
 
         options = {
-            tooltip: {
-                trigger: 'item',
-                backgroundColor: tooltipBg,
-                textStyle: { color: tooltipText },
-                borderColor: tooltipBorder,
-            },
-            series: [
-                {
-                    type: 'pie',
-                    radius: radius,
-                    center: ['50%', '50%'],
-                    data: [
-                        { value: currentVal, name: 'Mesure', itemStyle: { color: chartColor } },
-                        { value: remaining, name: 'Reste', itemStyle: { color: 'rgba(0,0,0,0.1)' } }
-                    ],
-                    label: { show: true, position: 'inside', formatter: '{c}' },
-                }
-            ]
+            tooltip: { formatter: '{c}', backgroundColor: tooltipBg, textStyle: { color: tooltipText }, borderColor: tooltipBorder },
+            series: [{
+                name: 'Valeur', type: 'gauge', min: bMin, max: cMax, radius: '90%', center: ['50%', '60%'],
+                axisLine: { show: true, lineStyle: { width: 10, color: gaugeColors.length > 0 ? gaugeColors : [[1, chartColor]] } },
+                pointer: { show: true, itemStyle: { color: chartColor }, width: 4 },
+                axisTick: { show: true, distance: -10, length: 8, lineStyle: { color: gridColor, width: 1 } },
+                splitLine: { show: true, distance: -10, length: 15, lineStyle: { color: gridColor, width: 2 } },
+                axisLabel: { show: true, color: tickColor, distance: 15, fontSize: 10 },
+                detail: { show: true, valueAnimation: true, formatter: '{value}', color: tickColor, fontSize: 16, offsetCenter: [0, '60%'] },
+                data: [{ value: lastVal }]
+            }]
         };
     } else {
         const markArea = [];
-        const nmin = thresholds.nmin;
-        const nmax = thresholds.nmax;
-        const cmin = thresholds.cmin;
-        const cmax = thresholds.cmax;
-        const c_red = resolveColor('var(--chart-band-red)');
-        const c_yellow = resolveColor('var(--chart-band-yellow)');
-        const c_green = resolveColor('var(--chart-band-green)');
-
-        const bMin = view.min !== undefined && view.min !== null && !isNaN(view.min) ? view.min : 0;
-        const bMax = view.max !== undefined && view.max !== null && !isNaN(view.max) ? view.max : 250;
 
         if (Number.isFinite(cmax) && Number.isFinite(nmin) && cmax <= nmin) {
             markArea.push([{ yAxis: cmax, itemStyle: { color: c_red } }, { yAxis: bMin }]);
@@ -329,10 +380,14 @@ function createEChart(type, title, rawData, target, color, thresholds, view, ext
             }
         }
 
-        const xMin = extra.initialZoomMs && rawData.length > 0 ? rawData[rawData.length - 1][0] - extra.initialZoomMs : undefined;
-
         options = {
-            grid: { top: 30, bottom: 25, left: 10, right: 20, containLabel: true },
+            grid: {
+                top: 40,
+                bottom: 50,
+                left: 15,
+                right: 25,
+                containLabel: true
+            },
             tooltip: {
                 trigger: 'axis',
                 backgroundColor: tooltipBg,
@@ -349,8 +404,7 @@ function createEChart(type, title, rawData, target, color, thresholds, view, ext
                 {
                     type: 'inside',
                     xAxisIndex: 0,
-                    startValue: xMin,
-                    endValue: rawData.length > 0 ? rawData[rawData.length - 1][0] : undefined,
+                    startValue: xMin ? xMin : undefined,
                     filterMode: 'filter'
                 },
                 {
@@ -362,36 +416,36 @@ function createEChart(type, title, rawData, target, color, thresholds, view, ext
                     borderColor: 'transparent',
                     textStyle: { color: tickColor },
                     handleStyle: { color: chartColor },
-                    fillerColor: 'rgba(39, 90, 254, 0.2)',
-                    startValue: xMin,
-                    endValue: rawData.length > 0 ? rawData[rawData.length - 1][0] : undefined
+                    fillerColor: 'rgba(39, 90, 254, 0.2)'
                 }
             ],
             xAxis: {
                 type: 'time',
-                z: 5,
-                splitLine: { show: true, lineStyle: { color: gridColor, type: 'solid', opacity: 1 } },
-                axisLabel: { color: tickColor, formatter: '{HH}:{mm}', margin: 12 },
-                axisTick: { show: false },
-                axisLine: { show: false }
+                show: true,
+                z: 10,
+                splitLine: { show: true, lineStyle: { color: gridColor, type: 'dashed', opacity: 0.3 } },
+                axisLabel: { show: true, color: tickColor, formatter: '{HH}:{mm}', margin: 10, fontSize: 10 },
+                axisTick: { show: true, lineStyle: { color: gridColor } },
+                axisLine: { show: true, lineStyle: { color: gridColor } }
             },
-            dataset: { source: [[0, 0]] },
             yAxis: {
                 type: 'value',
-                min: view.min,
-                max: view.max,
-                z: 5,
-                splitLine: { show: true, lineStyle: { color: gridColor, type: 'solid', opacity: 1 } },
-                axisLabel: { color: tickColor, margin: 12 },
-                axisTick: { show: false },
-                axisLine: { show: false }
+                min: bMin,
+                max: bMax,
+                show: true,
+                z: 10,
+                splitLine: { show: true, lineStyle: { color: gridColor, type: 'dashed', opacity: 0.3 } },
+                axisLabel: { show: true, color: tickColor, margin: 10, fontSize: 10 },
+                axisTick: { show: true, lineStyle: { color: gridColor } },
+                axisLine: { show: true, lineStyle: { color: gridColor } }
             },
             series: [{
                 data: rawData,
                 type: eType,
                 showSymbol: type === 'scatter',
                 symbolSize: type === 'scatter' ? 6 : 0,
-                smooth: true,
+                smooth: !isStep,
+                step: isStep ? 'end' : false,
                 sampling: null,
                 large: false,
                 itemStyle: { color: chartColor },
@@ -407,10 +461,10 @@ function createEChart(type, title, rawData, target, color, thresholds, view, ext
                     data: markArea
                 }
             }]
-        };
+        }
     }
 
-    chartInstance.setOption(options);
+    chartInstance.setOption(options, true);
 
     chartInstance.on('dataZoom', function () {
         const canvas = chartInstance.getDom();
@@ -677,19 +731,13 @@ document.addEventListener('change', function (e) {
             const val = Number(metric.value);
             const chart = canvas.chartInstance;
 
-            if (metric.chart_type === 'pie' || metric.chart_type === 'doughnut') {
-                const max = parseFloat(panel.dataset.max || panel.dataset.nmax || panel.dataset.dmax) || 100;
-                chart.setOption({
-                    series: [{
-                        data: [
-                            { value: val, name: 'Mesure', itemStyle: { color: resolveColor("var(--chart-color)") } },
-                            { value: Math.max(0, max - val), name: 'Reste', itemStyle: { color: 'rgba(0,0,0,0.1)' } }
-                        ]
-                    }]
-                });
-            } else {
-                const option = chart.getOption();
-                if (option.series && option.series.length > 0) {
+            const option = chart.getOption();
+            if (option.series && option.series.length > 0) {
+                const seriesType = option.series[0].type;
+
+                if (seriesType === 'gauge') {
+                    chart.setOption({ series: [{ data: [{ value: val }] }] });
+                } else {
                     const ds = option.series[0].data || [];
                     const exists = ds.some(p => p[0] === time);
                     if (!exists) {

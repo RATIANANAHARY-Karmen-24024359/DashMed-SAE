@@ -60,7 +60,7 @@
                 setTimeout(() => {
                     loader.classList.add('hidden');
                     setTimeout(() => { bar.style.width = '0%'; text.textContent = '0%'; }, 200);
-                }, 300); // Slight delay at 100% to satisfy visual proof
+                }, 300);
             };
         };
 
@@ -151,36 +151,80 @@
 
         let options = {};
 
-        if (type === 'pie' || type === 'doughnut') {
-            const currentVal = rawData[0][1];
-            const max = parseFloat(card.dataset.max) || 100;
-            const remaining = Math.max(0, max - currentVal);
-            const radius = type === 'doughnut' ? ['50%', '90%'] : '90%';
+        const eType = (type === 'line' || type === 'step') ? 'line' : (type === 'bar' ? 'bar' : 'scatter');
+        const isStep = type === 'step';
+
+        let bMin = view.min !== undefined && view.min !== null && !isNaN(view.min) ? view.min : 0;
+        let bMax = view.max !== undefined && view.max !== null && !isNaN(view.max) ? view.max : 250;
+
+        if (type === 'radar') {
+            options = {
+                grid: { top: 10, bottom: 10, left: 10, right: 10, containLabel: true },
+                radar: {
+                    indicator: [{ name: 'Valeur', max: bMax }],
+                    radius: '70%',
+                    splitNumber: 4,
+                    axisName: { color: tickColor },
+                    splitLine: { lineStyle: { color: gridColor, opacity: 0.5 } },
+                    splitArea: { show: false },
+                    axisLine: { lineStyle: { color: gridColor, opacity: 0.5 } }
+                },
+                series: [{
+                    type: 'radar',
+                    data: [{ value: [rawData.length > 0 ? rawData[rawData.length - 1][1] : 0], name: 'Dernière Valeur' }],
+                    itemStyle: { color: chartColor },
+                    areaStyle: {
+                        color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                            { offset: 0, color: chartColor + '66' },
+                            { offset: 1, color: chartColor + '00' }
+                        ])
+                    }
+                }]
+            };
+        } else if (type === 'gauge') {
+            const lastVal = rawData.length > 0 ? rawData[rawData.length - 1][1] : 0;
+            if (!Number.isFinite(bMax)) bMax = (lastVal > 0 ? lastVal * 1.5 : 100);
+
+            let gaugeColors = [];
+            if (Number.isFinite(thresholds.nmin) && Number.isFinite(thresholds.nmax) && bMax > bMin) {
+                let nminP = (thresholds.nmin - bMin) / (bMax - bMin);
+                let nmaxP = (thresholds.nmax - bMin) / (bMax - bMin);
+                nminP = Math.max(0, Math.min(1, nminP));
+                nmaxP = Math.max(0, Math.min(1, nmaxP));
+                let c_yellow = resolveColor('var(--chart-band-yellow)') || '#f59e0b';
+                let c_green = resolveColor('var(--chart-band-green)') || '#10b981';
+                let c_red = resolveColor('var(--chart-band-red)') || '#ef4444';
+
+                if (nminP > 0) gaugeColors.push([nminP, c_yellow]);
+                if (nmaxP > nminP) gaugeColors.push([nmaxP, c_green]);
+                if (nmaxP < 1) gaugeColors.push([1, c_red]);
+            } else {
+                gaugeColors = [[1, chartColor]];
+            }
 
             options = {
-                tooltip: {
-                    trigger: 'item',
-                    backgroundColor: tooltipBg,
-                    textStyle: { color: tooltipText },
-                    borderColor: tooltipBorder,
-                },
+                tooltip: { formatter: '{c}', backgroundColor: tooltipBg, textStyle: { color: tooltipText }, borderColor: tooltipBorder },
                 series: [
                     {
-                        type: 'pie',
-                        radius: radius,
-                        center: ['50%', '50%'],
-                        data: [
-                            { value: currentVal, name: 'Mesure', itemStyle: { color: chartColor } },
-                            { value: remaining, name: 'Reste', itemStyle: { color: 'rgba(0,0,0,0.1)' } }
-                        ],
-                        label: { show: false },
-                        silent: false
+                        name: 'Valeur',
+                        type: 'gauge',
+                        min: bMin,
+                        max: bMax,
+                        radius: '90%',
+                        center: ['50%', '60%'],
+                        axisLine: {
+                            lineStyle: { width: 10, color: gaugeColors.length > 0 ? gaugeColors : [[1, chartColor]] }
+                        },
+                        pointer: { itemStyle: { color: chartColor }, width: 4 },
+                        axisTick: { distance: -10, length: 8, lineStyle: { color: gridColor, width: 1 } },
+                        splitLine: { distance: -10, length: 15, lineStyle: { color: gridColor, width: 2 } },
+                        axisLabel: { color: tickColor, distance: 15, fontSize: 10 },
+                        detail: { valueAnimation: true, formatter: '{value}', color: tickColor, fontSize: 16, offsetCenter: [0, '60%'] },
+                        data: [{ value: lastVal }]
                     }
                 ]
             };
         } else {
-            const eType = type === 'line' ? 'line' : (type === 'bar' ? 'bar' : 'scatter');
-
             const markArea = [];
             const nmin = thresholds.nmin;
             const nmax = thresholds.nmax;
@@ -190,25 +234,19 @@
             const c_yellow = resolveColor('var(--chart-band-yellow)');
             const c_green = resolveColor('var(--chart-band-green)');
 
-            const bMin = view.min !== undefined && view.min !== null && !isNaN(view.min) ? view.min : 0;
-            const bMax = view.max !== undefined && view.max !== null && !isNaN(view.max) ? view.max : 250; // fallback max
-
             if (Number.isFinite(cmax) && Number.isFinite(nmin) && cmax <= nmin) {
-                // Inverted scale (e.g. Glasgow)
                 markArea.push([{ yAxis: cmax, itemStyle: { color: c_red } }, { yAxis: bMin }]);
                 markArea.push([{ yAxis: nmin, itemStyle: { color: c_yellow } }, { yAxis: cmax }]);
                 const greenTop = Number.isFinite(nmax) ? nmax : bMax;
                 if (greenTop > nmin) markArea.push([{ yAxis: greenTop, itemStyle: { color: c_green } }, { yAxis: nmin }]);
                 if (Number.isFinite(nmax) && bMax > nmax) markArea.push([{ yAxis: bMax, itemStyle: { color: c_yellow } }, { yAxis: nmax }]);
             } else if (Number.isFinite(nmax) && Number.isFinite(cmin) && nmax <= cmin) {
-                // Inverted scale 2
                 const greenBottom = Number.isFinite(nmin) ? nmin : bMin;
                 if (Number.isFinite(nmin) && greenBottom > bMin) markArea.push([{ yAxis: greenBottom, itemStyle: { color: c_yellow } }, { yAxis: bMin }]);
                 if (nmax > greenBottom) markArea.push([{ yAxis: nmax, itemStyle: { color: c_green } }, { yAxis: greenBottom }]);
                 markArea.push([{ yAxis: cmin, itemStyle: { color: c_yellow } }, { yAxis: nmax }]);
                 markArea.push([{ yAxis: bMax, itemStyle: { color: c_red } }, { yAxis: cmin }]);
             } else {
-                // Standard scale
                 if (Number.isFinite(cmin)) markArea.push([{ yAxis: cmin, itemStyle: { color: c_red } }, { yAxis: bMin }]);
 
                 let greenBottom = bMin;
@@ -257,7 +295,7 @@
                     }
                 },
                 xAxis: {
-                    type: 'time', // Fix: Use 'time' instead of 'category' for proper zoom
+                    type: 'time',
                     boundaryGap: false,
                     show: true,
                     z: 5,
@@ -274,8 +312,8 @@
                 },
                 yAxis: {
                     type: 'value',
-                    min: view.min,
-                    max: view.max,
+                    min: bMin,
+                    max: bMax,
                     show: true,
                     z: 5,
                     splitLine: { show: true, lineStyle: { color: gridColor, type: 'solid' } },
@@ -288,9 +326,11 @@
                     type: eType,
                     showSymbol: type === 'scatter',
                     symbolSize: type === 'scatter' ? 4 : 0,
-                    smooth: true,
+                    smooth: !isStep,
+                    step: isStep ? 'end' : false,
                     itemStyle: { color: chartColor },
                     lineStyle: { color: chartColor, width: 2 },
+                    areaStyle: undefined,
                     markArea: {
                         silent: true,
                         data: markArea
@@ -313,10 +353,10 @@
                     { type: 'inside', start: 0, end: 100, zoomLock: true, zoomOnMouseWheel: false, moveOnMouseMove: false }
                 ];
             }
-        }
 
+        }
         hideLoader();
-        chartInstance.setOption(options);
+        chartInstance.setOption(options, true);
 
         const ro = new ResizeObserver(() => {
             chartInstance.resize();
@@ -453,66 +493,54 @@
                 }
 
                 const canvas = card.querySelector(".card-spark-canvas");
-                if (metric.chart_type === 'pie' || metric.chart_type === 'doughnut') {
-                    if (canvas && canvas.chartInstance && metric.value !== '') {
-                        const chart = canvas.chartInstance;
-                        const currentVal = Number(metric.value);
-                        const max = parseFloat(card.dataset.max) || 100;
-                        const remaining = Math.max(0, max - currentVal);
 
-                        chart.setOption({
-                            series: [{
-                                data: [
-                                    { value: currentVal, name: 'Mesure', itemStyle: { color: resolveColor("var(--chart-color)") } },
-                                    { value: remaining, name: 'Reste', itemStyle: { color: 'rgba(0,0,0,0.1)' } }
-                                ]
-                            }]
-                        });
-                    }
-                } else {
-                    const dataList = card.querySelector("ul[data-spark]");
-                    if (dataList && metric.time_iso && metric.value !== '') {
-                        const existing = dataList.querySelector(`li[data-time="${metric.time_iso}"]`);
-                        if (!existing) {
-                            const li = document.createElement('li');
-                            li.dataset.time = metric.time_iso;
-                            li.dataset.value = metric.value;
-                            li.dataset.flag = metric.is_crit_flag ? '1' : '0';
+                const dataList = card.querySelector("ul[data-spark]");
+                if (dataList && metric.time_iso && metric.value !== '') {
+                    const existing = dataList.querySelector(`li[data-time="${metric.time_iso}"]`);
+                    if (!existing) {
+                        const li = document.createElement('li');
+                        li.dataset.time = metric.time_iso;
+                        li.dataset.value = metric.value;
+                        li.dataset.flag = metric.is_crit_flag ? '1' : '0';
 
-                            dataList.appendChild(li);
+                        dataList.appendChild(li);
 
-                            if (canvas && canvas.chartInstance) {
-                                const chart = canvas.chartInstance;
-                                const timeMs = new Date(metric.time_iso).getTime();
-                                const val = Number(metric.value);
+                        const val = Number(metric.value);
+                        const timeMs = new Date(metric.time_iso).getTime();
 
-                                if (isNaN(timeMs)) return;
-
-                                const option = chart.getOption();
-                                if (option.series && option.series.length > 0) {
+                        if (canvas && canvas.chartInstance) {
+                            const chart = canvas.chartInstance;
+                            const option = chart.getOption();
+                            if (option.series && option.series.length > 0) {
+                                const seriesType = option.series[0].type;
+                                if (seriesType === 'gauge') {
+                                    chart.setOption({ series: [{ data: [{ value: val }] }] });
+                                    return;
+                                } else if (seriesType === 'radar') {
+                                    chart.setOption({ series: [{ data: [{ value: [val] }] }] });
+                                    return;
+                                } else {
+                                    if (isNaN(timeMs)) return;
                                     const ds = option.series[0].data || [];
                                     const exists = ds.some(p => p[0] === timeMs);
                                     if (!exists) {
                                         ds.push([timeMs, val]);
                                         ds.sort((a, b) => a[0] - b[0]);
                                         if (ds.length > 100) ds.shift();
-
                                         const updateObj = { series: [{ data: ds }] };
-
                                         const durationVal = card.dataset.displayDuration;
                                         if (durationVal && durationVal !== 'all') {
                                             const hours = parseFloat(durationVal);
                                             const minTime = timeMs - (hours * 3600 * 1000);
                                             updateObj.dataZoom = [{ type: 'inside', startValue: minTime, endValue: timeMs, zoomLock: true, zoomOnMouseWheel: false, moveOnMouseMove: false }];
                                         }
-
                                         chart.setOption(updateObj);
                                     }
+                                    return;
                                 }
-                            } else {
-                                window.renderSparkline(card);
                             }
                         }
+                        window.renderSparkline(card);
                     }
                 }
             });
@@ -522,4 +550,3 @@
     });
 
 })();
-
