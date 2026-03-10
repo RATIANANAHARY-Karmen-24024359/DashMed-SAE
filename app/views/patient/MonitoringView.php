@@ -156,6 +156,7 @@ class MonitoringView
                         <?php
                         $patientMetrics = $this->patientMetrics;
                         $chartTypes = $this->chartTypes;
+                        $showNoLayoutMessage = false;
                         include dirname(__DIR__) . '/partials/_monitoring-cards.php';
                         ?>
                     </section>

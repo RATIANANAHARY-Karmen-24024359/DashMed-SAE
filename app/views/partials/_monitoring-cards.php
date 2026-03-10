@@ -18,6 +18,7 @@ declare(strict_types=1);
 $idPrefix = $idPrefix ?? '';
 $useCustomLayout = $useCustomLayout ?? false;
 $useCustomSize = $useCustomSize ?? false;
+$showNoLayoutMessage = $showNoLayoutMessage ?? true;
 
 $DEFAULT_WIDTH = 4;
 $DEFAULT_HEIGHT = 3;
@@ -40,7 +41,7 @@ $escape = static fn(mixed $value): string => htmlspecialchars(
 );
 
 if (!empty($patientMetrics)): ?>
-    <?php if (empty($layoutMap)): ?>
+    <?php if ($showNoLayoutMessage && empty($layoutMap)): ?>
         <article class="card" data-no-data="1"
             style="grid-column: 1 / -1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 2rem; text-align: center; gap: 1rem;">
             <h3 style="font-size: 1.1rem; font-weight: 600; color: var(--text-color);">Aucune donnée</h3>
