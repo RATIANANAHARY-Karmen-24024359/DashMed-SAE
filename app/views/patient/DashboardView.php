@@ -157,6 +157,7 @@ class DashboardView
                 'assets/js/service/stream.js?v=' . time(),
                 'assets/js/component/modal/chart.js?v=' . time(),
                 'assets/js/component/modal/navigation.js',
+                'assets/js/component/modal/modal.js',
                 'assets/js/component/charts/card-sparklines.js?v=' . time(),
             ],
             '.evenement-content {
@@ -185,15 +186,16 @@ class DashboardView
 
                     <div class="searchbar-with-patient">
                         <span class="patient-name-label">
-                             <?= htmlspecialchars(
-                                     trim(
-                                             (is_scalar($v = $this->patientData['first_name'] ?? '') ? (string)$v : '') . ' ' .
-                                             (is_scalar($v = $this->patientData['last_name'] ?? '') ? (string)$v : '')
-                                     ),
-                                     ENT_QUOTES, 'UTF-8'
-                             ) ?>
+                            <?= htmlspecialchars(
+                                trim(
+                                    (is_scalar($v = $this->patientData['first_name'] ?? '') ? (string) $v : '') . ' ' .
+                                    (is_scalar($v = $this->patientData['last_name'] ?? '') ? (string) $v : '')
+                                ),
+                                ENT_QUOTES,
+                                'UTF-8'
+                            ) ?>
 
-    </span>
+                        </span>
                         <?php include dirname(__DIR__) . '/partials/_searchbar.php'; ?>
                         <div class="live-clock" id="live-clock">
                             <span class="live-clock__time" id="live-clock-time"></span>
@@ -204,8 +206,8 @@ class DashboardView
                         (function () {
                             const timeEl = document.getElementById('live-clock-time');
                             const dateEl = document.getElementById('live-clock-date');
-                            const days = ['Dimanche','Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi'];
-                            const months = ['jan.','fév.','mars','avr.','mai','juin','juil.','août','sept.','oct.','nov.','déc.'];
+                            const days = ['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'];
+                            const months = ['jan.', 'fév.', 'mars', 'avr.', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.'];
 
                             function tick() {
                                 const now = new Date();
@@ -273,7 +275,7 @@ class DashboardView
 
 
                     <section class="skeleton-wrapper skeleton-monitoring-grid" id="skeleton-cards" data-skeleton-for="real-cards"
-                             data-skeleton-auto data-skeleton-delay="400">
+                        data-skeleton-auto data-skeleton-delay="400">
                         <?php for ($i = 0; $i < 6; $i++): ?>
                             <div class="skeleton-card">
                                 <div class="skeleton-card-header">
@@ -309,7 +311,7 @@ class DashboardView
                 <button id="aside-show-btn" onclick="toggleAside()">☰</button>
                 <aside id="aside">
                     <div class="skeleton-wrapper skeleton-aside-section" id="skeleton-aside" data-skeleton-for="real-aside"
-                         data-skeleton-auto data-skeleton-delay="350">
+                        data-skeleton-auto data-skeleton-delay="350">
                         <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 8px;">
                             <div class="skeleton skeleton-circle" style="width: 48px; height: 48px;"></div>
                             <div style="flex: 1; display: flex; flex-direction: column; gap: 6px;">
@@ -335,10 +337,10 @@ class DashboardView
                         <section class="patient-infos">
                             <?php
                             $firstName = htmlspecialchars(
-                                    is_scalar($v = $this->patientData['first_name']) ? (string) $v : 'Patient'
+                                is_scalar($v = $this->patientData['first_name']) ? (string) $v : 'Patient'
                             );
                             $lastName = htmlspecialchars(
-                                    is_scalar($v = $this->patientData['last_name']) ? (string) $v : 'Inconnu'
+                                is_scalar($v = $this->patientData['last_name']) ? (string) $v : 'Inconnu'
                             );
                             $birthDateStr = is_scalar($v = $this->patientData['birth_date']) ? (string) $v : '';
                             $age = 'Âge inconnu';
@@ -350,10 +352,10 @@ class DashboardView
                                 }
                             }
                             $admissionCause = htmlspecialchars(
-                                    is_scalar(
-                                            $v = $this->patientData['admission_cause']
-                                    ) ?
-                                            (string) $v : 'Aucun motif renseigné'
+                                is_scalar(
+                                    $v = $this->patientData['admission_cause']
+                                ) ?
+                                (string) $v : 'Aucun motif renseigné'
                             );
                             ?>
                             <div class="pi-header">
@@ -369,7 +371,7 @@ class DashboardView
                             </p>
 
                             <select id="id_rooms" name="room" onchange="location.href='/?page=dashboard&room=' + this.value"
-                                    style="margin-top: 15px; width: 100%; padding: 8px;">
+                                style="margin-top: 15px; width: 100%; padding: 8px;">
                                 <option value="" <?= $current === null ? 'selected' : '' ?>>
                                     -- Sélectionnez une chambre --
                                 </option>
@@ -414,8 +416,8 @@ class DashboardView
 
                             <?php
                             $toutesConsultations = array_merge(
-                                    $this->consultationsPassees,
-                                    $this->consultationsFutures
+                                $this->consultationsPassees,
+                                $this->consultationsFutures
                             );
 
                             if (!empty($toutesConsultations)):
@@ -450,13 +452,13 @@ class DashboardView
                                         <a href="/?page=medicalprocedure&id_patient=
                                     <?php echo urlencode((string) $patientId); ?>
                                     #<?php echo $this->getConsultationId($consultation); ?>" class="consultation-link"
-                                           data-date="<?php echo $isoDate; ?>">
+                                            data-date="<?php echo $isoDate; ?>">
                                             <div class="evenement-content">
                                                 <div class="date-container <?php if ($isPast) {
                                                     echo 'has-tooltip';
                                                 } ?>" <?php if ($isPast) {
-                                                    echo 'data-tooltip="Consultation déjà effectuée"';
-                                                } ?>>
+                                                     echo 'data-tooltip="Consultation déjà effectuée"';
+                                                 } ?>>
                                                     <span class="date">
                                                         <?php echo htmlspecialchars($this->formatDate($dateStr)); ?>
                                                     </span>
@@ -479,7 +481,7 @@ class DashboardView
 
 
                             <a href="/?page=medicalprocedure&id_patient=<?php echo urlencode((string) $patientId); ?>"
-                               style="text-decoration: none; color: inherit;">
+                                style="text-decoration: none; color: inherit;">
                                 <p class="bouton-consultations">Afficher plus de contenu</p>
                             </a>
                             <br>
@@ -823,7 +825,7 @@ class DashboardView
                                 lastAlertColor: isAlertCard(card) ? getAlertColor(card) : null
                             });
 
-                            card.addEventListener('click', () => {
+                            card.addEventListener('click', (event) => {
                                 window.activeModalCard = card;
                             });
 

@@ -420,9 +420,10 @@
 }
 
 .notif-volume-slider {
-    appearance: slider-vertical;
-    -webkit-appearance: slider-vertical;
-    writing-mode: bt-lr;
+    appearance: auto;
+    -webkit-appearance: auto;
+    writing-mode: vertical-lr;
+    direction: rtl;
     width: 6px;
     height: 100%;
     margin: 0;

@@ -421,7 +421,7 @@ const NotifHistory = (function () {
     const saveHistory = h => {
         const room = getCurrentRoom();
         const all = getAllHistory();
-        all[room] = h.slice(0, 50);
+        all[room] = h.slice(0, 500);
         localStorage.setItem(STORAGE_KEY, JSON.stringify(all));
     };
 
@@ -672,17 +672,37 @@ const NotifHistory = (function () {
         document.body.appendChild(panel);
     }
 
-    function render() {
+    let currentIndex = 0;
+    const itemsPerPage = 20;
+    let observer = null;
+    let isDelegated = false;
+
+    function render(append = false) {
         if (!panel) createPanel();
         const body = panel.querySelector('.notif-panel-body'),
             footer = panel.querySelector('.notif-panel-footer'),
             h = getHistory();
+
+        if (!append) {
+            currentIndex = 0;
+            body.innerHTML = '';
+            if (observer) {
+                observer.disconnect();
+                observer = null;
+            }
+        }
+
+        const toShow = h.slice(currentIndex, currentIndex + itemsPerPage);
+
         footer.style.display = h.length ? '' : 'none';
-        if (!h.length) {
+        
+        if (!append && !h.length) {
             body.innerHTML = '<div class="notif-panel-empty">Aucune notification</div>';
             return;
         }
-        body.innerHTML = h.map((n, i) => {
+
+        const html = toShow.map((n, i) => {
+            const realIdx = currentIndex + i;
             const type = n.type === 'error' ? 'critical' : (n.type === 'info' ? 'info' : 'warning');
             const param = n.title?.split('—')[1]?.trim() || n.rdvTime || 'Alerte';
             const hasCard = type !== 'info' && !!n.parameterId;
@@ -705,7 +725,7 @@ const NotifHistory = (function () {
                 messageStr = `DEPASSEMENT DE ${param.toUpperCase()} À ${heures}H${minutes}.`;
             }
 
-            return `<div class="notif-item ${type} ${hasCard ? 'notif-item--clickable' : ''}" data-idx="${i}" ${hasCard ? `data-param-id="${n.parameterId}"` : ''}>
+            return `<div class="notif-item ${type} ${hasCard ? 'notif-item--clickable' : ''}" data-idx="${realIdx}" ${hasCard ? `data-param-id="${n.parameterId}"` : ''}>
                 <div class="notif-item-content">
                     <div class="notif-item-header">
                         <div class="notif-item-param">${type === 'info' ? param : messageStr}</div>
@@ -716,21 +736,99 @@ const NotifHistory = (function () {
                 <button class="notif-item-delete">${CLOSE_ICON}</button>
             </div>`;
         }).join('');
-        body.querySelectorAll('.notif-item-delete').forEach(btn => btn.addEventListener('click', e => {
-            e.stopPropagation();
-            const item = btn.closest('.notif-item');
-            item.classList.add('removing');
-            setTimeout(() => {
-                removeFromHistory(+item.dataset.idx);
-                render();
-            }, 250);
-        }));
-        body.querySelectorAll('.notif-item--clickable').forEach(item => item.addEventListener('click', e => {
-            if (!e.target.closest('.notif-item-delete')) {
-                scrollToCard(item.dataset.paramId);
-                close();
+
+        if (append) {
+            const temp = document.createElement('div');
+            temp.innerHTML = html;
+            while(temp.firstChild) {
+                body.appendChild(temp.firstChild);
             }
-        }));
+        } else {
+            body.innerHTML = html;
+        }
+
+        if (!isDelegated) {
+            body.addEventListener('click', (e) => {
+                const deleteBtn = e.target.closest('.notif-item-delete');
+                if (deleteBtn) {
+                    e.stopPropagation();
+                    const item = deleteBtn.closest('.notif-item');
+                    item.classList.add('removing');
+                    setTimeout(() => {
+                        const idxToRemove = +item.dataset.idx;
+                        removeFromHistory(idxToRemove);
+                        
+                        item.remove();
+                        currentIndex = Math.max(0, currentIndex - 1);
+
+                        const items = body.querySelectorAll('.notif-item[data-idx]');
+                        items.forEach(el => {
+                            const curIdx = +el.dataset.idx;
+                            if (curIdx > idxToRemove) {
+                                el.dataset.idx = curIdx - 1;
+                            }
+                        });
+
+                        const h = getHistory();
+                        if (h.length === 0) {
+                            body.innerHTML = '<div class="notif-panel-empty">Aucune notification</div>';
+                            if (footer) footer.style.display = 'none';
+                        }
+                    }, 250);
+                    return;
+                }
+                
+                const clickableItem = e.target.closest('.notif-item--clickable');
+                if (clickableItem) {
+                    scrollToCard(clickableItem.dataset.paramId);
+                    close();
+                }
+            });
+            isDelegated = true;
+        }
+
+        currentIndex += itemsPerPage;
+
+        if (observer) {
+            observer.disconnect();
+        }
+
+        if (currentIndex < h.length) {
+            const skeletonLoader = document.createElement('div');
+            skeletonLoader.className = 'notif-skeleton-loader';
+            skeletonLoader.style.display = 'flex';
+            skeletonLoader.style.flexDirection = 'column';
+            skeletonLoader.style.gap = '8px';
+            skeletonLoader.style.padding = '12px 16px';
+            
+            skeletonLoader.innerHTML = Array(3).fill(`
+                <div class="notif-item" style="border: none; box-shadow: none; display: flex; align-items: flex-start; gap: 12px; padding: 12px 0;">
+                    <div class="notif-item-content" style="flex: 1; display: flex; flex-direction: column; gap: 8px;">
+                        <div class="notif-item-header" style="display: flex; justify-content: space-between; align-items: center;">
+                            <div class="skeleton skeleton-text skeleton-text--lg" style="margin: 0; width: 60%;"></div>
+                            <div class="skeleton skeleton-text skeleton-text--sm" style="margin: 0; width: 40px;"></div>
+                        </div>
+                        <div class="skeleton skeleton-text" style="width: 80%;"></div>
+                    </div>
+                </div>
+            `).join('');
+
+            body.appendChild(skeletonLoader);
+
+            observer = new IntersectionObserver((entries) => {
+                if (entries[0].isIntersecting) {
+                    observer.disconnect();
+                    setTimeout(() => {
+                        skeletonLoader.remove();
+                        render(true);
+                    }, 800);
+                }
+            }, {
+                root: body,
+                threshold: 0.1
+            });
+            observer.observe(skeletonLoader);
+        }
     }
 
     const open = () => {

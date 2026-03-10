@@ -51,14 +51,14 @@ class SecurityService
         }
 
         $isHttps = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
-            || (isset($_SERVER['SERVER_PORT']) && (int)$_SERVER['SERVER_PORT'] === 443);
+            || (isset($_SERVER['SERVER_PORT']) && (int) $_SERVER['SERVER_PORT'] === 443);
 
         ini_set('session.use_strict_mode', '1');
         ini_set('session.use_only_cookies', '1');
         ini_set('session.use_trans_sid', '0');
         ini_set('session.cookie_httponly', '1');
         ini_set('session.cookie_samesite', 'Strict');
-        ini_set('session.gc_maxlifetime', (string)self::SESSION_TIMEOUT);
+        ini_set('session.gc_maxlifetime', (string) self::SESSION_TIMEOUT);
 
         if ($isHttps) {
             ini_set('session.cookie_secure', '1');
@@ -87,35 +87,29 @@ class SecurityService
             return;
         }
 
-        // Prevent clickjacking (A01: Broken Access Control)
         header('X-Frame-Options: DENY');
 
-        // Prevent MIME type sniffing (A02: Security Misconfiguration)
         header('X-Content-Type-Options: nosniff');
 
-        // Enable XSS protection (legacy browsers)
         header('X-XSS-Protection: 1; mode=block');
 
-        // Referrer policy for privacy
         header('Referrer-Policy: strict-origin-when-cross-origin');
 
-        // Permissions policy (restrict browser features)
         header('Permissions-Policy: camera=(), microphone=(), geolocation=(), payment=()');
 
-        // Content Security Policy (A05: Injection, A08: Software/Data Integrity)
-        header("Content-Security-Policy: "
+        header(
+            "Content-Security-Policy: "
             . "default-src 'self'; "
             . "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; "
             . "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; "
             . "font-src 'self' https://fonts.gstatic.com; "
             . "img-src 'self' data:; "
-            . "connect-src 'self'; "
+            . "connect-src 'self' https://cdn.jsdelivr.net; "
             . "frame-ancestors 'none'; "
             . "base-uri 'self'; "
             . "form-action 'self';"
         );
 
-        // Cache control for sensitive pages
         header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
         header('Pragma: no-cache');
     }
@@ -149,7 +143,7 @@ class SecurityService
             return true;
         }
 
-        if ((time() - (int)$_SESSION['_last_activity']) > self::SESSION_TIMEOUT) {
+        if ((time() - (int) $_SESSION['_last_activity']) > self::SESSION_TIMEOUT) {
             self::destroySession();
             return false;
         }
@@ -236,9 +230,8 @@ class SecurityService
         $key = 'login_attempts_' . md5($identifier);
         $lockKey = 'login_lockout_' . md5($identifier);
 
-        // Check if currently locked out
         if (isset($_SESSION[$lockKey])) {
-            $lockoutTime = (int)$_SESSION[$lockKey];
+            $lockoutTime = (int) $_SESSION[$lockKey];
             if (time() < $lockoutTime) {
                 $remaining = $lockoutTime - time();
                 self::logSecurityEvent(
@@ -247,7 +240,6 @@ class SecurityService
                 );
                 return false;
             }
-            // Lockout expired, reset
             unset($_SESSION[$lockKey], $_SESSION[$key]);
         }
 
@@ -267,7 +259,7 @@ class SecurityService
         $key = 'login_attempts_' . md5($identifier);
         $lockKey = 'login_lockout_' . md5($identifier);
 
-        $attempts = isset($_SESSION[$key]) ? (int)$_SESSION[$key] : 0;
+        $attempts = isset($_SESSION[$key]) ? (int) $_SESSION[$key] : 0;
         $attempts++;
         $_SESSION[$key] = $attempts;
 
@@ -314,7 +306,7 @@ class SecurityService
             return 0;
         }
 
-        $remaining = (int)$_SESSION[$lockKey] - time();
+        $remaining = (int) $_SESSION[$lockKey] - time();
         return max(0, $remaining);
     }
 
@@ -362,7 +354,7 @@ class SecurityService
     public static function escapeHtml(mixed $value): string
     {
         return htmlspecialchars(
-            is_scalar($value) ? (string)$value : '',
+            is_scalar($value) ? (string) $value : '',
             ENT_QUOTES | ENT_SUBSTITUTE,
             'UTF-8'
         );

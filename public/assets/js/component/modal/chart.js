@@ -52,19 +52,73 @@ async function updatePanelChart(panelId, chartId, title) {
     if (!root) return;
 
     const panel = root.querySelector('#' + panelId);
-    if (!panel) return;
+    if (!panel) {
+        console.warn("[DashMed] Modal panel not found in modalDetails:", panelId);
+        return;
+    }
 
     const list = panel.querySelectorAll('ul[data-hist]>li');
     const noDataPlaceholder = panel.querySelector('.modal-no-data-placeholder');
-    const canvas = document.getElementById(chartId);
+    let canvas = panel.querySelector('.modal-chart');
+    if (canvas) {
+        canvas.id = chartId;
+    } else {
+        canvas = document.getElementById(chartId);
+    }
     const valueContainer = panel.querySelector('.modal-value-only');
 
     const chartType = panel.dataset.chart || 'line';
     const idx = parseInt(panel.getAttribute('data-idx') || '0', 10);
     const unit = (panel.dataset.unit || '').trim().toLowerCase();
 
-    const showLoader = () => { };
-    const hideLoader = () => { };
+    const modalLoader = panel.querySelector('.modal-chart-loader');
+    let finishLoader = null;
+
+    const showLoader = () => {
+        if (!modalLoader) return;
+        modalLoader.classList.remove('hidden');
+
+        const bar = modalLoader.querySelector('.loader-progress-bar');
+        const text = modalLoader.querySelector('.loader-progress-text');
+        if (!bar || !text) return;
+
+        bar.style.width = '0%';
+        text.textContent = '0%';
+
+        let active = true;
+        let progress = 0;
+        const animate = () => {
+            if (!active) return;
+            if (progress < 40) progress += Math.random() * 5;
+            else if (progress < 70) progress += Math.random() * 2;
+            else if (progress < 85) progress += Math.random() * 0.8;
+            else if (progress < 95) progress += Math.random() * 0.2;
+            if (progress > 95) progress = 95;
+
+            bar.style.width = progress + '%';
+            text.textContent = Math.floor(progress) + '%';
+            setTimeout(animate, 30);
+        };
+        animate();
+
+        finishLoader = () => {
+            active = false;
+            bar.style.width = '100%';
+            text.textContent = '100%';
+            setTimeout(() => {
+                modalLoader.classList.add('hidden');
+            }, 300);
+        };
+    };
+
+    const hideLoader = () => {
+        if (finishLoader) { finishLoader(); finishLoader = null; }
+        else if (modalLoader) modalLoader.classList.add('hidden');
+        if (canvas) {
+            canvas.style.display = 'block';
+            canvas.style.opacity = '1';
+        }
+    };
 
     if (chartType === 'value') {
         const valueRaw = panel.dataset.value || '—';
@@ -105,7 +159,9 @@ async function updatePanelChart(panelId, chartId, title) {
         if (unit.includes('%')) max = 100;
         else if (Number.isFinite(view.max)) max = view.max;
 
-        createEChart(chartType, title, [[Date.now(), val]], chartId, 'var(--chart-color)', thresholds, view, { mode: 'singlePercent', max });
+        if (canvas) canvas.style.display = 'block';
+        createEChart(chartType, title, [[Date.now(), val]], canvas, 'var(--chart-color)', thresholds, view, { mode: 'singlePercent', max });
+        hideLoader();
 
     } else {
         const targetDate = panel.dataset.targetDate || '';
@@ -124,16 +180,26 @@ async function updatePanelChart(panelId, chartId, title) {
             if (historyCache[cacheKey]) {
                 dataArr = historyCache[cacheKey];
             } else {
-                const res = await fetch(`${window.location.origin}/api_history?param=${encodeURIComponent(paramId)}${dateParam}`);
-                if (!res.ok) throw new Error('Fetch failed');
+                const fetchUrl = `/api_history?param=${encodeURIComponent(paramId)}${dateParam}`;
+                console.log('[DashMed] Fetching chart data:', fetchUrl);
+
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 60000);
+
+                const res = await fetch(fetchUrl, { signal: controller.signal });
+                clearTimeout(timeoutId);
+                console.log('[DashMed] Fetch response:', res.status, res.statusText);
+
+                if (!res.ok) throw new Error('Fetch failed: ' + res.status);
                 dataArr = await res.json();
                 if (dataArr.error) throw new Error(dataArr.error);
+                console.log('[DashMed] Data received:', dataArr.length, 'points');
                 historyCache[cacheKey] = dataArr;
             }
 
             const csvBtn = panel.querySelector('.btn-csv-download');
             if (csvBtn) {
-                csvBtn.href = `${window.location.origin}/api_history?param=${encodeURIComponent(paramId)}${dateParam}&raw=1&format=csv`;
+                csvBtn.href = `/api_history?param=${encodeURIComponent(paramId)}${dateParam}&raw=1&format=csv`;
             }
 
             if (dataArr.length === 0) {
@@ -171,7 +237,7 @@ async function updatePanelChart(panelId, chartId, title) {
                 initialZoom = 0;
             }
 
-            createEChart(chartType, title, rawData, chartId, 'var(--chart-color)', thresholds, view, { initialZoomMs: initialZoom });
+            createEChart(chartType, title, rawData, canvas, 'var(--chart-color)', thresholds, view, { initialZoomMs: initialZoom });
             setupRealtimeSyncButton(panel, chartId, title);
 
         } catch (err) {
@@ -188,12 +254,16 @@ function updatePanelPieChart(panelId, chartId, title) {
 
 function createEChart(type, title, rawData, target, color, thresholds, view, extra) {
     if (!window.echarts) return;
-    const canvas = document.getElementById(target);
+    const canvas = (typeof target === 'string') ? (document.getElementById('modalDetails')?.querySelector('#' + target) || document.getElementById(target)) : target;
     if (!canvas) return;
 
     if (canvas.chartInstance) {
         canvas.chartInstance.dispose();
     }
+
+    canvas.style.width = '100%';
+    canvas.style.height = '100%';
+    canvas.style.display = 'block';
 
     const chartInstance = echarts.init(canvas, null, {
         renderer: 'canvas',
@@ -334,7 +404,6 @@ function createEChart(type, title, rawData, target, color, thresholds, view, ext
                 axisTick: { show: false },
                 axisLine: { show: false }
             },
-            dataset: { source: [[0, 0]] },
             yAxis: {
                 type: 'value',
                 min: view.min,
@@ -407,6 +476,12 @@ function createEChart(type, title, rawData, target, color, thresholds, view, ext
 
     const ro = new ResizeObserver(() => chartInstance.resize());
     ro.observe(canvas.parentElement);
+
+    setTimeout(() => {
+        if (chartInstance && !chartInstance.isDisposed()) {
+            chartInstance.resize();
+        }
+    }, 400);
 }
 
 function getChartVisibleDurationMs(chart, panel) {
@@ -457,7 +532,7 @@ function setupRealtimeSyncButton(panel, chartId, title) {
         syncBtn.style.justifyContent = 'center';
 
         syncBtn.onclick = () => {
-            const canvas = document.getElementById(chartId);
+            const canvas = panel.querySelector('.modal-chart') || document.getElementById(chartId);
             if (canvas && canvas.chartInstance) {
                 const chart = canvas.chartInstance;
                 const opt = chart.getOption();
