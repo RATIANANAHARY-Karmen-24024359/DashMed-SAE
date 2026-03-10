@@ -236,3 +236,80 @@
     color: var(--text-muted);
     font-size: 0.9rem;
 }
+
+.searchbar-with-patient {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    margin-bottom: 24px;
+}
+
+
+.patient-name-label {
+    flex: 0 0 auto;
+    font-size: 1.7rem;
+    font-weight: 600;
+    white-space: nowrap;
+    color: var(--text-main, #1a1a1a);
+    padding-bottom: 0;
+    line-height: 1;
+}
+
+.searchbar-with-patient .searchbar {
+    flex: 1 1 0 !important;
+    width: 0 !important;
+    min-width: 0;
+    margin: 0;
+}
+
+.searchbar-with-patient form,
+.searchbar-with-patient input[type="search"],
+.searchbar-with-patient input[type="text"] {
+    flex: 1;
+    min-width: 0;
+}
+
+.live-clock {
+    flex: 0 0 auto;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    white-space: nowrap;
+    line-height: 1.25;
+}
+
+.live-clock__time {
+    font-size: 1.4rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    color: var(--text-primary, #1a1a2e);
+    font-variant-numeric: tabular-nums;
+}
+
+.live-clock__date {
+    font-size: 1.1rem;
+    color: var(--text-muted, #888);
+    text-transform: capitalize;
+}
+
+@media (max-width: 768px) {
+    .searchbar-with-patient {
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+
+    .patient-name-label {
+        font-size: 1.2rem;
+        flex: 1 1 auto;
+    }
+
+    .live-clock {
+        flex: 0 0 auto;
+    }
+
+    .searchbar-with-patient .searchbar {
+        flex: 1 1 100%;
+        order: 3;
+    }
+}

@@ -28,6 +28,9 @@ class MonitoringView
     /** @var int|null Context patient ID */
     private ?int $patientId;
 
+    /** @var array<string, mixed> Selected patient data */
+    private array $patientData;
+
 
     /**
      * Constructor.
@@ -35,13 +38,18 @@ class MonitoringView
      * @param array<int, \modules\models\entities\Indicator> $patientMetrics Processed metrics
      * @param array<string, string> $chartTypes Available charts
      * @param int|null $patientId Patient ID for search context
-
+     * @param array<string, mixed> $patientData Patient info
      */
-    public function __construct(array $patientMetrics = [], array $chartTypes = [], ?int $patientId = null)
-    {
+    public function __construct(
+            array $patientMetrics = [],
+            array $chartTypes = [],
+            ?int $patientId = null,
+            array $patientData = []
+    ) {
         $this->patientMetrics = $patientMetrics;
         $this->chartTypes = $chartTypes;
         $this->patientId = $patientId;
+        $this->patientData = $patientData;
     }
 
     /**
@@ -87,12 +95,49 @@ class MonitoringView
             <main class="container">
                 <section class="dashboard-content-container">
 
-                    <?php include dirname(__DIR__) . '/partials/_searchbar.php'; ?>
+                    <div class="searchbar-with-patient">
+                        <span class="patient-name-label">
+                             <?= htmlspecialchars(
+                                     trim(
+                                             (is_scalar($v = $this->patientData['first_name'] ?? '') ? (string)$v : '') . ' ' .
+                                             (is_scalar($v = $this->patientData['last_name'] ?? '') ? (string)$v : '')
+                                     ),
+                                     ENT_QUOTES, 'UTF-8'
+                             ) ?>
+
+    </span>
+                        <?php include dirname(__DIR__) . '/partials/_searchbar.php'; ?>
+                        <div class="live-clock" id="live-clock">
+                            <span class="live-clock__time" id="live-clock-time"></span>
+                            <span class="live-clock__date" id="live-clock-date"></span>
+                        </div>
+                    </div>
+                    <script>
+                        (function () {
+                            const timeEl = document.getElementById('live-clock-time');
+                            const dateEl = document.getElementById('live-clock-date');
+                            const days = ['Dimanche','Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi'];
+                            const months = ['jan.','fév.','mars','avr.','mai','juin','juil.','août','sept.','oct.','nov.','déc.'];
+
+                            function tick() {
+                                const now = new Date();
+                                const h = String(now.getHours()).padStart(2, '0');
+                                const m = String(now.getMinutes()).padStart(2, '0');
+                                const s = String(now.getSeconds()).padStart(2, '0');
+                                timeEl.textContent = h + ':' + m + ':' + s;
+                                dateEl.textContent = days[now.getDay()] + ' ' + now.getDate() + ' ' + months[now.getMonth()];
+                            }
+
+                            tick();
+                            setInterval(tick, 1000);
+                        })();
+                    </script>
+
 
                     <input type="hidden" id="context-patient-id" value="<?= htmlspecialchars((string) $this->patientId) ?>">
 
                     <section class="skeleton-wrapper skeleton-monitoring-grid" id="skeleton-monitoring"
-                        data-skeleton-for="real-monitoring" data-skeleton-auto data-skeleton-delay="400">
+                             data-skeleton-for="real-monitoring" data-skeleton-auto data-skeleton-delay="400">
                         <?php for ($i = 0; $i < 6; $i++): ?>
                             <div class="skeleton-card">
                                 <div class="skeleton-card-header">

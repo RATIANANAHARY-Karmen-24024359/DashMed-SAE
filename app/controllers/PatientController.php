@@ -207,7 +207,8 @@ class PatientController
 
             $chartTypes = $this->monitorModel->getAllChartTypes();
 
-            $view = new MonitoringView($processedMetrics, $chartTypes, $patientId);
+            $patientData = $this->loadPatientData($patientId);
+            $view = new MonitoringView($processedMetrics, $chartTypes, $patientId, $patientData);
             $view->show();
         } catch (\Exception $e) {
             error_log("PatientController::monitoring Error: " . $e->getMessage());
@@ -455,7 +456,8 @@ class PatientController
             : 0;
         $isAdmin = $this->isAdminUser($currentUserId);
 
-        $view = new MedicalprocedureView($consultations, $doctors, $isAdmin, $currentUserId, $patientId);
+        $patientData = $this->loadPatientData($patientId);
+        $view = new MedicalprocedureView($consultations, $doctors, $isAdmin, $currentUserId, $patientId, $patientData);
         $view->show();
     }
 
@@ -887,7 +889,7 @@ class PatientController
                 $stream = $monitorModel->streamRawHistoryByParameter($patientId, $parameterId, $targetDate, 0);
                 $downsampling = new \modules\services\DownsamplingService();
 
-                $formattedStream = function () use ($stream) {
+                $formattedStream = function() use ($stream) {
                     foreach ($stream as $row) {
                         $rawTs = (strpos($row['timestamp'], '+') === false && strpos($row['timestamp'], 'Z') === false)
                             ? $row['timestamp'] . ' UTC' : $row['timestamp'];
@@ -978,6 +980,7 @@ class PatientController
 
             $processedMetrics = $this->monitoringService->processMetrics($metrics, $rawHistory, $prefs, true);
             $formatted = [];
+
             foreach ($processedMetrics as $metric) {
                 if ($metric instanceof \modules\models\entities\Indicator) {
                     $viewData = $metric->getViewData();
@@ -989,7 +992,6 @@ class PatientController
 
                     $timeRaw = $metric->getTimestamp();
                     $rawTs = (is_string($timeRaw) && strpos($timeRaw, '+') === false && strpos($timeRaw, 'Z') === false) ? $timeRaw . ' UTC' : (string) $timeRaw;
-
                     $formatted[] = [
                         'parameter_id' => (string) $metric->getId(),
                         'slug' => is_scalar($viewData['slug'] ?? null) ? (string) $viewData['slug'] : 'param',
@@ -1118,6 +1120,7 @@ class PatientController
 
         try {
             $metrics = $this->monitorModel->getLatestMetrics($patientId);
+            $rawHistory = $this->monitorModel->getLatestHistoryForAllParameters($patientId, 1000);
             $prefs = $this->prefModel->getUserPreferences($userId);
             $userLayout = (array) $this->prefModel->getUserLayoutSimple($userId);
 
@@ -1239,11 +1242,6 @@ class PatientController
                 }
             }
 
-            /**
-             * Continuous streaming loop.
-             * Tracks the last sent timestamp from the DB to avoid time drift
-             * and ensures no data points are skipped between polling intervals.
-             */
             while (true) {
                 if (connection_aborted()) {
                     break;
@@ -1265,11 +1263,7 @@ class PatientController
 
                         $indicator = $indicatorsById[$pid] ?? null;
                         if ($indicator) {
-                            /**
-                             * Synchronize indicator state with the historical record
-                             * to generate correct metadata (color, slug, etc).
-                             */
-                            $indicator->setValue($val !== null && $val !== '' ? (float) $val : null);
+                            $indicator->setValue($val !== null && $val !== '' ? (float)$val : null);
                             $indicator->setTimestamp($ts);
                             $indicator->setAlertFlag((int) $flag);
 
