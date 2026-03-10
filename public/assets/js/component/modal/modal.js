@@ -18,7 +18,6 @@ function openModal(param, value, isCritical) {
     if (modalValue) modalValue.textContent = value;
 
     if (modalDetails) {
-        // Prevent memory leaks by properly disposing of existing chart instances
         const existingCharts = modalDetails.querySelectorAll('.modal-chart, canvas');
         existingCharts.forEach(el => {
             if (el.chartInstance) {

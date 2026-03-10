@@ -10,6 +10,7 @@ use modules\models\repositories\ConsultationRepository;
 use modules\models\repositories\CustomGroupRepository;
 use modules\models\repositories\PatientRepository;
 use modules\models\repositories\UserRepository;
+use modules\models\repositories\AlertThresholdRepository;
 use modules\models\entities\Consultation;
 use modules\models\repositories\MonitorRepository;
 use modules\models\repositories\MonitorPreferenceRepository;
@@ -59,6 +60,9 @@ class PatientController
     /** @var PatientContextService Context service */
     private PatientContextService $contextService;
 
+    /** @var AlertThresholdRepository Alert threshold repository */
+    private AlertThresholdRepository $thresholdRepo;
+
     /**
      * Constructor
      *
@@ -77,6 +81,7 @@ class PatientController
         $this->prefModel = new MonitorPreferenceRepository($this->pdo);
         $this->monitoringService = new MonitoringService();
         $this->contextService = new PatientContextService($this->patientRepo);
+        $this->thresholdRepo = new AlertThresholdRepository($this->pdo);
     }
 
     /**
@@ -220,7 +225,12 @@ class PatientController
     public function record(): void
     {
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-            $this->recordPost();
+            $action = $_POST['action'] ?? '';
+            if ($action === 'update_thresholds') {
+                $this->handleThresholdUpdate();
+            } else {
+                $this->recordPost();
+            }
         } else {
             $this->recordGet();
         }
@@ -289,12 +299,15 @@ class PatientController
                 return $d;
             }, $doctors);
 
+            $thresholds = $this->thresholdRepo->getThresholdsForPatient($idPatient);
+
             $view = new PatientrecordView(
                 $pastConsultations,
                 $futureConsultations,
                 $patientData,
                 $safeDoctors,
-                $msg
+                $msg,
+                $thresholds
             );
             $view->show();
         } catch (\Throwable $e) {
@@ -625,6 +638,100 @@ class PatientController
     }
 
     /**
+     * Handles alert threshold update via POST.
+     *
+     * @return void
+     */
+    private function handleThresholdUpdate(): void
+    {
+        $this->requireAuth();
+
+        $sessionCsrf = isset($_SESSION['csrf_patient']) && is_string($_SESSION['csrf_patient'])
+            ? $_SESSION['csrf_patient']
+            : '';
+        $postCsrf = isset($_POST['csrf']) && is_string($_POST['csrf']) ? $_POST['csrf'] : '';
+        if ($sessionCsrf === '' || $postCsrf === '' || !hash_equals($sessionCsrf, $postCsrf)) {
+            $_SESSION['patient_msg'] = ['type' => 'error', 'text' => 'Session expirée. Veuillez rafraîchir la page.'];
+            header('Location: /?page=dossierpatient');
+            exit;
+        }
+
+        $this->contextService->handleRequest();
+        $idPatient = $this->contextService->getCurrentPatientId();
+
+        if (!$idPatient) {
+            $_SESSION['patient_msg'] = ['type' => 'error', 'text' => 'Patient non identifié.'];
+            header('Location: /?page=dossierpatient');
+            exit;
+        }
+
+        $rawUserId = $_SESSION['user_id'] ?? 0;
+        $userId = is_numeric($rawUserId) ? (int) $rawUserId : null;
+
+        $thresholdAction = $_POST['threshold_action'] ?? 'save';
+        $parameterId = isset($_POST['parameter_id']) && is_string($_POST['parameter_id'])
+            ? trim($_POST['parameter_id'])
+            : '';
+
+        if ($parameterId === '') {
+            $_SESSION['patient_msg'] = ['type' => 'error', 'text' => 'Paramètre non spécifié.'];
+            header('Location: /?page=dossierpatient');
+            exit;
+        }
+
+        if ($thresholdAction === 'reset') {
+            $this->thresholdRepo->resetThreshold($idPatient, $parameterId);
+            $_SESSION['patient_msg'] = ['type' => 'success', 'text' => 'Seuils réinitialisés aux valeurs par défaut.'];
+            header('Location: /?page=dossierpatient');
+            exit;
+        }
+
+        $parseFloat = function (string $key): ?float {
+            $raw = $_POST[$key] ?? '';
+            if (!is_string($raw) || trim($raw) === '') {
+                return null;
+            }
+            $val = str_replace(',', '.', trim($raw));
+            return is_numeric($val) ? (float) $val : null;
+        };
+
+        $normalMin = $parseFloat('normal_min');
+        $normalMax = $parseFloat('normal_max');
+        $criticalMin = $parseFloat('critical_min');
+        $criticalMax = $parseFloat('critical_max');
+
+        if ($normalMin !== null && $normalMax !== null && $normalMin >= $normalMax) {
+            $_SESSION['patient_msg'] = ['type' => 'error', 'text' => 'Le seuil min normal doit être inférieur au seuil max normal.'];
+            header('Location: /?page=dossierpatient');
+            exit;
+        }
+        if ($criticalMin !== null && $criticalMax !== null && $criticalMin >= $criticalMax) {
+            $_SESSION['patient_msg'] = ['type' => 'error', 'text' => 'Le seuil min critique doit être inférieur au seuil max critique.'];
+            header('Location: /?page=dossierpatient');
+            exit;
+        }
+
+        $success = $this->thresholdRepo->saveThreshold(
+            $idPatient,
+            $parameterId,
+            $normalMin,
+            $normalMax,
+            $criticalMin,
+            $criticalMax,
+            $userId
+        );
+
+        if ($success) {
+            $_SESSION['patient_msg'] = ['type' => 'success', 'text' => 'Seuils d\'alerte mis à jour avec succès.'];
+        } else {
+            $_SESSION['patient_msg'] = ['type' => 'error', 'text' => 'Erreur lors de la mise à jour des seuils.'];
+        }
+
+        header('Location: /?page=dossierpatient');
+        exit;
+    }
+
+    /**
      * Checks if user is admin.
      *
      * @param int $userId
@@ -677,7 +784,7 @@ class PatientController
 
     /**
      * Retrieves historical data for a specific medical parameter.
-     * 
+     *
      * Uses query parameters to determine the scope and applies Largest Triangle Three Buckets (LTTB)
      * downsampling if the dataset exceeds 5000 points to optimize client-side rendering performance.
      * Unbuffered streaming is used for large requests to maintain a low memory footprint.
@@ -810,8 +917,9 @@ class PatientController
 
             $jsonResult = json_encode($formatted);
 
-            if (!is_dir(dirname($cacheFile)))
+            if (!is_dir(dirname($cacheFile))) {
                 mkdir(dirname($cacheFile), 0777, true);
+            }
             file_put_contents($cacheFile, $jsonResult);
 
             echo $jsonResult;
@@ -824,7 +932,7 @@ class PatientController
 
     /**
      * Retrieves the latest real-time metrics for the current patient.
-     * 
+     *
      * Identifies the patient context, fetches the most recent metric values,
      * processes them through the MonitoringService to apply user preferences,
      * and rigorously formats timestamps into UTC ISO-8601 for frontend synchronization.
@@ -843,7 +951,6 @@ class PatientController
                 return;
             }
 
-            // Release session lock to allow concurrent requests (prevents UI freezing)
             session_write_close();
 
             $roomId = $this->getRoomId();
@@ -867,34 +974,32 @@ class PatientController
             $rawUserId = $_SESSION['user_id'] ?? 0;
             $prefs = $this->prefModel->getUserPreferences(is_numeric($rawUserId) ? (int) $rawUserId : 0);
 
-            // Only need a lightweight history or just empty if we only care about the latest value
             $rawHistory = $this->monitorModel->getRawHistory($patientId, 1);
 
             $processedMetrics = $this->monitoringService->processMetrics($metrics, $rawHistory, $prefs, true);
             $formatted = [];
-
             foreach ($processedMetrics as $metric) {
                 if ($metric instanceof \modules\models\entities\Indicator) {
                     $viewData = $metric->getViewData();
-                    $historyHtmlData = $viewData['history_html_data'] ?? [];
+                    $historyHtmlData = is_array($viewData['history_html_data'] ?? null) ? $viewData['history_html_data'] : [];
                     $latestTimeIso = '';
-                    if (!empty($historyHtmlData)) {
-                        $latestTimeIso = $historyHtmlData[0]['time_iso'] ?? '';
+                    if (!empty($historyHtmlData) && is_array($historyHtmlData[0] ?? null) && isset($historyHtmlData[0]['time_iso'])) {
+                        $latestTimeIso = is_scalar($historyHtmlData[0]['time_iso']) ? (string) $historyHtmlData[0]['time_iso'] : '';
                     }
 
                     $timeRaw = $metric->getTimestamp();
-                    $rawTs = (is_string($timeRaw) && strpos($timeRaw, '+') === false && strpos($timeRaw, 'Z') === false) ? $timeRaw . ' UTC' : $timeRaw;
+                    $rawTs = (is_string($timeRaw) && strpos($timeRaw, '+') === false && strpos($timeRaw, 'Z') === false) ? $timeRaw . ' UTC' : (string) $timeRaw;
 
                     $formatted[] = [
-                        'parameter_id' => $metric->getId(),
-                        'slug' => $viewData['slug'] ?? 'param',
-                        'value' => $viewData['value'] ?? '',
-                        'unit' => $viewData['unit'] ?? '',
-                        'state_class' => $viewData['card_class'] ?? '',
-                        'is_crit_flag' => (bool) ($viewData['is_crit_flag'] ?? false),
-                        'time_iso' => $timeRaw ? date('c', (int) strtotime($rawTs)) : ($latestTimeIso),
-                        'chart_type' => $viewData['chart_type'] ?? 'line',
-                        'display_name' => $viewData['display_name'] ?? ''
+                        'parameter_id' => (string) $metric->getId(),
+                        'slug' => is_scalar($viewData['slug'] ?? null) ? (string) $viewData['slug'] : 'param',
+                        'value' => is_scalar($viewData['value'] ?? null) ? (string) $viewData['value'] : '',
+                        'unit' => is_scalar($viewData['unit'] ?? null) ? (string) $viewData['unit'] : '',
+                        'state_class' => is_scalar($viewData['card_class'] ?? null) ? (string) $viewData['card_class'] : '',
+                        'is_crit_flag' => !empty($viewData['is_crit_flag']),
+                        'time_iso' => ($timeRaw !== null && $timeRaw !== '') ? date('c', (int) strtotime($rawTs)) : $latestTimeIso,
+                        'chart_type' => is_scalar($viewData['chart_type'] ?? null) ? (string) $viewData['chart_type'] : 'line',
+                        'display_name' => is_scalar($viewData['display_name'] ?? null) ? (string) $viewData['display_name'] : ''
                     ];
                 }
             }

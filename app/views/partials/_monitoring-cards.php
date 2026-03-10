@@ -167,16 +167,21 @@ if (!empty($patientMetrics)): ?>
                             '24' => '24H'
                         ];
                         foreach ($cardOptions as $val => $lab): ?>
-                            <option value="<?= $val ?>" <?= $cardDuration === $val ? 'selected' : '' ?>><?= $lab ?></option>
+                            <option value="<?= $val ?>" <?= $cardDuration === $val ? 'selected' : '' ?>>
+                                <?= $lab ?>
+                            </option>
                         <?php endforeach; ?>
                     </select>
                 </div>
 
                 <p class="value"
                     style="flex: 1; text-align: right; display: <?= $isValueOnly ? 'none' : 'flex' ?>; justify-content: flex-end; align-items: center; gap: 3px; margin: 0; line-height: 1;">
-                    <span style="font-size: 0.95rem; font-weight: 700; color: var(--text-main);"><?= $escape($value) ?></span>
-                    <span class="unit"
-                        style="font-size: 0.7rem; color: var(--text-muted);"><?= $unit !== '' ? ' ' . $escape($unit) : '' ?></span>
+                    <span style="font-size: 0.95rem; font-weight: 700; color: var(--text-main);">
+                        <?= $escape($value) ?>
+                    </span>
+                    <span class="unit" style="font-size: 0.7rem; color: var(--text-muted);">
+                        <?= $unit !== '' ? ' ' . $escape($unit) : '' ?>
+                    </span>
                     <span class="value-status-icon status-critical" title="Critique"
                         style="color: var(--color-critical, #EF4444); display: <?= str_contains($stateClass, 'card--alert') ? 'flex' : 'none' ?>;">
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
@@ -211,8 +216,10 @@ if (!empty($patientMetrics)): ?>
                 </p>
             </div>
 
-            <div class="card-spark" style="display: <?= $isValueOnly ? 'none' : 'block' ?>;">
-                <div class="card-spark-canvas" id="<?= $escape($idPrefix) ?>spark-<?= $escape($slug) ?>"></div>
+            <div class="card-spark" style="display: <?= $isValueOnly ? 'none' : 'block' ?>; height: 100px; width: 100%;">
+                <div class="card-spark-canvas" id="<?= $escape($idPrefix) ?>spark-<?= $escape($slug) ?>"
+                    style="width: 100%; height: 100%;">
+                </div>
                 <div class="no-data-placeholder" style="display:none;">
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 60" class="no-data-svg">
                         <path d="M10 45 L25 35 L40 40 L55 25 L70 30 L85 20" stroke="currentColor" stroke-width="2" fill="none"
@@ -278,33 +285,37 @@ if (!empty($patientMetrics)): ?>
                     </div>
 
                     <div class="modal-chart-types-container"
-                        style="display: flex; flex-direction: column; gap: 4px; align-items: flex-end;">
-                        <div class="modal-chart-types" style="display: flex; align-items: center; gap: 6px;">
-                            <span class="chart-type-label"
-                                style="font-size: 0.65rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; font-weight: 700;">Modale</span>
-                            <select class="modal-interval-select"
-                                style="font-size: 0.65rem; padding: 1px 4px; border-radius: 4px; border: 1px solid var(--border-color); background: rgba(0,0,0,0.2); color: var(--text-primary); cursor: pointer; outline: none; width: auto; max-width: 80px;">
-                                <?php
-                                $currentDuration = (string) ($viewData['display_duration'] ?? '0.0333');
-                                $options = [
-                                    '0.0333' => '2m',
-                                    'all' => 'Tout',
-                                    '0.0833' => '5m',
-                                    '0.25' => '15m',
-                                    '0.5' => '30m',
-                                    '1' => '1H',
-                                    '12' => '12H',
-                                    '24' => '24H',
-                                    '168' => '7J',
-                                    '720' => '30J'
-                                ];
-                                foreach ($options as $val => $lab): ?>
-                                    <option value="<?= $val ?>" <?= $currentDuration === $val ? 'selected' : '' ?>><?= $lab ?>
-                                    </option>
-                                <?php endforeach; ?>
-                            </select>
-                            <div class="chart-type-group" style="padding: 2px;">
+                        style="display: flex; flex-direction: column; gap: 0.5rem; align-items: flex-end;">
+                        <div class="modal-chart-types">
+                            <div
+                                style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; gap: 8px;">
+                                <span class="chart-type-label"
+                                    style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600;">Modale</span>
+                                <select class="modal-interval-select"
+                                    style="font-size: 0.70rem; padding: 2px 4px; border-radius: 4px; border: 1px solid var(--border-color); background: rgba(0,0,0,0.2); color: var(--text-primary); cursor: pointer; outline: none; width: auto; max-width: 90px;">
+                                    <?php
+                                    $currentDuration = (string) ($viewData['display_duration'] ?? '0.0333');
+                                    $options = [
+                                        '0.0333' => '2m',
+                                        'all' => 'Tout',
+                                        '0.0833' => '5m',
+                                        '0.25' => '15m',
+                                        '0.5' => '30m',
+                                        '1' => '1H',
+                                        '12' => '12H',
+                                        '24' => '24H',
+                                        '168' => '7J',
+                                        '720' => '30J'
+                                    ];
+                                    foreach ($options as $val => $lab): ?>
+                                        <option value="<?= $val ?>" <?= $currentDuration === $val ? 'selected' : '' ?>>
+                                            <?= $lab ?>
+                                        </option>
+                                    <?php endforeach; ?>
+                                </select>
 
+                            </div>
+                            <div class="chart-type-group">
                                 <?php foreach ($chartAllowed as $allowedType):
                                     $icon = '';
                                     switch ($allowedType) {
@@ -416,31 +427,32 @@ viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-li
                     </div>
                 </div>
 
-                <div class="canvas-wrapper">
+                <div class="canvas-wrapper" style="width: 100%; height: 400px; position: relative;">
                     <div class="modal-chart chart-<?= $escape($chartType) ?>" tabindex="-1"
                         data-id="<?= $escape($idPrefix) ?>modal-chart-<?= $escape($slug) ?>" style="width: 100%; height: 100%;">
                     </div>
                 </div>
-
-                <div class="modal-no-data-placeholder" style="display:none;">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 120" class="no-data-svg-modal">
-                        <path d="M20 90 L50 70 L80 80 L110 50 L140 60 L170 40" stroke="currentColor" stroke-width="3"
-                            fill="none" stroke-dasharray="8,6" opacity="0.3" />
-                        <circle cx="100" cy="65" r="25" fill="none" stroke="currentColor" stroke-width="3" opacity="0.4" />
-                        <line x1="90" y1="55" x2="110" y2="75" stroke="currentColor" stroke-width="3" opacity="0.4" />
-                        <line x1="110" y1="55" x2="90" y2="75" stroke="currentColor" stroke-width="3" opacity="0.4" />
-                    </svg>
-                    <span class="no-data-text-modal">Aucune donnée disponible</span>
-                </div>
-
-                <ul data-hist style="display:none">
-                    <?php foreach ($viewData['history_html_data'] ?? [] as $historyItem): ?>
-                        <li data-time="<?= $escape($historyItem['time_iso'] ?? '') ?>"
-                            data-value="<?= $escape($historyItem['value'] ?? '') ?>"
-                            data-flag="<?= $escape($historyItem['flag'] ?? '') ?>"></li>
-                    <?php endforeach; ?>
-                </ul>
             </div>
+
+            <div class="modal-no-data-placeholder" style="display:none;">
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 120" class="no-data-svg-modal">
+                    <path d="M20 90 L50 70 L80 80 L110 50 L140 60 L170 40" stroke="currentColor" stroke-width="3" fill="none"
+                        stroke-dasharray="8,6" opacity="0.3" />
+                    <circle cx="100" cy="65" r="25" fill="none" stroke="currentColor" stroke-width="3" opacity="0.4" />
+                    <line x1="90" y1="55" x2="110" y2="75" stroke="currentColor" stroke-width="3" opacity="0.4" />
+                    <line x1="110" y1="55" x2="90" y2="75" stroke="currentColor" stroke-width="3" opacity="0.4" />
+                </svg>
+                <span class="no-data-text-modal">Aucune donnée disponible</span>
+            </div>
+
+            <ul data-hist style="display:none">
+                <?php foreach ($viewData['history_html_data'] ?? [] as $historyItem): ?>
+                    <li data-time="<?= $escape($historyItem['time_iso'] ?? '') ?>"
+                        data-value="<?= $escape($historyItem['value'] ?? '') ?>"
+                        data-flag="<?= $escape($historyItem['flag'] ?? '') ?>"></li>
+                <?php endforeach; ?>
+            </ul>
+        </div>
         </div>
     <?php endforeach; ?>
 

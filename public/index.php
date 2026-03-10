@@ -19,15 +19,12 @@ require $ROOT . '/vendor/autoload.php';
 
 use modules\services\SecurityService;
 
-// A02:2025 - Security Misconfiguration: Configure secure session BEFORE starting it
 SecurityService::configureSecureSession();
 
 session_start();
 
-// A02:2025 - Security Misconfiguration: Send security HTTP headers on every request
 SecurityService::sendSecurityHeaders();
 
-// A07:2025 - Authentication Failures: Check session timeout
 if (isset($_SESSION['user_id']) && !SecurityService::checkSessionTimeout()) {
     SecurityService::logSecurityEvent('SESSION_TIMEOUT', 'Session expired due to inactivity');
     SecurityService::destroySession();
@@ -37,7 +34,6 @@ if (isset($_SESSION['user_id']) && !SecurityService::checkSessionTimeout()) {
     exit;
 }
 
-// A01:2025 - Broken Access Control: Generate CSRF token for all requests
 SecurityService::generateCsrfToken();
 
 require $ROOT . '/assets/includes/Database.php';

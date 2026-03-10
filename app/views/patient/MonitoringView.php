@@ -28,6 +28,7 @@ class MonitoringView
     /** @var int|null Context patient ID */
     private ?int $patientId;
 
+
     /**
      * Constructor.
      *
@@ -70,8 +71,9 @@ class MonitoringView
                 'https://cdn.jsdelivr.net/npm/chartjs-adapter-moment@1.0.1/dist/chartjs-adapter-moment.min.js',
                 'https://cdn.jsdelivr.net/npm/hammerjs@2.0.8',
                 'https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1/dist/chartjs-plugin-zoom.min.js',
-                'assets/js/component/modal/chart.js',
-                'assets/js/component/charts/card-sparklines.js',
+                'assets/js/service/stream.js?v=' . time(),
+                'assets/js/component/modal/chart.js?v=' . time(),
+                'assets/js/component/charts/card-sparklines.js?v=' . time(),
                 'assets/js/component/modal/navigation.js',
                 'assets/js/component/modal/modal.js',
             ],
