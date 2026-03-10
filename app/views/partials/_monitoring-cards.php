@@ -336,17 +336,26 @@ viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-li
 <circle cx="7.5" cy="7.5" r="2.5"/><circle cx="16.5" cy="16.5" r="2.5"/><circle cx="7.5" cy="16.5" r="2.5"/>
 <circle cx="16.5" cy="7.5" r="2.5"/></svg>';
                                             break;
-                                        case 'pie':
-                                        case 'doughnut':
+                                        case 'radar':
                                             $icon = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" 
 viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-<path d="M21.21 15.89A10 10 0 1 1 8 2.83"></path><path d="M22 12A10 10 0 0 0 12 2v10z"></path></svg>';
+<polygon points="12 2 19 8 17 17 7 17 5 8"></polygon><circle cx="12" cy="11" r="2"></circle></svg>';
+                                            break;
+                                        case 'step':
+                                            $icon = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" 
+viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+<polyline points="4 20 4 14 10 14 10 8 16 8 16 2 22 2"></polyline></svg>';
                                             break;
                                         case 'value':
                                             $icon = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" 
 viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
 <rect x="4" y="4" width="16" height="16" rx="2" ry="2"></rect><path d="M12 8v8"></path><path d="M10 10l2-2"></path>
 </svg>';
+                                            break;
+                                        case 'gauge':
+                                            $icon = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" 
+viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+<path d="M12 14l4-4"></path><path d="M3.34 16A10 10 0 1 1 20.66 16"></path></svg>';
                                             break;
                                         default:
                                             $icon = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" 
@@ -389,11 +398,15 @@ viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-li
 <circle cx="7.5" cy="7.5" r="2.5"/><circle cx="16.5" cy="16.5" r="2.5"/><circle cx="7.5" cy="16.5" r="2.5"/>
 <circle cx="16.5" cy="7.5" r="2.5"/></svg>';
                                             break;
-                                        case 'pie':
-                                        case 'doughnut':
+                                        case 'radar':
                                             $icon = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" 
 viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-<path d="M21.21 15.89A10 10 0 1 1 8 2.83"></path><path d="M22 12A10 10 0 0 0 12 2v10z"></path></svg>';
+<polygon points="12 2 19 8 17 17 7 17 5 8"></polygon><circle cx="12" cy="11" r="2"></circle></svg>';
+                                            break;
+                                        case 'step':
+                                            $icon = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" 
+viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+<polyline points="4 20 4 14 10 14 10 8 16 8 16 2 22 2"></polyline></svg>';
                                             break;
                                         case 'value':
                                             $icon = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" 
@@ -401,6 +414,11 @@ viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-li
 <rect x="4" y="4" width="16" height="16" rx="2" ry="2"></rect><path d="M12 8v8"></path><path d="M10 10l2-2">
 </path>
 </svg>';
+                                            break;
+                                        case 'gauge':
+                                            $icon = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" 
+viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+<path d="M12 14l4-4"></path><path d="M3.34 16A10 10 0 1 1 20.66 16"></path></svg>';
                                             break;
                                         default:
                                             $icon = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" 
