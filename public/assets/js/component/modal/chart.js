@@ -268,31 +268,7 @@ function createEChart(type, title, rawData, target, color, thresholds, view, ext
         ? rawData[rawData.length - 1][0] - extra.initialZoomMs
         : undefined;
 
-    if (type === 'radar') {
-        options = {
-            grid: { top: 10, bottom: 10, left: 10, right: 10, containLabel: true },
-            radar: {
-                indicator: [{ name: 'Valeur', max: bMax }],
-                radius: '70%',
-                splitNumber: 4,
-                axisName: { color: tickColor },
-                splitLine: { lineStyle: { color: gridColor, opacity: 0.5 } },
-                splitArea: { show: false },
-                axisLine: { lineStyle: { color: gridColor, opacity: 0.5 } }
-            },
-            series: [{
-                type: 'radar',
-                data: [{ value: [rawData.length > 0 ? rawData[rawData.length - 1][1] : 0], name: 'Dernière Valeur' }],
-                itemStyle: { color: chartColor },
-                areaStyle: {
-                    color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-                        { offset: 0, color: chartColor + '66' },
-                        { offset: 1, color: chartColor + '00' }
-                    ])
-                }
-            }]
-        };
-    } else if (type === 'gauge') {
+    if (type === 'gauge') {
 
         const lastVal = rawData.length > 0
             ? rawData[rawData.length - 1][1]
@@ -382,10 +358,10 @@ function createEChart(type, title, rawData, target, color, thresholds, view, ext
 
         options = {
             grid: {
-                top: 40,
-                bottom: 50,
-                left: 15,
-                right: 25,
+                top: 20,
+                bottom: 30,
+                left: 10,
+                right: 20,
                 containLabel: true
             },
             tooltip: {
@@ -422,22 +398,22 @@ function createEChart(type, title, rawData, target, color, thresholds, view, ext
             xAxis: {
                 type: 'time',
                 show: true,
-                z: 10,
-                splitLine: { show: true, lineStyle: { color: gridColor, type: 'dashed', opacity: 0.3 } },
-                axisLabel: { show: true, color: tickColor, formatter: '{HH}:{mm}', margin: 10, fontSize: 10 },
-                axisTick: { show: true, lineStyle: { color: gridColor } },
-                axisLine: { show: true, lineStyle: { color: gridColor } }
+                z: 5,
+                splitLine: { show: true, lineStyle: { color: gridColor, type: 'solid', opacity: 0.1 } },
+                axisLabel: { show: true, color: tickColor, formatter: '{HH}:{mm}', margin: 8, fontSize: 10 },
+                axisTick: { show: false },
+                axisLine: { show: false }
             },
             yAxis: {
                 type: 'value',
                 min: bMin,
                 max: bMax,
                 show: true,
-                z: 10,
-                splitLine: { show: true, lineStyle: { color: gridColor, type: 'dashed', opacity: 0.3 } },
-                axisLabel: { show: true, color: tickColor, margin: 10, fontSize: 10 },
-                axisTick: { show: true, lineStyle: { color: gridColor } },
-                axisLine: { show: true, lineStyle: { color: gridColor } }
+                z: 5,
+                splitLine: { show: true, lineStyle: { color: gridColor, type: 'solid', opacity: 0.1 } },
+                axisLabel: { show: true, color: tickColor, margin: 8, fontSize: 10 },
+                axisTick: { show: false },
+                axisLine: { show: false }
             },
             series: [{
                 data: rawData,
@@ -734,7 +710,6 @@ document.addEventListener('change', function (e) {
             const option = chart.getOption();
             if (option.series && option.series.length > 0) {
                 const seriesType = option.series[0].type;
-
                 if (seriesType === 'gauge') {
                     chart.setOption({ series: [{ data: [{ value: val }] }] });
                 } else {

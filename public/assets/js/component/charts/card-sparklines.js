@@ -157,31 +157,7 @@
         let bMin = view.min !== undefined && view.min !== null && !isNaN(view.min) ? view.min : 0;
         let bMax = view.max !== undefined && view.max !== null && !isNaN(view.max) ? view.max : 250;
 
-        if (type === 'radar') {
-            options = {
-                grid: { top: 10, bottom: 10, left: 10, right: 10, containLabel: true },
-                radar: {
-                    indicator: [{ name: 'Valeur', max: bMax }],
-                    radius: '70%',
-                    splitNumber: 4,
-                    axisName: { color: tickColor },
-                    splitLine: { lineStyle: { color: gridColor, opacity: 0.5 } },
-                    splitArea: { show: false },
-                    axisLine: { lineStyle: { color: gridColor, opacity: 0.5 } }
-                },
-                series: [{
-                    type: 'radar',
-                    data: [{ value: [rawData.length > 0 ? rawData[rawData.length - 1][1] : 0], name: 'Dernière Valeur' }],
-                    itemStyle: { color: chartColor },
-                    areaStyle: {
-                        color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-                            { offset: 0, color: chartColor + '66' },
-                            { offset: 1, color: chartColor + '00' }
-                        ])
-                    }
-                }]
-            };
-        } else if (type === 'gauge') {
+        if (type === 'gauge') {
             const lastVal = rawData.length > 0 ? rawData[rawData.length - 1][1] : 0;
             if (!Number.isFinite(bMax)) bMax = (lastVal > 0 ? lastVal * 1.5 : 100);
 
@@ -515,9 +491,6 @@
                                 const seriesType = option.series[0].type;
                                 if (seriesType === 'gauge') {
                                     chart.setOption({ series: [{ data: [{ value: val }] }] });
-                                    return;
-                                } else if (seriesType === 'radar') {
-                                    chart.setOption({ series: [{ data: [{ value: [val] }] }] });
                                     return;
                                 } else {
                                     if (isNaN(timeMs)) return;
