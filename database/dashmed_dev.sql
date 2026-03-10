@@ -243,6 +243,7 @@ CREATE TABLE `user_parameter_chart_pref` (
 
 -- Table patient_data
 CREATE TABLE `patient_data` (
+                                `seq` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
                                 `id_patient` INT UNSIGNED NOT NULL,
                                 `parameter_id` VARCHAR(50) NOT NULL,
                                 `value` DECIMAL(15,2) DEFAULT NULL,
@@ -252,7 +253,9 @@ CREATE TABLE `patient_data` (
                                 `archived` TINYINT(1) DEFAULT 0, -- à voir pour la partie historique des données
 
                                 PRIMARY KEY (`id_patient`, `parameter_id`, `timestamp`),
+                                UNIQUE KEY `uq_patient_data_seq` (`seq`),
                                 INDEX `ix_patient_param_time` (`id_patient`, `parameter_id`, `timestamp`),
+                                INDEX `ix_patient_param_seq` (`id_patient`, `parameter_id`, `seq`),
                                 INDEX `ix_patient_archived_time` (`id_patient`, `archived`, `timestamp`),
 
                                 CONSTRAINT `fk_patient_data_patient`

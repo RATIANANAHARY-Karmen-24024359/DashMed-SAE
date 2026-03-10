@@ -211,7 +211,9 @@ class PatientController
 
             if ($patientId) {
                 $metrics = $this->monitorModel->getLatestMetrics($patientId);
-                $rawHistory = $this->monitorModel->getLatestHistoryForAllParameters($patientId, 1000);
+                // PERF: do not pre-load full sparkline history on initial Monitoring page render.
+                // History is now fetched lazily by the frontend (api_history_tail / api_history_chunk).
+                $rawHistory = [];
             }
 
             $rawUserId = $_SESSION['user_id'] ?? 0;
@@ -1066,7 +1068,9 @@ class PatientController
              * This prevents memory exhaustion on the initial page load while 
              * keeping sparklines perfectly accurate.
              */
-            $rawHistory = $this->monitorModel->getLatestHistoryForAllParameters($patientId, 1000);
+            // PERF: do not pre-load full sparkline history on initial Dashboard render.
+            // The frontend loads history lazily (exact chunks) and caches it.
+            $rawHistory = [];
             
             $prefs = $this->prefModel->getUserPreferences($userId);
             /** @var array<int, array<string, mixed>> */
@@ -1244,6 +1248,308 @@ class PatientController
             flush();
         }
     }
+    /**
+     * API: Returns the latest N points (tail) for a given parameter.
+     *
+     * Use cases:
+     * - Fast initial render of sparklines (dashboard/monitoring)
+     * - Low-latency UI updates without scanning the full history
+     *
+     * Contract:
+     * - Always returns points in chronological order (ASC)
+     * - Points are exact (no downsampling)
+     * - Intended to be small (hard-capped)
+     *
+     * Query params:
+     * - patient_id (int, optional): explicit patient override
+     * - param (string, required): parameter id
+     * - limit (int, optional): number of points (default 250, max 5000)
+     * - date (string, optional): upper bound
+     *
+     * @return void Outputs JSON.
+     */
+    public function apiHistoryTail(): void
+    {
+        header('Content-Type: application/json');
+
+        try {
+            $userId = $_SESSION['user_id'] ?? null;
+            if (!$userId && !isset($_GET['debug'])) {
+                echo json_encode(['error' => 'Non autorisé']);
+                return;
+            }
+
+            // Release session lock
+            session_write_close();
+
+            $roomId = $this->getRoomId();
+            $patientId = null;
+
+            $getPatientId = $_GET['patient_id'] ?? null;
+            if ($getPatientId && is_numeric($getPatientId)) {
+                $patientId = (int) $getPatientId;
+            }
+
+            if (!$patientId && $roomId) {
+                $patientId = $this->patientRepo->getPatientIdByRoom($roomId);
+            }
+            if (!$patientId) {
+                $this->contextService->handleRequest();
+                $patientId = $this->contextService->getCurrentPatientId();
+            }
+
+            if (!$patientId) {
+                echo json_encode(['error' => 'Patient introuvable']);
+                return;
+            }
+
+            $rawParameterId = $_GET['param'] ?? '';
+            $parameterId = is_string($rawParameterId) ? $rawParameterId : '';
+            if ($parameterId === '') {
+                echo json_encode(['error' => 'Paramètre manquant']);
+                return;
+            }
+
+            $limit = 250;
+            if (isset($_GET['limit']) && is_numeric($_GET['limit'])) {
+                $limit = max(10, min(5000, (int) $_GET['limit']));
+            }
+
+            $targetDate = null;
+            if (isset($_GET['date']) && is_string($_GET['date']) && $_GET['date'] !== '') {
+                $targetDate = $_GET['date'];
+            }
+
+            // 10s cache
+            $cacheKey = md5("tail_v1_{$patientId}_{$parameterId}_{$limit}_{$targetDate}");
+            $cacheFile = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'dashmed_cache' . DIRECTORY_SEPARATOR . $cacheKey . '.json';
+            if (file_exists($cacheFile) && (time() - filemtime($cacheFile) < 10)) {
+                echo (string) file_get_contents($cacheFile);
+                return;
+            }
+
+            $history = $this->monitorModel->getTailHistoryByParameter($patientId, $parameterId, $limit, $targetDate);
+            $formatted = [];
+            foreach ($history as $row) {
+                $ts = (string) ($row['timestamp'] ?? '');
+                $rawTs = (strpos($ts, '+') === false && strpos($ts, 'Z') === false) ? $ts . ' UTC' : $ts;
+                $formatted[] = [
+                    'time_iso' => $ts !== '' ? date('c', (int) strtotime($rawTs)) : '',
+                    'value' => $row['value'] !== null ? (string) round((float) $row['value'], 2) : null,
+                    'flag' => (string) ($row['alert_flag'] ?? '0'),
+                ];
+            }
+
+            $json = json_encode([
+                'patient_id' => $patientId,
+                'param' => $parameterId,
+                'points' => $formatted,
+                'last_time_iso' => !empty($formatted) ? ($formatted[count($formatted) - 1]['time_iso'] ?? null) : null,
+            ]);
+
+            if (!is_dir(dirname($cacheFile))) {
+                mkdir(dirname($cacheFile), 0777, true);
+            }
+            file_put_contents($cacheFile, $json);
+
+            echo $json;
+        } catch (\Throwable $e) {
+            error_log('[PatientController] apiHistoryTail error: ' . $e->getMessage());
+            echo json_encode(['error' => 'Erreur interne']);
+        }
+    }
+
+    /**
+     * API: Returns an exact history chunk for one parameter.
+     *
+     * This endpoint is designed for background synchronization:
+     * - stable pagination using `seq` (preferred)
+     * - resumable downloads
+     * - backpressure-friendly chunk sizes
+     *
+     * Query params:
+     * - patient_id (int, optional)
+     * - param (string, required)
+     * - limit (int, optional, 100..20000)
+     * - after_seq (int, optional): robust cursor (exclusive)
+     * - after (string, optional): timestamp cursor (exclusive) if cursor=ts
+     * - cursor=ts (string, optional): forces legacy timestamp cursor mode
+     *
+     * Response:
+     * - points: array of {time_iso, value, flag, seq}
+     * - next_after_seq: the last seq returned (for cursor)
+     *
+     * @return void Outputs JSON.
+     */
+    public function apiHistoryChunk(): void
+    {
+        header('Content-Type: application/json');
+
+        try {
+            $userId = $_SESSION['user_id'] ?? null;
+            if (!$userId && !isset($_GET['debug'])) {
+                echo json_encode(['error' => 'Non autorisé']);
+                return;
+            }
+
+            session_write_close();
+
+            $roomId = $this->getRoomId();
+            $patientId = null;
+
+            $getPatientId = $_GET['patient_id'] ?? null;
+            if ($getPatientId && is_numeric($getPatientId)) {
+                $patientId = (int) $getPatientId;
+            }
+
+            if (!$patientId && $roomId) {
+                $patientId = $this->patientRepo->getPatientIdByRoom($roomId);
+            }
+            if (!$patientId) {
+                $this->contextService->handleRequest();
+                $patientId = $this->contextService->getCurrentPatientId();
+            }
+
+            if (!$patientId) {
+                echo json_encode(['error' => 'Patient introuvable']);
+                return;
+            }
+
+            $rawParameterId = $_GET['param'] ?? '';
+            $parameterId = is_string($rawParameterId) ? $rawParameterId : '';
+            if ($parameterId === '') {
+                echo json_encode(['error' => 'Paramètre manquant']);
+                return;
+            }
+
+            $after = $_GET['after'] ?? null;
+            $afterTs = (is_string($after) && $after !== '') ? $after : null;
+
+            $limit = 5000;
+            if (isset($_GET['limit']) && is_numeric($_GET['limit'])) {
+                $limit = max(100, min(20000, (int) $_GET['limit']));
+            }
+
+            // Robust cursor: prefer seq pagination when possible.
+            // If the schema provides seq, we use it even for the first page (after_seq=0).
+            $afterSeq = 0;
+            if (isset($_GET['after_seq']) && is_numeric($_GET['after_seq'])) {
+                $afterSeq = max(0, (int) $_GET['after_seq']);
+            }
+
+            // Use seq cursor by default; fallback to timestamp mode only if explicitly requested.
+            $useSeq = !isset($_GET['cursor']) || $_GET['cursor'] !== 'ts';
+
+            if ($useSeq) {
+                $rows = $this->monitorModel->getHistoryChunkAfterSeq($patientId, $parameterId, $afterSeq > 0 ? $afterSeq : null, $limit);
+            } else {
+                $rows = $this->monitorModel->getHistoryChunkAfter($patientId, $parameterId, $afterTs, $limit);
+            }
+
+            $formatted = [];
+            $lastIso = null;
+            $lastSeq = null;
+            foreach ($rows as $row) {
+                $ts = (string) ($row['timestamp'] ?? '');
+                $rawTs = (strpos($ts, '+') === false && strpos($ts, 'Z') === false) ? $ts . ' UTC' : $ts;
+                $iso = $ts !== '' ? date('c', (int) strtotime($rawTs)) : '';
+                $lastIso = $iso;
+
+                if (isset($row['seq'])) {
+                    $lastSeq = (int) $row['seq'];
+                }
+
+                $formatted[] = [
+                    'time_iso' => $iso,
+                    'value' => $row['value'] !== null ? (string) round((float) $row['value'], 2) : null,
+                    'flag' => (string) ($row['alert_flag'] ?? '0'),
+                    'seq' => isset($row['seq']) ? (int) $row['seq'] : null,
+                ];
+            }
+
+            echo json_encode([
+                'patient_id' => $patientId,
+                'param' => $parameterId,
+                'points' => $formatted,
+                'next_after' => $lastIso,
+                'next_after_seq' => $lastSeq,
+                'has_more' => count($formatted) >= $limit,
+            ]);
+        } catch (\Throwable $e) {
+            error_log('[PatientController] apiHistoryChunk error: ' . $e->getMessage());
+            echo json_encode(['error' => 'Erreur interne']);
+        }
+    }
+
+    /**
+     * API: Returns lightweight metadata (watermarks) for a given parameter.
+     *
+     * Clients use this to determine whether their local cache is fully synced.
+     * `max_seq` is the preferred watermark for the robust chunk cursor.
+     *
+     * Query params:
+     * - patient_id (int, optional)
+     * - param (string, required)
+     *
+     * @return void Outputs JSON.
+     */
+    public function apiHistoryMeta(): void
+    {
+        header('Content-Type: application/json');
+
+        try {
+            $userId = $_SESSION['user_id'] ?? null;
+            if (!$userId && !isset($_GET['debug'])) {
+                echo json_encode(['error' => 'Non autorisé']);
+                return;
+            }
+
+            session_write_close();
+
+            $roomId = $this->getRoomId();
+            $patientId = null;
+
+            $getPatientId = $_GET['patient_id'] ?? null;
+            if ($getPatientId && is_numeric($getPatientId)) {
+                $patientId = (int) $getPatientId;
+            }
+
+            if (!$patientId && $roomId) {
+                $patientId = $this->patientRepo->getPatientIdByRoom($roomId);
+            }
+            if (!$patientId) {
+                $this->contextService->handleRequest();
+                $patientId = $this->contextService->getCurrentPatientId();
+            }
+
+            if (!$patientId) {
+                echo json_encode(['error' => 'Patient introuvable']);
+                return;
+            }
+
+            $rawParameterId = $_GET['param'] ?? '';
+            $parameterId = is_string($rawParameterId) ? $rawParameterId : '';
+            if ($parameterId === '') {
+                echo json_encode(['error' => 'Paramètre manquant']);
+                return;
+            }
+
+            $meta = $this->monitorModel->getHistoryMeta($patientId, $parameterId);
+            echo json_encode([
+                'patient_id' => $patientId,
+                'param' => $parameterId,
+                'max_ts' => $meta['max_ts'] ?? null,
+                'max_seq' => $meta['max_seq'] ?? null,
+                'count' => $meta['count'] ?? null,
+                'server_time' => date('c'),
+                'schema_version' => 1,
+            ]);
+        } catch (\Throwable $e) {
+            error_log('[PatientController] apiHistoryMeta error: ' . $e->getMessage());
+            echo json_encode(['error' => 'Erreur interne']);
+        }
+    }
+
     /**
      * Retrieves the name of a patient by their ID.
      *

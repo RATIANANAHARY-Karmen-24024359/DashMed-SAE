@@ -106,6 +106,11 @@ class MonitoringView
             <!-- Global SSE stream service -->
             <script src="assets/js/service/stream.js?v=<?= time() ?>"></script>
 
+            <!-- Exact history cache + perfect sync engine -->
+            <script src="assets/js/service/history-cache.js?v=<?= time() ?>"></script>
+            <script src="assets/js/component/charts/sparkline-loader.js?v=<?= time() ?>"></script>
+            <script src="assets/js/service/history-sync.js?v=<?= time() ?>"></script>
+
             <script src="assets/js/component/modal/chart.js?v=<?= time() ?>"></script>
             <script src="assets/js/component/charts/card-sparklines.js?v=<?= time() ?>"></script>
 

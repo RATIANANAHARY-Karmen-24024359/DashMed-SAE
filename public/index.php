@@ -113,6 +113,12 @@ function resolveRoute(string $path): array
         return ['modules\\controllers\\api\\SearchController', null];
     if ($segments[0] === 'api_history')
         return ['modules\\controllers\\PatientController', 'apiHistory'];
+    if ($segments[0] === 'api_history_tail')
+        return ['modules\\controllers\\PatientController', 'apiHistoryTail'];
+    if ($segments[0] === 'api_history_chunk')
+        return ['modules\\controllers\\PatientController', 'apiHistoryChunk'];
+    if ($segments[0] === 'api_history_meta')
+        return ['modules\\controllers\\PatientController', 'apiHistoryMeta'];
     if ($segments[0] === 'api_patient_name')
         return ['modules\\controllers\\PatientController', 'apiPatientName'];
     if ($segments[0] === 'api_live_metrics')
