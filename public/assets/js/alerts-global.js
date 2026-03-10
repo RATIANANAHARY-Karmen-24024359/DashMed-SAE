@@ -259,11 +259,13 @@ const DashMedGlobalAlerts = (function () {
     }
 
     function showAlert(a) {
-        if (localStorage.getItem('dashmed_dnd') === 'true') return;
         if (!a?.type) return;
 
-        playAlertSound(a.type);
         if (typeof NotifHistory !== 'undefined') NotifHistory.add(a);
+
+        if (localStorage.getItem('dashmed_dnd') === 'true') return;
+
+        playAlertSound(a.type);
 
         if (a.type === 'error') showCriticalToast(a);
         else if (a.type === 'info') showInfoToast(a);
@@ -271,7 +273,6 @@ const DashMedGlobalAlerts = (function () {
     }
 
     async function fetchAlerts() {
-        if (localStorage.getItem('dashmed_dnd') === 'true') return [];
         try {
             const room = new URLSearchParams(location.search).get('room') || '';
             const res = await fetch(room ? `${API_URL}?room=${room}` : API_URL);
@@ -314,7 +315,7 @@ const DashMedGlobalAlerts = (function () {
         const urlRoom = new URLSearchParams(location.search).get('room');
         if (urlRoom) return urlRoom;
         const cookieMatch = document.cookie.match(/room_id=(\d+)/);
-        return cookieMatch ? cookieMatch[1] : null;
+        return cookieMatch ? cookieMatch[1] : 'global';
     }
 
     function getActiveStates() {
@@ -331,8 +332,6 @@ const DashMedGlobalAlerts = (function () {
     }
 
     async function check() {
-        if (localStorage.getItem('dashmed_dnd') === 'true') return;
-
         const alerts = await fetchAlerts();
         const activeStates = getActiveStates();
         const newStates = {};
@@ -406,7 +405,7 @@ const NotifHistory = (function () {
         const urlRoom = new URLSearchParams(location.search).get('room');
         if (urlRoom) return urlRoom;
         const cookieMatch = document.cookie.match(/room_id=(\d+)/);
-        return cookieMatch ? cookieMatch[1] : null;
+        return cookieMatch ? cookieMatch[1] : 'global';
     };
 
     const getAllHistory = () => {
@@ -415,14 +414,12 @@ const NotifHistory = (function () {
     };
     const getHistory = () => {
         const room = getCurrentRoom();
-        if (!room) return [];
         const all = getAllHistory();
         return all[room] || [];
     };
 
     const saveHistory = h => {
         const room = getCurrentRoom();
-        if (!room) return;
         const all = getAllHistory();
         all[room] = h.slice(0, 50);
         localStorage.setItem(STORAGE_KEY, JSON.stringify(all));
@@ -430,7 +427,6 @@ const NotifHistory = (function () {
 
     const clearCurrentRoomHistory = () => {
         const room = getCurrentRoom();
-        if (!room) return;
         const all = getAllHistory();
         delete all[room];
         localStorage.setItem(STORAGE_KEY, JSON.stringify(all));
@@ -441,6 +437,9 @@ const NotifHistory = (function () {
         h.unshift({ ...a, timestamp: Date.now() });
         saveHistory(h);
         updateBadge();
+        if (panel?.classList.contains('active')) {
+            render();
+        }
     }
 
     function removeFromHistory(i) {
@@ -454,11 +453,11 @@ const NotifHistory = (function () {
     function updateBadge() {
         const btns = document.querySelectorAll('.action-btn[aria-label="Notifications"]');
         const count = getHistory().length;
-        const isDnd = localStorage.getItem('dashmed_dnd') === 'true';
+        const isDnd = getDndState();
 
         btns.forEach(btn => {
             let badge = btn.querySelector('.notif-badge');
-            if (count > 0 && !isDnd) {
+            if (count > 0) {
                 if (!badge) {
                     badge = document.createElement('span');
                     badge.className = 'notif-badge';
@@ -470,10 +469,10 @@ const NotifHistory = (function () {
                 badge?.remove();
             }
 
-            if (isDnd) {
-                btn.classList.add('dnd-active');
-            } else {
-                btn.classList.remove('dnd-active');
+            const iconImg = btn.querySelector('img.icon') || btn.querySelector('img');
+            if (iconImg) {
+                const iconPath = isDnd ? 'assets/img/icons/bell-off.svg' : 'assets/img/icons/bell.svg';
+                iconImg.setAttribute('src', iconPath);
             }
         });
     }
@@ -500,6 +499,7 @@ const NotifHistory = (function () {
         const toggle = panel?.querySelector('#notif-panel-dnd');
         if (toggle) toggle.checked = enabled;
         syncProfileToggle(enabled);
+        updateBadge();
         DashMedGlobalAlerts.syncSettings({ alert_dnd: enabled ? 1 : 0 });
     }
 
@@ -592,13 +592,6 @@ const NotifHistory = (function () {
         notifDnd.addEventListener('change', (e) => {
             const isChecked = e.target.checked;
             setDndState(isChecked);
-            if (typeof iziToast !== 'undefined') {
-                if (isChecked) {
-                    iziToast.info({ title: 'Info', message: 'Mode Ne pas déranger activé.', position: 'topRight' });
-                } else {
-                    iziToast.success({ title: 'Succès', message: 'Mode Ne pas déranger désactivé.', position: 'topRight' });
-                }
-            }
         });
 
         panel.querySelector('.notif-clear-all').addEventListener('click', () => {
@@ -673,7 +666,6 @@ const NotifHistory = (function () {
             }
         });
 
-        // Initial check
         const dndToggle = panel.querySelector('#notif-panel-dnd');
         if (dndToggle) dndToggle.checked = getDndState();
         document.body.appendChild(overlay);

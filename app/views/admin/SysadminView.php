@@ -72,7 +72,7 @@ class SysadminView
             ],
             '',
             true,
-            false
+            true
         );
 
         $layout->render(function () use ($professions, $users, $rooms, $csrf, $error, $success, $old, $h, $adminNoChecked, $genderHommeChecked, $genderFemmeChecked) {
