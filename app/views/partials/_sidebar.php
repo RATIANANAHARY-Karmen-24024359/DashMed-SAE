@@ -38,7 +38,7 @@ $currentPage = is_string($rawPage) ? $rawPage : 'dashboard';
             <img src="assets/img/icons/ecg.svg" class="icon" alt="Surveillance ECG">
         </a>
         <a href="/?page=explorer" <?= $isActive('explorer', $currentPage) ?>>
-            <img src="assets/img/icons/courbe-graph_1.svg" class="icon" alt="Explorateur de données">
+            <img src="assets/img/icons/viwer.svg" class="icon" alt="Explorateur de données">
         </a>
         <a href="/?page=medicalprocedure" <?= $isActive('medicalprocedure', $currentPage) ?>>
             <img src="assets/img/icons/patient-record.svg" class="icon" alt="Dossier patient">
