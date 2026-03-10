@@ -256,13 +256,24 @@ function createEChart(type, title, rawData, target, color, thresholds, view, ext
 
     const isStep = type === 'step';
 
-    const bMin = view.min !== undefined && view.min !== null && !isNaN(view.min)
-        ? view.min
-        : 0;
+    let bMin = view.min;
+    let bMax = view.max;
 
-    const bMax = view.max !== undefined && view.max !== null && !isNaN(view.max)
-        ? view.max
-        : 250;
+    if (!Number.isFinite(bMin) || !Number.isFinite(bMax) || bMin === bMax) {
+        bMin = 0;
+        bMax = 250;
+        if (rawData.length > 0) {
+            const vals = rawData.map(p => p[1]);
+            const minVal = Math.min(...vals);
+            const maxVal = Math.max(...vals);
+            if (maxVal > 250) bMax = Math.ceil(maxVal * 1.1);
+            if (minVal < 0) bMin = Math.floor(minVal * 1.1);
+            if (bMin === bMax) {
+                bMin -= 10;
+                bMax += 10;
+            }
+        }
+    }
 
     const xMin = extra.initialZoomMs && rawData.length > 0
         ? rawData[rawData.length - 1][0] - extra.initialZoomMs
@@ -317,6 +328,13 @@ function createEChart(type, title, rawData, target, color, thresholds, view, ext
         };
     } else {
         const markArea = [];
+        const nmin = thresholds.nmin;
+        const nmax = thresholds.nmax;
+        const cmin = thresholds.cmin;
+        const cmax = thresholds.cmax;
+        const c_red = resolveColor('var(--chart-band-red)') || '#ef4444';
+        const c_yellow = resolveColor('var(--chart-band-yellow)') || '#f59e0b';
+        const c_green = resolveColor('var(--chart-band-green)') || '#10b981';
 
         if (Number.isFinite(cmax) && Number.isFinite(nmin) && cmax <= nmin) {
             markArea.push([{ yAxis: cmax, itemStyle: { color: c_red } }, { yAxis: bMin }]);
@@ -398,22 +416,22 @@ function createEChart(type, title, rawData, target, color, thresholds, view, ext
             xAxis: {
                 type: 'time',
                 show: true,
-                z: 5,
-                splitLine: { show: true, lineStyle: { color: gridColor, type: 'solid', opacity: 0.1 } },
-                axisLabel: { show: true, color: tickColor, formatter: '{HH}:{mm}', margin: 8, fontSize: 10 },
-                axisTick: { show: false },
-                axisLine: { show: false }
+                z: 10,
+                splitLine: { show: true, lineStyle: { color: gridColor, type: 'solid', opacity: 0.2 } },
+                axisLabel: { show: true, color: tickColor, margin: 8, fontSize: 10 },
+                axisTick: { show: true, lineStyle: { color: gridColor } },
+                axisLine: { show: true, lineStyle: { color: gridColor } }
             },
             yAxis: {
                 type: 'value',
                 min: bMin,
                 max: bMax,
                 show: true,
-                z: 5,
-                splitLine: { show: true, lineStyle: { color: gridColor, type: 'solid', opacity: 0.1 } },
+                z: 10,
+                splitLine: { show: true, lineStyle: { color: gridColor, type: 'solid', opacity: 0.2 } },
                 axisLabel: { show: true, color: tickColor, margin: 8, fontSize: 10 },
-                axisTick: { show: false },
-                axisLine: { show: false }
+                axisTick: { show: true, lineStyle: { color: gridColor } },
+                axisLine: { show: true, lineStyle: { color: gridColor } }
             },
             series: [{
                 data: rawData,

@@ -154,8 +154,24 @@
         const eType = (type === 'line' || type === 'step') ? 'line' : (type === 'bar' ? 'bar' : 'scatter');
         const isStep = type === 'step';
 
-        let bMin = view.min !== undefined && view.min !== null && !isNaN(view.min) ? view.min : 0;
-        let bMax = view.max !== undefined && view.max !== null && !isNaN(view.max) ? view.max : 250;
+        let bMin = view.min;
+        let bMax = view.max;
+
+        if (!Number.isFinite(bMin) || !Number.isFinite(bMax) || bMin === bMax) {
+            bMin = 0;
+            bMax = 250;
+            if (rawData.length > 0) {
+                const vals = rawData.map(p => p[1]);
+                const minVal = Math.min(...vals);
+                const maxVal = Math.max(...vals);
+                if (maxVal > 250) bMax = Math.ceil(maxVal * 1.1);
+                if (minVal < 0) bMin = Math.floor(minVal * 1.1);
+                if (bMin === bMax) {
+                    bMin -= 10;
+                    bMax += 10;
+                }
+            }
+        }
 
         if (type === 'gauge') {
             const lastVal = rawData.length > 0 ? rawData[rawData.length - 1][1] : 0;
@@ -283,8 +299,8 @@
                         interval: 'auto',
                         hideOverlap: true
                     },
-                    axisTick: { show: false },
-                    axisLine: { show: false }
+                    axisTick: { show: true, lineStyle: { color: gridColor, opacity: 0.3 } },
+                    axisLine: { show: true, lineStyle: { color: gridColor, opacity: 0.3 } }
                 },
                 yAxis: {
                     type: 'value',
@@ -294,8 +310,8 @@
                     z: 5,
                     splitLine: { show: true, lineStyle: { color: gridColor, type: 'solid' } },
                     axisLabel: { show: true, color: tickColor },
-                    axisTick: { show: false },
-                    axisLine: { show: false }
+                    axisTick: { show: true, lineStyle: { color: gridColor, opacity: 0.3 } },
+                    axisLine: { show: true, lineStyle: { color: gridColor, opacity: 0.3 } }
                 },
                 series: [{
                     data: rawData,
