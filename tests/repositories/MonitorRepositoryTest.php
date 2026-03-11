@@ -30,9 +30,9 @@ class MonitorRepositoryTest extends TestCase
         $this->pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
         $this->pdo->exec("CREATE TABLE patient_data (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            seq INTEGER PRIMARY KEY AUTOINCREMENT,
             id_patient INTEGER,
-            parameter_id INTEGER,
+            parameter_id TEXT,
             value REAL,
             timestamp TEXT,
             alert_flag INTEGER DEFAULT 0,
@@ -135,6 +135,38 @@ class MonitorRepositoryTest extends TestCase
      * Test retrieval of available chart types.
      * Test de r\u00e9cup\u00e9ration des types de graphiques disponibles.
      */
+    public function testGetTailHistoryByParameter()
+    {
+        // Insert 3 points
+        $this->pdo->exec("INSERT INTO patient_data (id_patient, parameter_id, value, timestamp) VALUES (1, 'BPM', 70, '2023-01-01 09:00:00')");
+        $this->pdo->exec("INSERT INTO patient_data (id_patient, parameter_id, value, timestamp) VALUES (1, 'BPM', 75, '2023-01-01 09:10:00')");
+        $this->pdo->exec("INSERT INTO patient_data (id_patient, parameter_id, value, timestamp) VALUES (1, 'BPM', 80, '2023-01-01 09:20:00')");
+
+        $tail = $this->monitorModel->getTailHistoryByParameter(1, 'BPM', 2);
+        $this->assertCount(2, $tail);
+        // Returned ASC
+        $this->assertEquals(75.0, (float)$tail[0]['value']);
+        $this->assertEquals(80.0, (float)$tail[1]['value']);
+    }
+
+    public function testGetHistoryChunkAfter()
+    {
+        $this->pdo->exec("INSERT INTO patient_data (id_patient, parameter_id, value, timestamp) VALUES (1, 'BPM', 70, '2023-01-01 09:00:00')");
+        $this->pdo->exec("INSERT INTO patient_data (id_patient, parameter_id, value, timestamp) VALUES (1, 'BPM', 75, '2023-01-01 09:10:00')");
+        $this->pdo->exec("INSERT INTO patient_data (id_patient, parameter_id, value, timestamp) VALUES (1, 'BPM', 80, '2023-01-01 09:20:00')");
+
+        $chunk = $this->monitorModel->getHistoryChunkAfter(1, 'BPM', '2023-01-01 09:00:00', 10);
+        $this->assertCount(2, $chunk);
+        $this->assertEquals(75.0, (float)$chunk[0]['value']);
+        $this->assertEquals(80.0, (float)$chunk[1]['value']);
+
+        // Robust seq cursor version
+        $chunk2 = $this->monitorModel->getHistoryChunkAfterSeq(1, 'BPM', 1, 10);
+        $this->assertCount(2, $chunk2);
+        $this->assertEquals(75.0, (float)$chunk2[0]['value']);
+        $this->assertEquals(80.0, (float)$chunk2[1]['value']);
+    }
+
     public function testGetAllChartTypes()
     {
         $this->pdo->exec("INSERT INTO chart_types (chart_type, label) VALUES ('line', 'Ligne')");

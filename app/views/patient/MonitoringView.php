@@ -66,6 +66,9 @@ class MonitoringView
             jsFiles: [
                 'https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js',
                 'assets/js/service/stream.js?v=' . time(),
+                'assets/js/service/history-cache.js?v=' . time(),
+                'assets/js/component/charts/sparkline-loader.js?v=' . time(),
+                'assets/js/service/history-sync.js?v=' . time(),
                 'assets/js/component/modal/chart.js?v=' . time(),
                 'assets/js/component/charts/card-sparklines.js?v=' . time(),
                 'assets/js/component/modal/navigation.js',
@@ -120,6 +123,5 @@ class MonitoringView
             </div>
 <?php
         });
-
     }
 }
