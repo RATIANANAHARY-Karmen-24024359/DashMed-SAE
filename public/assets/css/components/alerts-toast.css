@@ -613,6 +613,10 @@ body.aside-collapsed .iziToast-wrapper-topRight {
     right: 0 !important;
 }
 
+body.notif-panel-open {
+    overflow: hidden;
+}
+
 body.notif-panel-open .iziToast-wrapper-topRight {
     right: max(var(--aside-w, 0px), 350px) !important;
 }

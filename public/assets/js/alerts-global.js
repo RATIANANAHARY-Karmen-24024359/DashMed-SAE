@@ -88,7 +88,10 @@ const DashMedGlobalAlerts = (function () {
         return saved ? parseInt(saved, 10) : 20000;
     }
 
+    let lastSyncTime = 0;
+
     async function syncSettingsWithBackend(settings) {
+        lastSyncTime = Date.now();
         try {
             await fetch(API_URL, {
                 method: 'POST',
@@ -279,7 +282,7 @@ const DashMedGlobalAlerts = (function () {
             const data = await res.json();
             if (!data.success) return [];
 
-            if (data.settings) {
+            if (data.settings && (Date.now() - lastSyncTime > 4000)) {
                 if (data.settings.alert_volume !== undefined) {
                     localStorage.setItem('dashmed_notif_volume', data.settings.alert_volume.toString());
                 }
@@ -394,7 +397,16 @@ const DashMedGlobalAlerts = (function () {
         setInterval(check, CHECK_INTERVAL);
     }
 
-    return { init, checkNow: check, syncSettings: syncSettingsWithBackend };
+    let checkTimeout = null;
+    function requestCheck() {
+        if (checkTimeout) clearTimeout(checkTimeout);
+        checkTimeout = setTimeout(() => {
+            check();
+            checkTimeout = null;
+        }, 150);
+    }
+
+    return { init, checkNow: requestCheck, syncSettings: syncSettingsWithBackend };
 })();
 
 const NotifHistory = (function () {

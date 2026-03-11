@@ -281,3 +281,45 @@
     background: var(--bg-surface);
     color: var(--text-main);
 }
+
+.status-critical {
+    color: var(--color-critical, #ef4444) !important;
+}
+
+.status-warning {
+    color: var(--color-warning, #f59e0b) !important;
+}
+
+.card.card--alert {
+    border: 2px solid var(--color-critical, #ef4444) !important;
+    animation: criticalPulse 2s infinite cubic-bezier(0.4, 0, 0.6, 1);
+}
+
+.card.card--warn {
+    border: 2px solid var(--color-warning, #f59e0b) !important;
+    animation: warningPulse 2s infinite cubic-bezier(0.4, 0, 0.6, 1);
+}
+
+@keyframes criticalPulse {
+
+    0%,
+    100% {
+        box-shadow: 0 4px 6px -1px rgba(239, 68, 68, 0.2), 0 2px 4px -1px rgba(239, 68, 68, 0.1);
+    }
+
+    50% {
+        box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.15), 0 8px 15px -3px rgba(239, 68, 68, 0.3);
+    }
+}
+
+@keyframes warningPulse {
+
+    0%,
+    100% {
+        box-shadow: 0 4px 6px -1px rgba(245, 158, 11, 0.2), 0 2px 4px -1px rgba(245, 158, 11, 0.1);
+    }
+
+    50% {
+        box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.15), 0 8px 15px -3px rgba(245, 158, 11, 0.3);
+    }
+}

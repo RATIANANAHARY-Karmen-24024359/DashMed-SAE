@@ -67,14 +67,11 @@ function windowOnClick(event) {
     }
 }
 
-// Global listeners
 document.addEventListener('click', (event) => {
-    // Handling close button click via delegation or direct listener
     if (event.target.closest('.close-button')) {
         toggleModal();
     }
 
-    // Check click outside modal
     windowOnClick(event);
 });
 

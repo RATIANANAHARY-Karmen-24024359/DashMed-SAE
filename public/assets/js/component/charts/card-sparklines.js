@@ -373,6 +373,8 @@
             const metrics = event.detail;
             if (metrics.error) return;
 
+            let requiresAlertCheck = false;
+
             metrics.forEach(metric => {
                 const card = document.querySelector(`article.card[data-slug="${metric.slug}"]`);
                 if (!card) return;
@@ -413,9 +415,7 @@
                 }
 
                 if (oldState !== newState && newState !== 'normal') {
-                    if (typeof DashMedGlobalAlerts !== 'undefined' && typeof DashMedGlobalAlerts.checkNow === 'function') {
-                        DashMedGlobalAlerts.checkNow();
-                    }
+                    requiresAlertCheck = true;
                 }
 
                 const canvas = card.querySelector(".card-spark-canvas");
@@ -482,6 +482,12 @@
                     }
                 }
             });
+
+            if (requiresAlertCheck) {
+                if (typeof DashMedGlobalAlerts !== 'undefined' && typeof DashMedGlobalAlerts.checkNow === 'function') {
+                    DashMedGlobalAlerts.checkNow();
+                }
+            }
         } catch (e) {
             console.error('SSE metrics fetch error:', e);
         }

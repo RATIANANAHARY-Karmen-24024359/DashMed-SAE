@@ -60,15 +60,7 @@
     border: 2px solid var(--red-500);
 }
 
-.card--alert {
-    position: relative;
-    border: 3px solid var(--red-500);
-}
 
-.card--warn {
-    position: relative;
-    border: 3px solid var(--amber-500);
-}
 
 @media (max-width: 1024px) {
     .canvas-wrapper {
