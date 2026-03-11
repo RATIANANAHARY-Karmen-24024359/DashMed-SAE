@@ -37,7 +37,7 @@ h1 {
 .cards-grid .card {
     min-height: 300px;
     height: 100%;
-    overflow: hidden;
+    overflow: visible;
 }
 
 .cards-grid .card .card-spark {
@@ -76,9 +76,11 @@ h1 {
         background-color: rgba(59, 130, 246, 0.2);
         transform: scale(1.02);
     }
+
     50% {
         background-color: rgba(59, 130, 246, 0.1);
     }
+
     100% {
         background-color: transparent;
         transform: scale(1);

@@ -8,15 +8,18 @@ use PDO;
 /**
  * Class MonitorRepository
  *
- * Handles retrieval of patient monitoring metrics and history.
+ * High-performance data access layer for physiological time-series data.
+ * Optimized for real-time streaming, downsampling (LTTB), and historical analytics.
+ * 
+ * Part of the DashMed Core Infrastructure.
  *
  * @package DashMed\Modules\Models\Repositories
  * @author DashMed Team
- * @license Proprietary
+ * @version 3.4.2
  */
 class MonitorRepository extends BaseRepository
 {
-    /** @var string Table name */
+    /** @var string The main table containing measurement samples (e.g., 'patient_data'). */
     private string $table;
 
     /** @var string Status: Normal */
@@ -168,13 +171,16 @@ class MonitorRepository extends BaseRepository
     }
 
     /**
-     * Retrieves raw buffered history for a patient.
+     * Retrieves a standard buffered collection of historical data points.
+     * 
+     * Standard implementation for small to medium ranges. For large scale analysis,
+     * use streamRawHistoryByParameter() instead to maintain flat memory usage.
      *
      * @param int $patientId The unique patient identifier.
      * @param int $limit Maximum number of records to return (0 for unlimited).
-     * @param string|null $sinceTimestamp Optional timestamp filter (YYYY-MM-DD HH:MM:SS). 
-     *                                   Only records strictly after this time are returned.
-     * @return array<int, array{parameter_id: string, value: float|null, timestamp: string, alert_flag: int}> Ordered ASC.
+     * @param string|null $sinceTimestamp Optional starting point (YYYY-MM-DD HH:MM:SS).
+     * @return array<int, array{parameter_id: string, value: float|null, timestamp: string, alert_flag: int}>
+     * @throws \PDOException If retrieval fails.
      */
     public function getRawHistory(int $patientId, int $limit = 0, ?string $sinceTimestamp = null): array
     {
@@ -224,15 +230,46 @@ class MonitorRepository extends BaseRepository
     }
 
     /**
-     * Efficiently retrieves the latest history points for ALL parameters of a patient.
-     * 
-     * Uses a window function (if MySQL 8+) or a specific optimized join strategy 
-     * to avoid loading the entire historical table when only sparklines are needed.
+     * Efficiently retrieves the latest history points for SPECIFIC parameters of a patient.
      *
      * @param int $patientId Patient ID
+     * @param array<int, string> $parameterIds List of parameter IDs
      * @param int $limitPerParam Max points per parameter (default 1000)
      * @return array<int, array{parameter_id: string, value: float|null, timestamp: string, alert_flag: int}>
      */
+    public function getLatestHistoryForSpecificParameters(int $patientId, array $parameterIds, int $limitPerParam = 1000): array
+    {
+        if (empty($parameterIds)) {
+            return [];
+        }
+
+        try {
+            $placeholders = implode(',', array_fill(0, count($parameterIds), '?'));
+
+            $sql = "
+                SELECT parameter_id, value, `timestamp`, alert_flag
+                FROM (
+                    SELECT 
+                        parameter_id, value, `timestamp`, alert_flag,
+                        ROW_NUMBER() OVER(PARTITION BY parameter_id ORDER BY `timestamp` DESC) as rn
+                    FROM {$this->table}
+                    WHERE id_patient = ? AND archived = 0 AND parameter_id IN ($placeholders)
+                ) ranked
+                WHERE rn <= ?
+                ORDER BY parameter_id, `timestamp` ASC
+            ";
+
+            $st = $this->pdo->prepare($sql);
+            $params = array_merge([$patientId], $parameterIds, [$limitPerParam]);
+            $st->execute($params);
+
+            return $st->fetchAll();
+        } catch (\PDOException $e) {
+            error_log("MonitorRepository::getLatestHistoryForSpecificParameters Error: " . $e->getMessage());
+            return [];
+        }
+    }
+
     public function getLatestHistoryForAllParameters(int $patientId, int $limitPerParam = 1000): array
     {
         try {
@@ -340,11 +377,12 @@ class MonitorRepository extends BaseRepository
     }
 
     /**
-     * Streams raw history for a specific patient and parameter using an unbuffered query.
+     * Streams raw history using an unbuffered MySQL query.
      *
-     * This method utilizes PDO unbuffered queries to yield rows one by one directly
-     * from the driver, ensuring the PHP memory footprint remains perfectly flat (O(1))
-     * regardless of how many millions of rows are returned.
+     * This method utilizes PDO unbuffered queries to yield rows one by one.
+     * Ensures O(1) memory footprint regardless of the number of points.
+     * 
+     * @important MUST restore PDO::MYSQL_ATTR_USE_BUFFERED_QUERY after use.
      *
      * @param int $patientId The unique ID of the patient.
      * @param string $parameterId The target medical parameter (e.g., 'FC', 'SpO2').
@@ -401,7 +439,8 @@ class MonitorRepository extends BaseRepository
             $st->execute();
 
             while ($row = $st->fetch(\PDO::FETCH_ASSOC)) {
-                /** @var array{parameter_id: string, value: string|null, timestamp: string, alert_flag: int|string} $row */ yield $row;
+                /** @var array{parameter_id: string, value: string|null, timestamp: string, alert_flag: int|string} $row */
+                yield $row;
             }
         } catch (\PDOException $e) {
             error_log("MonitorRepository::streamRawHistoryByParameter Error: " . $e->getMessage());
@@ -417,11 +456,11 @@ class MonitorRepository extends BaseRepository
      * It performs a FIRST pass of reduction in SQL using AVG() and GROUP BY,
      * so PHP only receives a manageable amount of points (e.g. 5,000-10,000).
      *
-     * @param int $patientId Patient ID
-     * @param string $parameterId Parameter identifier
-     * @param int $intervalSeconds Grouping interval in seconds
-     * @param string|null $targetDate Optional target date filter
-     * @return \Generator Streams associative arrays of data
+     * @param int $patientId Patient ID.
+     * @param string $parameterId Parameter identifier.
+     * @param int $intervalSeconds Time bucket size in seconds.
+     * @param string|null $targetDate Optional date filter.
+     * @return \Generator
      */
     public function streamPreAggregatedHistoryByParameter(
         int $patientId,
@@ -538,6 +577,251 @@ class MonitorRepository extends BaseRepository
         } catch (\PDOException $e) {
             error_log("MonitorRepository::countRawHistoryByParameter Error: " . $e->getMessage());
             return 0;
+        }
+    }
+
+    /**
+     * Retrieves the complete list of available chart types.
+     *
+     * @return array<string, string> Associative array (type => label)
+     */
+    /**
+     * Fetches the latest N samples for a single parameter (tail) in ascending timestamp order.
+     *
+     * Implementation details:
+     * - Uses an index-friendly `ORDER BY timestamp DESC LIMIT N` subquery.
+     * - Wraps the result to return points in chronological order (ASC) for charting.
+     *
+     * @param int $patientId The patient identifier.
+     * @param string $parameterId The parameter identifier (e.g. "FC_m", "HCO3").
+     * @param int $limit Max number of points to return (hard-capped to 5000).
+     * @param string|null $targetDate Optional upper bound (YYYY-MM-DD or YYYY-MM-DDTHH:MM).
+     *
+     * @return array<int, array{
+     *   parameter_id: string,
+     *   value: float|string|null,
+     *   timestamp: string,
+     *   alert_flag: string|int
+     * }>
+     */
+    public function getTailHistoryByParameter(
+        int $patientId,
+        string $parameterId,
+        int $limit = 250,
+        ?string $targetDate = null
+    ): array {
+        $limit = max(1, min(5000, $limit));
+
+        try {
+            $dateCondition = '';
+            $isDateTime = false;
+            if ($targetDate !== null) {
+                if (
+                    preg_match('/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/', $targetDate) ||
+                    preg_match('/^\d{4}-\d{2}-\d{2}$/', $targetDate)
+                ) {
+                    $dateCondition = 'AND `timestamp` <= :targetDateEnd';
+                    $isDateTime = true;
+                }
+            }
+
+            $sql = "
+                SELECT * FROM (
+                    SELECT parameter_id, value, `timestamp`, alert_flag
+                    FROM {$this->table}
+                    WHERE id_patient = :id
+                      AND parameter_id = :paramId
+                      AND archived = 0
+                      $dateCondition
+                    ORDER BY `timestamp` DESC
+                    LIMIT :limit
+                ) sub
+                ORDER BY `timestamp` ASC
+            ";
+
+            $st = $this->pdo->prepare($sql);
+            $st->bindValue(':id', $patientId, \PDO::PARAM_INT);
+            $st->bindValue(':paramId', $parameterId, \PDO::PARAM_STR);
+            $st->bindValue(':limit', $limit, \PDO::PARAM_INT);
+
+            if ($isDateTime && $targetDate !== null) {
+                $formattedDate = str_replace('T', ' ', $targetDate);
+                if (strlen($formattedDate) === 10) {
+                    $formattedDate .= ' 23:59:59';
+                } elseif (strlen($formattedDate) === 16) {
+                    $formattedDate .= ':59';
+                }
+                $st->bindValue(':targetDateEnd', $formattedDate, \PDO::PARAM_STR);
+            }
+
+            $st->execute();
+            return $st->fetchAll();
+        } catch (\PDOException $e) {
+            error_log('MonitorRepository::getTailHistoryByParameter Error: ' . $e->getMessage());
+            return [];
+        }
+    }
+
+    /**
+     * Fetches an exact, forward-only chunk after a given timestamp cursor.
+     *
+     * Notes:
+     * - This cursor is weaker than the monotonic `seq` cursor. Prefer {@see getHistoryChunkAfterSeq()}.
+     * - Kept for backwards-compatibility and tooling that only knows timestamps.
+     *
+     * @param int $patientId The patient identifier.
+     * @param string $parameterId The parameter identifier.
+     * @param string|null $afterTimestamp Exclusive cursor in SQL DATETIME (YYYY-MM-DD HH:MM:SS) or null to start.
+     * @param int $limit Max number of points to return (hard-capped to 20000).
+     *
+     * @return array<int, array{
+     *   parameter_id: string,
+     *   value: float|string|null,
+     *   timestamp: string,
+     *   alert_flag: string|int
+     * }>
+     */
+    public function getHistoryChunkAfter(
+        int $patientId,
+        string $parameterId,
+        ?string $afterTimestamp,
+        int $limit = 5000
+    ): array {
+        $limit = max(1, min(20000, $limit));
+
+        try {
+            $afterCondition = '';
+            if ($afterTimestamp !== null && $afterTimestamp !== '') {
+                // accept ISO too
+                $afterTimestamp = str_replace('T', ' ', $afterTimestamp);
+                if (str_ends_with($afterTimestamp, 'Z')) {
+                    $afterTimestamp = rtrim($afterTimestamp, 'Z');
+                }
+                $afterCondition = 'AND `timestamp` > :afterTs';
+            }
+
+            $sql = "
+                SELECT parameter_id, value, `timestamp`, alert_flag
+                FROM {$this->table}
+                WHERE id_patient = :id
+                  AND parameter_id = :paramId
+                  AND archived = 0
+                  $afterCondition
+                ORDER BY `timestamp` ASC
+                LIMIT :limit
+            ";
+
+            $st = $this->pdo->prepare($sql);
+            $st->bindValue(':id', $patientId, \PDO::PARAM_INT);
+            $st->bindValue(':paramId', $parameterId, \PDO::PARAM_STR);
+            if ($afterCondition !== '') {
+                $st->bindValue(':afterTs', $afterTimestamp, \PDO::PARAM_STR);
+            }
+            $st->bindValue(':limit', $limit, \PDO::PARAM_INT);
+            $st->execute();
+            return $st->fetchAll();
+        } catch (\PDOException $e) {
+            error_log('MonitorRepository::getHistoryChunkAfter Error: ' . $e->getMessage());
+            return [];
+        }
+    }
+
+    /**
+     * Fetches an exact, forward-only chunk using the monotonic `seq` cursor.
+     *
+     * Why `seq`:
+     * - Guarantees strict ordering and safe pagination even when multiple rows share the same timestamp.
+     * - Allows resumable background sync without missing or duplicating points.
+     *
+     * @param int $patientId The patient identifier.
+     * @param string $parameterId The parameter identifier.
+     * @param int|null $afterSeq Exclusive cursor (seq). Use null to start from the beginning.
+     * @param int $limit Max number of points to return (hard-capped to 20000).
+     *
+     * @return array<int, array{
+     *   seq: int|string,
+     *   parameter_id: string,
+     *   value: float|string|null,
+     *   timestamp: string,
+     *   alert_flag: string|int
+     * }>
+     */
+    public function getHistoryChunkAfterSeq(
+        int $patientId,
+        string $parameterId,
+        ?int $afterSeq,
+        int $limit = 5000
+    ): array {
+        $limit = max(1, min(20000, $limit));
+
+        try {
+            $afterCondition = '';
+            if ($afterSeq !== null && $afterSeq > 0) {
+                $afterCondition = 'AND seq > :afterSeq';
+            }
+
+            $sql = "
+                SELECT seq, parameter_id, value, `timestamp`, alert_flag
+                FROM {$this->table}
+                WHERE id_patient = :id
+                  AND parameter_id = :paramId
+                  AND archived = 0
+                  $afterCondition
+                ORDER BY seq ASC
+                LIMIT :limit
+            ";
+
+            $st = $this->pdo->prepare($sql);
+            $st->bindValue(':id', $patientId, \PDO::PARAM_INT);
+            $st->bindValue(':paramId', $parameterId, \PDO::PARAM_STR);
+            if ($afterCondition !== '') {
+                $st->bindValue(':afterSeq', $afterSeq, \PDO::PARAM_INT);
+            }
+            $st->bindValue(':limit', $limit, \PDO::PARAM_INT);
+            $st->execute();
+            return $st->fetchAll();
+        } catch (\PDOException $e) {
+            error_log('MonitorRepository::getHistoryChunkAfterSeq Error: ' . $e->getMessage());
+            return [];
+        }
+    }
+
+    /**
+     * Lightweight metadata for sync/validation.
+     *
+     * This is intentionally cheap to compute compared to serving large histories.
+     * The `max_seq` watermark enables a client to determine when it is fully synced.
+     *
+     * @param int $patientId The patient identifier.
+     * @param string $parameterId The parameter identifier.
+     *
+     * @return array{max_ts: string|null, max_seq: int|null, count: int|null}
+     */
+    public function getHistoryMeta(int $patientId, string $parameterId): array
+    {
+        try {
+            $sql = "
+                SELECT MAX(`timestamp`) AS max_ts, COUNT(*) AS cnt, MAX(seq) AS max_seq
+                FROM {$this->table}
+                WHERE id_patient = :id
+                  AND parameter_id = :paramId
+                  AND archived = 0
+            ";
+            $st = $this->pdo->prepare($sql);
+            $st->bindValue(':id', $patientId, \PDO::PARAM_INT);
+            $st->bindValue(':paramId', $parameterId, \PDO::PARAM_STR);
+            $st->execute();
+            $row = $st->fetch(\PDO::FETCH_ASSOC);
+
+            // max_seq may not exist on older schema; keep null-safe.
+            return [
+                'max_ts' => isset($row['max_ts']) ? (string) $row['max_ts'] : null,
+                'count' => isset($row['cnt']) ? (int) $row['cnt'] : null,
+                'max_seq' => isset($row['max_seq']) ? (int) $row['max_seq'] : null,
+            ];
+        } catch (\PDOException $e) {
+            error_log('MonitorRepository::getHistoryMeta Error: ' . $e->getMessage());
+            return ['max_ts' => null, 'max_seq' => null, 'count' => null];
         }
     }
 

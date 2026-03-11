@@ -1,6 +1,3 @@
-var modal = document.querySelector(".modal");
-var closeButton = document.querySelector(".close-button");
-
 /**
  * Opens the modal and populates its title and value.
  * Appends a critical tag if the value is deemed critical.
@@ -10,6 +7,9 @@ var closeButton = document.querySelector(".close-button");
  * @param {boolean} isCritical - Whether the value exceeds critical thresholds.
  */
 function openModal(param, value, isCritical) {
+    const modal = document.querySelector(".modal");
+    if (!modal) return;
+
     const modalTitle = modal.querySelector('#modalTitle');
     const modalValue = modal.querySelector('#modalValue');
     const modalDetails = modal.querySelector('#modalDetails');
@@ -40,11 +40,18 @@ function openModal(param, value, isCritical) {
  * Toggles the visibility of the modal and manages the body scrolling state.
  */
 function toggleModal() {
+    const modal = document.querySelector(".modal");
+    if (!modal) return;
+
     modal.classList.toggle("show-modal");
     if (modal.classList.contains("show-modal")) {
         document.body.classList.add("modal-open");
     } else {
         document.body.classList.remove("modal-open");
+        // Clear activeModalCard when closing to resume countdowns
+        if (typeof window.activeModalCard !== 'undefined') {
+            window.activeModalCard = null;
+        }
     }
 }
 
@@ -54,13 +61,26 @@ function toggleModal() {
  * @param {MouseEvent} event - The window click event.
  */
 function windowOnClick(event) {
-    if (event.target === modal) {
+    const modal = document.querySelector(".modal");
+    if (modal && event.target === modal) {
         toggleModal();
     }
 }
 
-closeButton.addEventListener("click", toggleModal);
-window.addEventListener("click", windowOnClick);
+document.addEventListener('click', (event) => {
+    if (event.target.closest('.close-button')) {
+        toggleModal();
+    }
+
+    windowOnClick(event);
+});
+
+window.addEventListener("keydown", function (event) {
+    const modal = document.querySelector(".modal");
+    if (event.key === "Escape" && modal && modal.classList.contains("show-modal")) {
+        toggleModal();
+    }
+});
 
 /**
  * Formats an ISO time string into a more readable localized French format.
@@ -103,9 +123,3 @@ function formatTime(timeStr) {
         });
     }
 }
-
-window.addEventListener("keydown", function (event) {
-    if (event.key === "Escape" && modal.classList.contains("show-modal")) {
-        toggleModal();
-    }
-});

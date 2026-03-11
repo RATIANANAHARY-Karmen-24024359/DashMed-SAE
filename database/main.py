@@ -55,12 +55,20 @@ DB_CONFIG = {
     'db': os.getenv('DB_NAME'),
 }
 
-# Listes de validation chargées depuis la BDD au démarrage
-VALID_PATIENT_IDS = []
-VALID_PARAMETERS = []
-VALID_USER_IDS = []
-PARAMETER_RANGES = {}  # {parameter_id: {'dm': display_min, 'dmx': display_max, 'nm': normal_min, 'nmx': normal_max, 'cm': critical_min, 'cmx': critical_max}}
-PARAM_VOLATILITY = {}  # {parameter_id: volatility_float}
+# Validation caches loaded from DB at startup
+# NOTE: use sets for O(1) membership checks during high-throughput inserts.
+VALID_PATIENT_IDS: set[int] = set()
+VALID_PARAMETERS: set[str] = set()
+VALID_USER_IDS: set[int] = set()
+
+# {parameter_id: {'dm': display_min, 'dmx': display_max, 'nm': normal_min, 'nmx': normal_max, 'cm': critical_min, 'cmx': critical_max}}
+PARAMETER_RANGES: dict[str, dict] = {}
+PARAM_VOLATILITY: dict[str, float] = {}  # {parameter_id: volatility_float}
+
+# Pre-built INSERT statement for batch operations
+_COLUMNS_STR = ', '.join(DB_COLUMNS)
+_PLACEHOLDERS = ', '.join(['%s'] * len(DB_COLUMNS))
+_INSERT_QUERY = f"INSERT INTO {DB_TABLE_NAME} ({_COLUMNS_STR}) VALUES ({_PLACEHOLDERS})"
 
 def load_csv_data(filepath: str):
     """Charge le CSV en mémoire sous forme de liste de dictionnaires."""
@@ -189,7 +197,8 @@ def generate_batch(num_cycles: int = 100) -> list:
         return []
 
     data = []
-    default_created_by = str(VALID_USER_IDS[0]) if VALID_USER_IDS else '1'
+    # Pick a stable default author id (set -> iterator)
+    default_created_by = str(next(iter(VALID_USER_IDS))) if VALID_USER_IDS else '1'
 
     for cycle_idx in range(num_cycles):
         if cycle_idx == 0:
@@ -335,7 +344,7 @@ async def create_pool():
 
 
 async def discover_valid_data(pool: aiomysql.Pool):
-    """Récupère les IDs valides et les plages de valeurs en BDD pour la validation pré-insertion."""
+    """Load validation caches (patients, parameters, users and thresholds) from the DB."""
     global VALID_PATIENT_IDS, VALID_PARAMETERS, VALID_USER_IDS, PARAMETER_RANGES
 
     print()
@@ -348,8 +357,8 @@ async def discover_valid_data(pool: aiomysql.Pool):
             # Vérification de l'existence des patients
             await cur.execute("SELECT id_patient FROM patients ORDER BY id_patient")
             patients = await cur.fetchall()
-            VALID_PATIENT_IDS = [p[0] for p in patients]
-            print(f"[INFO] {len(VALID_PATIENT_IDS)} patients: {VALID_PATIENT_IDS}")
+            VALID_PATIENT_IDS = {int(p[0]) for p in patients}
+            print(f"[INFO] {len(VALID_PATIENT_IDS)} patients: {sorted(VALID_PATIENT_IDS)}")
 
             # Récupération des paramètres avec TOUS les seuils
             await cur.execute("""
@@ -358,9 +367,9 @@ async def discover_valid_data(pool: aiomysql.Pool):
                 FROM parameter_reference
             """)
             params = await cur.fetchall()
-            VALID_PARAMETERS = [p[0] for p in params]
+            VALID_PARAMETERS = {str(p[0]) for p in params}
             PARAMETER_RANGES = {
-                p[0]: {
+                str(p[0]): {
                     'dm': float(p[1]) if p[1] is not None else 0.0,
                     'dmx': float(p[2]) if p[2] is not None else 100.0,
                     'nm': float(p[3]) if p[3] is not None else None,
@@ -374,93 +383,80 @@ async def discover_valid_data(pool: aiomysql.Pool):
             # Vérification des utilisateurs (auteurs des données)
             await cur.execute("SELECT id_user FROM users ORDER BY id_user")
             users = await cur.fetchall()
-            VALID_USER_IDS = [u[0] for u in users]
-            print(f"[INFO] {len(VALID_USER_IDS)} utilisateurs: {VALID_USER_IDS}")
+            VALID_USER_IDS = {int(u[0]) for u in users}
+            print(f"[INFO] {len(VALID_USER_IDS)} utilisateurs: {sorted(VALID_USER_IDS)}")
 
     print()
 
 
-def validate_record(record):
-    """Vérifie l'intégrité référentielle avant d'envoyer la requête à MySQL."""
+def validate_record(record) -> tuple[bool, str]:
+    """Validate record referential integrity before hitting the database."""
     try:
         patient_id = int(record['id_patient'])
         if patient_id not in VALID_PATIENT_IDS:
-            return False, f"Patient {patient_id} non trouvé"
+            return False, f"Patient {patient_id} not found"
     except (KeyError, ValueError) as e:
-        return False, f"id_patient invalide: {e}"
+        return False, f"Invalid id_patient: {e}"
 
-    param_id = record.get('parameter_id', '')
+    param_id = str(record.get('parameter_id', ''))
     if param_id not in VALID_PARAMETERS:
-        return False, f"Paramètre '{param_id}' non trouvé"
+        return False, f"Unknown parameter_id '{param_id}'"
 
     try:
         created_by = int(record.get('created_by', 0))
         if created_by not in VALID_USER_IDS:
-            return False, f"Utilisateur {created_by} non trouvé"
+            return False, f"User {created_by} not found"
     except ValueError as e:
-        return False, f"created_by invalide: {e}"
+        return False, f"Invalid created_by: {e}"
 
     return True, ""
 
 
-async def insert_record(pool, record, timestamp):
-    """Exécute une seule insertion dans la base de données."""
-    is_valid, error_msg = validate_record(record)
-    if not is_valid:
-        return False, error_msg
+async def insert_cycle(pool, cycle, cycle_num):
+    """Insert a full cycle using a single batched operation.
 
-    columns_str = ', '.join(DB_COLUMNS)
-    placeholders = ', '.join(['%s'] * len(DB_COLUMNS))
+    Why:
+    - `executemany()` drastically reduces per-row overhead (cursor creation, network RTT, autocommit cost).
+    - Validation is done in-memory; invalid rows are skipped.
 
-    query = f"INSERT INTO {DB_TABLE_NAME} ({columns_str}) VALUES ({placeholders})"
+    Returns:
+    - (success_count, skip_count, error_count)
+    """
+    timestamp = datetime.now().strftime(DATETIME_FORMAT)
 
-    # Préparation du tuple de valeurs avec conversion de types
-    values = (
-        int(record['id_patient']),
-        record['parameter_id'],
-        float(record['value']),
-        timestamp,
-        int(record.get('alert_flag', 0)),
-        int(record['created_by']),
-        int(record.get('archived', 0))
-    )
+    values_list = []
+    skip_count = 0
+
+    for record in cycle:
+        ok, _ = validate_record(record)
+        if not ok:
+            skip_count += 1
+            continue
+
+        try:
+            values_list.append((
+                int(record['id_patient']),
+                str(record['parameter_id']),
+                float(record['value']),
+                timestamp,
+                int(record.get('alert_flag', 0)),
+                int(record['created_by']),
+                int(record.get('archived', 0)),
+            ))
+        except Exception:
+            skip_count += 1
+
+    if not values_list:
+        return 0, skip_count, 0
 
     try:
         async with pool.acquire() as conn:
             async with conn.cursor() as cur:
-                await cur.execute(query, values)
-                return True, f"P{record['id_patient']}-{record['parameter_id']}={record['value']}"
+                await cur.executemany(_INSERT_QUERY, values_list)
+        return len(values_list), skip_count, 0
     except Exception as e:
-        return False, f"Erreur: {e}"
-
-
-async def insert_cycle(pool, cycle, cycle_num):
-    """Insère tous les enregistrements d'un cycle en parallèle via asyncio.gather."""
-    timestamp = datetime.now().strftime(DATETIME_FORMAT)
-
-    # Création des coroutines pour chaque record du cycle
-    tasks = [insert_record(pool, record, timestamp) for record in cycle]
-
-    # Lancement simultané des insertions du cycle
-    results = await asyncio.gather(*tasks, return_exceptions=True)
-
-    success_count = 0
-    skip_count = 0
-    error_count = 0
-
-    for i, result in enumerate(results):
-        if isinstance(result, Exception):
-            error_count += 1
-        elif result[0]:
-            success_count += 1
-        else:
-            # Distinction entre erreur MySQL et skip de validation
-            if "non trouvé" in result[1] or "invalide" in result[1]:
-                skip_count += 1
-            else:
-                error_count += 1
-
-    return success_count, skip_count, error_count
+        # On error, keep the cycle moving; count all attempted rows as errors.
+        return 0, skip_count, len(values_list)
 
 
 def print_progress_bar(current, total, success, skip, error, elapsed):

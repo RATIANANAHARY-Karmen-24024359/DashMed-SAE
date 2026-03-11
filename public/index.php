@@ -109,11 +109,15 @@ function resolveRoute(string $path): array
         return ['modules\\controllers\\PatientController', 'record'];
     if (in_array($segments[0], ['medicalprocedure', 'consultations']))
         return ['modules\\controllers\\PatientController', 'consultations'];
+    if ($segments[0] === 'explorer')
+        return ['modules\\controllers\\PatientController', 'explorer'];
 
     if ($segments[0] === 'profile')
         return ['modules\\controllers\\UserController', 'profile'];
     if ($segments[0] === 'customization')
         return ['modules\\controllers\\UserController', 'customization'];
+    if ($segments[0] === 'custom_group')
+        return ['modules\\controllers\\UserController', 'customGroup'];
 
     if ($segments[0] === 'sysadmin')
         return ['modules\\controllers\\AdminController', 'panel'];
@@ -129,6 +133,14 @@ function resolveRoute(string $path): array
         return ['modules\\controllers\\api\\SearchController', null];
     if ($segments[0] === 'api_history')
         return ['modules\\controllers\\PatientController', 'apiHistory'];
+    if ($segments[0] === 'api_history_tail')
+        return ['modules\\controllers\\PatientController', 'apiHistoryTail'];
+    if ($segments[0] === 'api_history_chunk')
+        return ['modules\\controllers\\PatientController', 'apiHistoryChunk'];
+    if ($segments[0] === 'api_history_meta')
+        return ['modules\\controllers\\PatientController', 'apiHistoryMeta'];
+    if ($segments[0] === 'api_patient_name')
+        return ['modules\\controllers\\PatientController', 'apiPatientName'];
     if ($segments[0] === 'api_live_metrics')
         return ['modules\\controllers\\PatientController', 'apiLiveMetrics'];
     if ($segments[0] === 'api_stream')

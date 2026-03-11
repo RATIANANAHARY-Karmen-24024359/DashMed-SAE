@@ -197,7 +197,7 @@ class UserRepository extends BaseRepository
      */
     public function updateById(int $id, array $data): bool
     {
-        $allowedFields = ['first_name', 'last_name', 'email', 'admin_status', 'id_profession'];
+        $allowedFields = ['first_name', 'last_name', 'email', 'admin_status', 'id_profession', 'alert_volume', 'alert_duration', 'alert_dnd'];
         $sets = [];
         $values = [':id_user' => $id];
 
@@ -209,9 +209,13 @@ class UserRepository extends BaseRepository
                     $values[":$field"] = strtolower(
                         trim(is_string($emailVal) ? $emailVal : '')
                     );
-                } elseif ($field === 'admin_status') {
-                    $adminVal = $data[$field];
-                    $values[":$field"] = is_numeric($adminVal) ? (int) $adminVal : 0;
+                } elseif ($field === 'admin_status' || $field === 'alert_dnd') {
+                    $val = $data[$field];
+                    $values[":$field"] = is_numeric($val) || is_bool($val) ? (int) $val : 0;
+                } elseif ($field === 'alert_volume') {
+                    $values[":$field"] = (float) $data[$field];
+                } elseif ($field === 'alert_duration') {
+                    $values[":$field"] = (int) $data[$field];
                 } else {
                     $values[":$field"] = $data[$field];
                 }
@@ -289,7 +293,10 @@ class UserRepository extends BaseRepository
             is_numeric($row['admin_status'] ?? null) ? (int) $row['admin_status'] : 0,
             is_string($password) ? $password : null,
             isset($row['id_profession']) && is_numeric($row['id_profession']) ? (int) $row['id_profession'] : null,
-            is_string($profLabel) ? $profLabel : null
+            is_string($profLabel) ? $profLabel : null,
+            isset($row['alert_volume']) ? (float) $row['alert_volume'] : 0.50,
+            isset($row['alert_duration']) ? (int) $row['alert_duration'] : 20000,
+            isset($row['alert_dnd']) ? (bool) $row['alert_dnd'] : false
         );
     }
 }

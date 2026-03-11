@@ -182,43 +182,28 @@ input:checked+.slider:before {
     bottom: 32px;
     left: 50%;
     transform: translateX(-50%);
-    background: #ffffff;
+    background: var(--bg-surface);
     padding: 12px 24px;
     border-radius: 100px;
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    box-shadow: var(--shadow-lg);
     display: flex;
     align-items: center;
     gap: 16px;
     z-index: 9999;
-    border: 1px solid #e2e8f0;
+    border: 1px solid var(--border-default);
     animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .unsaved-bar p {
     margin: 0;
-    color: #1e293b;
+    color: var(--text-main);
     font-weight: 500;
     font-size: 0.95rem;
 }
 
-.unsaved-bar .btn-save {
-    background: #0f172a;
-    color: white;
-    border: none;
+.unsaved-bar .dm-btn {
     padding: 8px 16px;
     border-radius: 50px;
-    font-size: 0.9rem;
-    font-weight: 500;
-    cursor: pointer;
-    transition: background 0.2s;
-    pointer-events: auto;
-    box-shadow: none;
-}
-
-.unsaved-bar .btn-save:hover {
-    background: #334155;
-    transform: none;
-    box-shadow: none;
 }
 
 @keyframes slideUp {

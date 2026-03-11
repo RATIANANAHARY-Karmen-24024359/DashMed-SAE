@@ -14,7 +14,7 @@
     justify-content: flex-start;
     align-items: center;
     box-sizing: border-box;
-    overflow: hidden;
+    overflow: visible;
 }
 
 .card:hover {
@@ -23,29 +23,66 @@
 }
 
 .card .card-header {
-    display: flex;
-    flex-direction: row;
-    justify-content: space-between;
-    width: 100%;
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
     align-items: center;
+    width: 100%;
     flex-shrink: 0;
+    min-height: 24px;
+    margin: 0;
+    padding: 0;
+    gap: 8px;
 }
 
 .card .card-header h3 {
-    font-size: 0.9em;
+    font-size: 0.75rem;
     letter-spacing: 0.05em;
     text-transform: uppercase;
     color: var(--text-primary);
     margin: 0;
     text-align: left;
-    flex: 1;
+    line-height: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.card .card-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    justify-content: flex-end;
+}
+
+.card .card-interval-wrapper {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    padding: 0 4px;
 }
 
 .card .card-header .value {
-    font-size: 1.1em;
+    font-size: 0.95rem;
     font-weight: 700;
     white-space: nowrap;
     margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    color: var(--text-main);
+}
+
+.card .card-header .value .value-text {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--text-main);
+}
+
+.card .card-header .value .unit {
+    font-size: 0.7rem;
+    color: var(--text-muted);
 }
 
 .card .card-spark {
@@ -127,11 +164,32 @@
     position: absolute;
     inset: 0;
     display: flex;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
     z-index: 2;
     background: var(--bg-surface);
     transition: opacity 0.4s ease, visibility 0.4s ease;
+    border-radius: 14px;
+}
+
+.loader-logo-svg {
+    filter: drop-shadow(0 0 6px rgba(37, 91, 254, 0.15));
+    animation: loader-logo-pulse 2s ease-in-out infinite;
+}
+
+@keyframes loader-logo-pulse {
+
+    0%,
+    100% {
+        opacity: 0.8;
+        transform: scale(1);
+    }
+
+    50% {
+        opacity: 1;
+        transform: scale(1.1);
+    }
 }
 
 .card-chart-loader.hidden {
@@ -140,21 +198,30 @@
     pointer-events: none;
 }
 
-.card-chart-loader-svg {
-    width: 40px;
-    height: 40px;
-    filter: drop-shadow(0 0 6px rgba(37, 91, 254, 0.15));
+.loader-progress-container {
+    width: 60%;
+    max-width: 150px;
+    height: 8px;
+    background-color: var(--bg-surface-hover, rgba(0, 0, 0, 0.1));
+    border-radius: 4px;
+    overflow: hidden;
+    margin-bottom: 8px;
+    display: flex;
 }
 
-.card-chart-loader-circle {
-    fill: none;
-    stroke: var(--text-primary);
-    stroke-width: 3;
-    stroke-linecap: round;
-    stroke-dasharray: 126;
-    stroke-dashoffset: 126;
-    transform-origin: center;
-    animation: card-loader-dash 1.4s ease-in-out infinite, card-loader-rotate 1.8s linear infinite;
+.loader-progress-bar {
+    width: 0%;
+    height: 100%;
+    background-color: var(--primary-color, #275afe);
+    border-radius: 4px;
+    transition: width 0.1s ease-out;
+}
+
+.loader-progress-text {
+    font-size: 0.8em;
+    font-weight: 700;
+    color: var(--text-primary);
+    font-variant-numeric: tabular-nums;
 }
 
 @keyframes card-loader-dash {
@@ -182,35 +249,77 @@
 }
 
 .card .card-interval-select {
-    font-size: 0.6rem;
-    padding: 0 12px 0 4px;
-    height: 16px;
-    border-radius: 3px;
-    border: 1px solid rgba(255, 255, 255, 0.3);
-    background: rgba(255, 255, 255, 0.1) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%23ffffff' stroke-width='5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E") no-repeat right 2px center;
-    background-size: 8px;
-    color: #fff;
+    font-size: 0.7rem;
+    padding: 0 16px 0 6px;
+    height: 20px;
+    border-radius: 6px;
+    border: 1px solid var(--border-subtle);
+    background: var(--bg-surface-hover) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E") no-repeat right 4px center;
+    background-size: 10px;
+    color: var(--text-main);
     cursor: pointer;
     outline: none;
     transition: all 0.2s ease;
     text-align: left;
-    font-weight: 700;
+    font-weight: 500;
     appearance: none;
     -webkit-appearance: none;
     display: inline-flex;
     align-items: center;
     justify-content: flex-start;
-    min-width: 38px;
+    min-width: 45px;
     line-height: normal;
     margin: 0;
 }
 
 .card .card-interval-select:hover {
-    background-color: rgba(255, 255, 255, 0.2);
-    border-color: rgba(255, 255, 255, 0.5);
+    background-color: var(--bg-surface-hover);
+    border-color: var(--text-muted);
 }
 
 .card .card-interval-select option {
     background: var(--bg-surface);
     color: var(--text-main);
+}
+
+.status-critical {
+    color: var(--color-critical, #ef4444) !important;
+}
+
+.status-warning {
+    color: var(--color-warning, #f59e0b) !important;
+}
+
+.card.card--alert {
+    border: 2px solid var(--color-critical, #ef4444) !important;
+    animation: criticalPulse 2s infinite cubic-bezier(0.4, 0, 0.6, 1);
+}
+
+.card.card--warn {
+    border: 2px solid var(--color-warning, #f59e0b) !important;
+    animation: warningPulse 2s infinite cubic-bezier(0.4, 0, 0.6, 1);
+}
+
+@keyframes criticalPulse {
+
+    0%,
+    100% {
+        box-shadow: 0 4px 6px -1px rgba(239, 68, 68, 0.2), 0 2px 4px -1px rgba(239, 68, 68, 0.1);
+    }
+
+    50% {
+        box-shadow: 0 0 0 4px rgba(239, 68, 68, 0.15), 0 8px 15px -3px rgba(239, 68, 68, 0.3);
+    }
+}
+
+@keyframes warningPulse {
+
+    0%,
+    100% {
+        box-shadow: 0 4px 6px -1px rgba(245, 158, 11, 0.2), 0 2px 4px -1px rgba(245, 158, 11, 0.1);
+    }
+
+    50% {
+        box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.15), 0 8px 15px -3px rgba(245, 158, 11, 0.3);
+    }
 }

@@ -68,7 +68,6 @@ const SkeletonLoader = {
                 var contentId = skeleton.getAttribute('data-skeleton-for');
 
                 if (contentId) {
-                    // We drop the forced delay to reveal exactly when loading formally finishes
                     SkeletonLoader.reveal(skeleton.id, contentId, 0);
                 }
             });

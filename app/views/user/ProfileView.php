@@ -39,21 +39,22 @@ class ProfileView
         }
         $_SESSION['csrf_profile'] = bin2hex(random_bytes(16));
 
-        $h = static function ($v): string {
+        $h = static function ($v) {
             return htmlspecialchars((string) ($v ?? ''), ENT_QUOTES, 'UTF-8');
         };
 
         $layout = new \modules\views\layout\Layout(
-            title: 'Mon profil',
-            cssFiles: [
+            'Mon profil',
+            [
                 'assets/css/components/alerts-toast.css',
                 'assets/css/pages/profile.css',
             ],
-            jsFiles: [
+            [
                 'assets/js/pages/dash.js',
             ],
-            showSidebar: true,
-            showAlerts: true
+            '',
+            true,
+            true
         );
 
         $layout->render(function () use ($user, $professions, $msg, $h) {
@@ -178,24 +179,35 @@ class ProfileView
                                 <label class="toggle-switch"
                                     style="display: flex; align-items: center; cursor: pointer; gap: 0.5rem; font-size: 0.95rem; color: var(--text-main);">
                                     <input type="checkbox" id="dnd-dev-toggle"
-                                        style="width: 1.2rem; height: 1.2rem; cursor: pointer;">
+                                        style="width: 1.2rem; height: 1.2rem; cursor: pointer;" <?= ($user['alert_dnd'] ?? 0) ? 'checked' : '' ?>>
                                     <span>Activer le mode "Ne pas déranger"</span>
                                 </label>
                             </div>
                             <script>
-                                const dndToggle = document.getElementById('dnd-dev-toggle');
-                                dndToggle.checked = localStorage.getItem('dashmed_dnd') === 'true';
-                                dndToggle.addEventListener('change', (e) => {
-                                    localStorage.setItem('dashmed_dnd', e.target.checked);
-                                    if (typeof iziToast !== 'undefined') {
-                                        if (e.target.checked) {
-                                            iziToast.info({ title: 'Info', message: 'Mode Ne pas déranger activé.', position: 'topRight' });
-                                        } else {
-                                            iziToast.success({ title: 'Succès', message: 'Mode Ne pas déranger désactivé.', position: 'topRight' });
-                                        }
-                                    }
-                                    if (typeof NotifHistory !== 'undefined' && NotifHistory.updateBadge) {
-                                        NotifHistory.updateBadge();
+                                document.addEventListener('DOMContentLoaded', () => {
+                                    const dndToggle = document.getElementById('dnd-dev-toggle');
+                                    if (dndToggle) {
+                                        dndToggle.addEventListener('change', (e) => {
+                                            const enabled = e.target.checked;
+                                            localStorage.setItem('dashmed_dnd', enabled);
+
+                                            if (window.DashMedGlobalAlerts && window.DashMedGlobalAlerts.syncSettings) {
+                                                window.DashMedGlobalAlerts.syncSettings({ alert_dnd: enabled ? 1 : 0 });
+                                            }
+
+                                            window.dispatchEvent(new StorageEvent('storage', {
+                                                key: 'dashmed_dnd',
+                                                newValue: enabled ? 'true' : 'false'
+                                            }));
+
+                                            if (typeof iziToast !== 'undefined') {
+                                                if (enabled) {
+                                                    iziToast.info({ title: 'Info', message: 'Mode Ne pas déranger activé.', position: 'topRight' });
+                                                } else {
+                                                    iziToast.success({ title: 'Succès', message: 'Mode Ne pas déranger désactivé.', position: 'topRight' });
+                                                }
+                                            }
+                                        });
                                     }
                                 });
                             </script>

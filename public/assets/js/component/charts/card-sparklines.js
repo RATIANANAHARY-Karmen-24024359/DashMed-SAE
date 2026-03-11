@@ -10,6 +10,19 @@
         return val;
     };
 
+
+    const fetchRemoteHistory = async (parameterId) => {
+        try {
+            const url = `/?page=api_history&param=${parameterId}`;
+            const response = await fetch(url);
+            if (!response.ok) throw new Error('API Error');
+            return await response.json();
+        } catch (e) {
+            console.error('Fetch error:', e);
+            return [];
+        }
+    };
+
     const resolveColor = (color) => {
         if (typeof color === 'string' && color.startsWith('var(')) {
             const match = color.match(/var\((--[^)]+)\)/);
@@ -27,15 +40,10 @@
         const valueOnlyContainer = card.querySelector('.card-value-only-container');
         const sparkContainer = card.querySelector('.card-spark');
         const headerValue = card.querySelector('.card-header .value');
-        const chartLoader = card.querySelector('.card-chart-loader');
-
-        const hideLoader = () => { if (chartLoader) chartLoader.classList.add('hidden'); };
-
         if (type === 'value') {
             if (valueOnlyContainer) valueOnlyContainer.style.display = 'flex';
             if (sparkContainer) sparkContainer.style.display = 'none';
             if (headerValue) headerValue.style.display = 'none';
-            hideLoader();
             return;
         } else {
             if (valueOnlyContainer) valueOnlyContainer.style.display = 'none';
@@ -46,7 +54,7 @@
         const dataList = card.querySelector("ul[data-spark]");
         const canvas = card.querySelector(".card-spark-canvas");
 
-        if (!canvas || !dataList) { hideLoader(); return; }
+        if (!canvas || !dataList) return;
 
         const items = dataList.querySelectorAll("li");
         const noDataPlaceholder = card.querySelector(".no-data-placeholder");
@@ -54,7 +62,6 @@
         if (!items.length) {
             if (canvas) canvas.style.display = 'none';
             if (noDataPlaceholder) noDataPlaceholder.style.display = 'flex';
-            hideLoader();
             return;
         }
 
@@ -62,20 +69,21 @@
 
         items.forEach((item) => {
             const time = item.dataset.time || "";
-            const val = Number(item.dataset.value);
+            const rawVal = item.dataset.value;
+            const val = (rawVal === '' || rawVal === undefined || rawVal === 'null') ? null : Number(rawVal);
 
-            if (!time || !Number.isFinite(val)) return;
+            if (!time) return;
+            if (val !== null && !Number.isFinite(val)) return;
 
             const d = new Date(time);
-            if (isNaN(d.getTime())) return;
-
-            rawData.push([d.getTime(), val]);
+            if (!isNaN(d.getTime())) {
+                rawData.push([d.getTime(), val]);
+            }
         });
 
         if (!rawData.length) {
             if (canvas) canvas.style.display = 'none';
             if (noDataPlaceholder) noDataPlaceholder.style.display = 'flex';
-            hideLoader();
             return;
         }
 
@@ -115,7 +123,46 @@
 
         let options = {};
 
-        if (type === 'pie' || type === 'doughnut') {
+        if (type === 'gauge') {
+            const currentVal = rawData[rawData.length - 1][1];
+            const gaugeMin = Number.isFinite(view.min) ? view.min : 0;
+            const gaugeMax = parseFloat(card.dataset.max) || (Number.isFinite(view.max) ? view.max : 100);
+            const nmin = thresholds.nmin, nmax = thresholds.nmax, cmin = thresholds.cmin, cmax = thresholds.cmax;
+            const range = gaugeMax - gaugeMin;
+            const c_red = resolveColor('var(--chart-band-red)') || 'rgba(239,68,68,0.45)';
+            const c_yellow = resolveColor('var(--chart-band-yellow)') || 'rgba(245,158,11,0.45)';
+            const c_green = resolveColor('var(--chart-band-green)') || 'rgba(34,197,94,0.45)';
+            const axisLineColors = [];
+            if (range > 0) {
+                const r = (v) => Math.max(0, Math.min(1, (v - gaugeMin) / range));
+                if (Number.isFinite(cmin) && Number.isFinite(nmin) && Number.isFinite(nmax) && Number.isFinite(cmax)) {
+                    axisLineColors.push([r(cmin), c_red], [r(nmin), c_yellow], [r(nmax), c_green], [r(cmax), c_yellow], [1, c_red]);
+                } else if (Number.isFinite(nmin) && Number.isFinite(nmax)) {
+                    axisLineColors.push([r(nmin), c_yellow], [r(nmax), c_green], [1, c_yellow]);
+                } else { axisLineColors.push([1, chartColor]); }
+            } else { axisLineColors.push([1, chartColor]); }
+
+            options = {
+                series: [{
+                    type: 'gauge', min: gaugeMin, max: gaugeMax,
+                    center: ['50%', '58%'], radius: '90%',
+                    startAngle: 210, endAngle: -30, splitNumber: 4,
+                    axisLine: { lineStyle: { width: 10, color: axisLineColors } },
+                    axisTick: { distance: 2, length: 3, lineStyle: { color: 'auto', width: 1 } },
+                    splitLine: { distance: 2, length: 8, lineStyle: { color: 'auto', width: 1.5 } },
+                    axisLabel: { color: tickColor, distance: 12, fontSize: 9 },
+                    pointer: { length: '50%', width: 4, itemStyle: { color: chartColor } },
+                    anchor: { show: true, showAbove: true, size: 8, itemStyle: { borderWidth: 2, borderColor: chartColor, color: tooltipBg } },
+                    title: { show: false },
+                    detail: {
+                        valueAnimation: true, fontSize: 16, fontWeight: 700,
+                        color: chartColor, offsetCenter: [0, '75%'],
+                        formatter: function(v) { return v.toFixed(1); }
+                    },
+                    data: [{ value: Math.round(currentVal * 100) / 100 }]
+                }]
+            };
+        } else if (type === 'pie' || type === 'doughnut') {
             const currentVal = rawData[0][1];
             const max = parseFloat(card.dataset.max) || 100;
             const remaining = Math.max(0, max - currentVal);
@@ -143,7 +190,7 @@
                 ]
             };
         } else {
-            const eType = type === 'line' ? 'line' : (type === 'bar' ? 'bar' : 'scatter');
+            const eType = (type === 'step' || type === 'line') ? 'line' : (type === 'bar' ? 'bar' : 'scatter');
 
             const markArea = [];
             const nmin = thresholds.nmin;
@@ -155,24 +202,21 @@
             const c_green = resolveColor('var(--chart-band-green)');
 
             const bMin = view.min !== undefined && view.min !== null && !isNaN(view.min) ? view.min : 0;
-            const bMax = view.max !== undefined && view.max !== null && !isNaN(view.max) ? view.max : 250; // fallback max
+            const bMax = view.max !== undefined && view.max !== null && !isNaN(view.max) ? view.max : 250;
 
             if (Number.isFinite(cmax) && Number.isFinite(nmin) && cmax <= nmin) {
-                // Inverted scale (e.g. Glasgow)
                 markArea.push([{ yAxis: cmax, itemStyle: { color: c_red } }, { yAxis: bMin }]);
                 markArea.push([{ yAxis: nmin, itemStyle: { color: c_yellow } }, { yAxis: cmax }]);
                 const greenTop = Number.isFinite(nmax) ? nmax : bMax;
                 if (greenTop > nmin) markArea.push([{ yAxis: greenTop, itemStyle: { color: c_green } }, { yAxis: nmin }]);
                 if (Number.isFinite(nmax) && bMax > nmax) markArea.push([{ yAxis: bMax, itemStyle: { color: c_yellow } }, { yAxis: nmax }]);
             } else if (Number.isFinite(nmax) && Number.isFinite(cmin) && nmax <= cmin) {
-                // Inverted scale 2
                 const greenBottom = Number.isFinite(nmin) ? nmin : bMin;
                 if (Number.isFinite(nmin) && greenBottom > bMin) markArea.push([{ yAxis: greenBottom, itemStyle: { color: c_yellow } }, { yAxis: bMin }]);
                 if (nmax > greenBottom) markArea.push([{ yAxis: nmax, itemStyle: { color: c_green } }, { yAxis: greenBottom }]);
                 markArea.push([{ yAxis: cmin, itemStyle: { color: c_yellow } }, { yAxis: nmax }]);
                 markArea.push([{ yAxis: bMax, itemStyle: { color: c_red } }, { yAxis: cmin }]);
             } else {
-                // Standard scale
                 if (Number.isFinite(cmin)) markArea.push([{ yAxis: cmin, itemStyle: { color: c_red } }, { yAxis: bMin }]);
 
                 let greenBottom = bMin;
@@ -221,7 +265,7 @@
                     }
                 },
                 xAxis: {
-                    type: 'time', // Fix: Use 'time' instead of 'category' for proper zoom
+                    type: 'time',
                     boundaryGap: false,
                     show: true,
                     z: 5,
@@ -250,9 +294,11 @@
                 series: [{
                     data: rawData,
                     type: eType,
+                    step: type === 'step' ? 'middle' : false,
                     showSymbol: type === 'scatter',
                     symbolSize: type === 'scatter' ? 4 : 0,
-                    smooth: true,
+                    smooth: type !== 'step',
+                    connectNulls: true,
                     itemStyle: { color: chartColor },
                     lineStyle: { color: chartColor, width: 2 },
                     markArea: {
@@ -262,26 +308,25 @@
                 }]
             };
 
-            const durationVal = card.dataset.displayDuration;
+            const durationVal = card.dataset.cardDisplayDuration || card.dataset.displayDuration;
             if (durationVal && durationVal !== 'all' && rawData.length > 0) {
                 const hours = parseFloat(durationVal);
                 if (!isNaN(hours)) {
                     const lastTime = rawData[rawData.length - 1][0];
                     const minTime = lastTime - (hours * 3600 * 1000);
                     options.dataZoom = [
-                        { type: 'inside', startValue: minTime, endValue: lastTime }
+                        { type: 'inside', startValue: minTime, endValue: lastTime, filterMode: 'none', zoomLock: true, zoomOnMouseWheel: false, moveOnMouseMove: false }
                     ];
                 }
             } else if (durationVal === 'all') {
                 options.dataZoom = [
-                    { type: 'inside', start: 0, end: 100 }
+                    { type: 'inside', start: 0, end: 100, filterMode: 'none', zoomLock: true, zoomOnMouseWheel: false, moveOnMouseMove: false }
                 ];
             }
         }
 
         chartInstance.setOption(options);
 
-        // Resize observer instead of resize window
         const ro = new ResizeObserver(() => {
             chartInstance.resize();
         });
@@ -302,53 +347,120 @@
         });
     });
 
+    document.addEventListener('click', function (e) {
+        const btn = e.target.closest('.card-chart-btn');
+        if (!btn || !btn.dataset.cardChartType) return;
+
+        e.preventDefault();
+
+        const panel = btn.closest('.modal-grid');
+        if (!panel) return;
+
+        const group = btn.closest('.chart-type-group');
+        if (group) {
+            group.querySelectorAll('.card-chart-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+        }
+
+        const newType = btn.dataset.cardChartType;
+        const paramId = panel.dataset.paramId;
+
+        const slug = panel.id.replace(/^.*panel-/, '');
+        const card = document.querySelector(`article.card[data-slug="${slug}"]`);
+        if (card) {
+            card.dataset.chartType = newType;
+            window.renderSparkline(card);
+        }
+
+        // Sync active state back to the source detail element so reopening the modal preserves it
+        const detailId = card ? card.getAttribute('data-detail-id') : null;
+        const sourceDetail = detailId ? document.getElementById(detailId) : null;
+        if (sourceDetail) {
+            sourceDetail.querySelectorAll('.card-chart-btn').forEach(b => b.classList.remove('active'));
+            const match = sourceDetail.querySelector(`.card-chart-btn[data-card-chart-type="${newType}"]`);
+            if (match) match.classList.add('active');
+        }
+
+        if (paramId) {
+            const formData = new FormData();
+            formData.append('parameter_id', paramId);
+            formData.append('chart_type', newType);
+            formData.append('chart_pref_submit', '1');
+            fetch(window.location.href, { method: 'POST', body: formData }).catch(console.error);
+        }
+    });
+
     document.addEventListener('change', function (e) {
-        if (e.target.classList.contains('card-interval-select')) {
-            const select = e.target;
+        const select = e.target.closest('.card-interval-select');
+        if (select) {
             const card = select.closest('article.card');
             if (!card) return;
 
             const val = select.value;
             const slug = card.dataset.slug;
 
-            // Update local value
             card.dataset.cardDisplayDuration = val;
 
-            // Persist preference for this specific card
             const formData = new FormData();
-            formData.append('parameter_id', slug);
+            formData.append('parameter_id', card.dataset.parameterId || slug);
             formData.append('chart_type', val);
             formData.append('chart_pref_submit', '1');
             formData.append('preference_type', 'card_duration');
             fetch(window.location.href, { method: 'POST', body: formData }).catch(console.error);
 
-            // Update chart zoom
             const canvas = card.querySelector(".card-spark-canvas");
             if (canvas && canvas.chartInstance) {
-                const chart = canvas.chartInstance;
-                if (val === 'all') {
-                    chart.dispatchAction({ type: 'dataZoom', start: 0, end: 100 });
-                } else {
-                    const hours = parseFloat(val);
-                    if (!isNaN(hours)) {
-                        const opt = chart.getOption();
-                        const data = opt.series[0].data;
-                        if (data && data.length > 0) {
-                            const lastTime = data[data.length - 1][0];
-                            const minTime = lastTime - (hours * 3600 * 1000);
-                            chart.dispatchAction({ type: 'dataZoom', startValue: minTime, endValue: lastTime });
+                const hours = parseFloat(val);
+                if (val !== 'all' && !isNaN(hours)) {
+                    const dataList = card.querySelector("ul[data-spark]");
+                    const items = dataList ? dataList.querySelectorAll("li") : [];
+                    let hasEnough = false;
+
+                    if (items.length > 0) {
+                        const firstTime = new Date(items[0].dataset.time).getTime();
+                        const lastTime = new Date(items[items.length - 1].dataset.time).getTime();
+                        if (lastTime - firstTime >= (hours * 3600 * 1000)) {
+                            hasEnough = true;
                         }
                     }
+
+                    if (!hasEnough) {
+                        const paramId = card.dataset.parameterId;
+                        fetchRemoteHistory(paramId).then(data => {
+                            if (data && Array.isArray(data)) {
+                                if (dataList) {
+                                    const existingTimes = new Set();
+                                    items.forEach(li => existingTimes.add(li.dataset.time));
+
+                                    data.forEach(item => {
+                                        if (!existingTimes.has(item.time_iso)) {
+                                            const li = document.createElement('li');
+                                            li.dataset.time = item.time_iso;
+                                            li.dataset.value = item.value;
+                                            li.dataset.flag = item.flag;
+                                            dataList.appendChild(li);
+                                        }
+                                    });
+                                }
+                                window.renderSparkline(card);
+                            }
+                        });
+                        return;
+                    }
                 }
+
+                window.renderSparkline(card);
             }
         }
     });
 
+    document.addEventListener('click', function (e) {
+        if (e.target.closest('.card-interval-select')) {
+            e.stopPropagation();
+        }
+    }, true);
+
     window.addEventListener('DashMedDurationChange', function (e) {
-        // This event comes from the MODAL select.
-        // User says: 'quand je change le temps de la modale ça... change aussi celui de la card mais lui ça le mémorise'
-        // Actually, if we want them independent, the modal change SHOULD NOT affect the card.
-        // I'll comment this out or make it only update open modals.
     });
 
 
@@ -357,6 +469,8 @@
         try {
             const metrics = event.detail;
             if (metrics.error) return;
+
+            let requiresAlertCheck = false;
 
             metrics.forEach(metric => {
                 const card = document.querySelector(`article.card[data-slug="${metric.slug}"]`);
@@ -374,12 +488,19 @@
                 const criticalIcon = card.querySelector('.status-critical');
                 const warningIcon = card.querySelector('.status-warning');
 
+                let oldState = 'normal';
+                if (card.classList.contains('card--alert')) oldState = 'alert';
+                else if (card.classList.contains('card--warn')) oldState = 'warn';
+                let newState = 'normal';
+
                 if (metric.state_class && metric.state_class.includes('card--alert')) {
+                    newState = 'alert';
                     if (criticalIcon) criticalIcon.style.display = 'flex';
                     if (warningIcon) warningIcon.style.display = 'none';
                     card.classList.add('card--alert');
                     card.classList.remove('card--warn');
                 } else if (metric.state_class && metric.state_class.includes('card--warn')) {
+                    newState = 'warn';
                     if (criticalIcon) criticalIcon.style.display = 'none';
                     if (warningIcon) warningIcon.style.display = 'flex';
                     card.classList.add('card--warn');
@@ -390,8 +511,19 @@
                     card.classList.remove('card--alert', 'card--warn');
                 }
 
+                if (oldState !== newState && newState !== 'normal') {
+                    requiresAlertCheck = true;
+                }
+
                 const canvas = card.querySelector(".card-spark-canvas");
-                if (metric.chart_type === 'pie' || metric.chart_type === 'doughnut') {
+                const cardChartType = card.dataset.chartType || metric.chart_type;
+                if (cardChartType === 'gauge') {
+                    if (canvas && canvas.chartInstance && metric.value !== '') {
+                        canvas.chartInstance.setOption({
+                            series: [{ data: [{ value: Math.round(Number(metric.value) * 100) / 100 }] }]
+                        });
+                    }
+                } else if (metric.chart_type === 'pie' || metric.chart_type === 'doughnut') {
                     if (canvas && canvas.chartInstance && metric.value !== '') {
                         const chart = canvas.chartInstance;
                         const currentVal = Number(metric.value);
@@ -417,18 +549,16 @@
                             li.dataset.value = metric.value;
                             li.dataset.flag = metric.is_crit_flag ? '1' : '0';
 
-                            /**
-                             * Append new data point to the DOM for synchronization.
-                             * Maintaining full history as per user requirements.
-                             */
                             dataList.appendChild(li);
 
                             if (canvas && canvas.chartInstance) {
                                 const chart = canvas.chartInstance;
                                 const timeMs = new Date(metric.time_iso).getTime();
-                                const val = Number(metric.value);
+                                let val = (metric.value === '' || metric.value === undefined || metric.value === 'null') ? null : Number(metric.value);
 
                                 if (isNaN(timeMs)) return;
+                                if (val !== null && !Number.isFinite(val)) return;
+                                if (typeof val === 'number') val = Math.round(val * 100) / 100;
 
                                 const option = chart.getOption();
                                 if (option.series && option.series.length > 0) {
@@ -437,31 +567,38 @@
                                     if (!exists) {
                                         ds.push([timeMs, val]);
                                         ds.sort((a, b) => a[0] - b[0]);
-                                        if (ds.length > 100) ds.shift();
+                                        if (ds.length > 1000) ds.shift();
 
                                         const updateObj = { series: [{ data: ds }] };
 
-                                        const durationVal = card.dataset.displayDuration;
+                                        const durationVal = card.dataset.cardDisplayDuration || card.dataset.displayDuration;
                                         if (durationVal && durationVal !== 'all') {
                                             const hours = parseFloat(durationVal);
                                             const minTime = timeMs - (hours * 3600 * 1000);
-                                            updateObj.dataZoom = [{ type: 'inside', startValue: minTime, endValue: timeMs }];
+                                            updateObj.dataZoom = [{ type: 'inside', startValue: minTime, endValue: timeMs, zoomLock: true, zoomOnMouseWheel: false, moveOnMouseMove: false }];
                                         }
 
                                         chart.setOption(updateObj);
                                     }
                                 }
-                            } else {
-                                window.renderSparkline(card);
                             }
+                        } else {
+                            window.renderSparkline(card);
                         }
                     }
                 }
             });
+
+            if (requiresAlertCheck) {
+                if (typeof DashMedGlobalAlerts !== 'undefined' && typeof DashMedGlobalAlerts.checkNow === 'function') {
+                    DashMedGlobalAlerts.checkNow();
+                }
+            }
         } catch (e) {
             console.error('SSE metrics fetch error:', e);
         }
     });
+
 
 })();
 

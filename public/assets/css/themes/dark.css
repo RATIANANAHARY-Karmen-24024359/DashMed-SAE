@@ -9,9 +9,20 @@
     --bg-danger-subtle: rgba(239, 68, 68, 0.15);
     --bg-danger-hover: rgba(239, 68, 68, 0.25);
 
+    /* Explorer Specific */
+    --explorer-glass: rgba(255, 255, 255, 0.05);
+    --explorer-glass-stroke: rgba(255, 255, 255, 0.12);
+    --explorer-accent: #275afe;
+    --explorer-accent-glow: rgba(39, 90, 254, 0.4);
+    --explorer-card-bg: rgba(18, 18, 23, 0.7);
+    --explorer-input-bg: rgba(0, 0, 0, 0.2);
+    --explorer-stat-row-border: rgba(255, 255, 255, 0.05);
+    --explorer-header-gradient: linear-gradient(135deg, var(--blue-600) 0%, rgba(255, 255, 255, 0.7) 100%);
 
+    /* Text */
     --text-main: var(--slate-100);
     --text-muted: var(--slate-400);
+    --text-secondary: var(--slate-400);
     --text-inverse: var(--slate-900);
     --text-primary: var(--blue-400);
     --text-success: var(--green-400);

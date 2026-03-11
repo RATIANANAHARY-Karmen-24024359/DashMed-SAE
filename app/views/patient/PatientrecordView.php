@@ -17,7 +17,7 @@ class PatientrecordView
 {
     /** @var array<string, mixed> Patient medical/admin data */
     private array $patientData;
-    
+
     /** @var array<int, \modules\models\entities\Consultation> Past consultations */
     private array $pastConsultations;
 
@@ -89,18 +89,19 @@ class PatientrecordView
         $h = fn($s) => htmlspecialchars((string) $s, ENT_QUOTES, 'UTF-8');
 
         $layout = new \modules\views\layout\Layout(
-            title: 'Dossier Patient',
-            cssFiles: [
+            'Dossier Patient',
+            [
                 'assets/css/pages/patient-record.css',
                 'assets/css/components/searchbar/searchbar.css',
                 'assets/css/components/alert-thresholds.css',
             ],
-            jsFiles: [
+            [
                 'assets/js/pages/dash.js',
                 'assets/js/pages/dossier_patient.js',
             ],
-            showSidebar: true,
-            showAlerts: true
+            '',
+            true,
+            true
         );
 
         $layout->render(function () use ($h, $csrfToken) {
@@ -108,7 +109,45 @@ class PatientrecordView
 
             <main class="container nav-space">
                 <div class="dashboard-content-container">
-                    <?php include dirname(__DIR__) . '/partials/_searchbar.php'; ?>
+
+                    <div class="searchbar-with-patient">
+                        <span class="patient-name-label">
+                             <?= htmlspecialchars(
+                                     trim(
+                                             (is_scalar($v = $this->patientData['first_name'] ?? '') ? (string)$v : '') . ' ' .
+                                             (is_scalar($v = $this->patientData['last_name'] ?? '') ? (string)$v : '')
+                                     ),
+                                     ENT_QUOTES, 'UTF-8'
+                             ) ?>
+
+    </span>
+                        <?php include dirname(__DIR__) . '/partials/_searchbar.php'; ?>
+                        <div class="live-clock" id="live-clock">
+                            <span class="live-clock__time" id="live-clock-time"></span>
+                            <span class="live-clock__date" id="live-clock-date"></span>
+                        </div>
+                    </div>
+                    <script>
+                        (function () {
+                            const timeEl = document.getElementById('live-clock-time');
+                            const dateEl = document.getElementById('live-clock-date');
+                            const days = ['Dimanche','Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi'];
+                            const months = ['jan.','fév.','mars','avr.','mai','juin','juil.','août','sept.','oct.','nov.','déc.'];
+
+                            function tick() {
+                                const now = new Date();
+                                const h = String(now.getHours()).padStart(2, '0');
+                                const m = String(now.getMinutes()).padStart(2, '0');
+                                const s = String(now.getSeconds()).padStart(2, '0');
+                                timeEl.textContent = h + ':' + m + ':' + s;
+                                dateEl.textContent = days[now.getDay()] + ' ' + now.getDate() + ' ' + months[now.getMonth()];
+                            }
+
+                            tick();
+                            setInterval(tick, 1000);
+                        })();
+                    </script>
+
                     <input type="hidden" id="context-patient-id" value="<?= $h($this->patientData['id_patient'] ?? '') ?>">
 
                     <?php
@@ -170,55 +209,6 @@ class PatientrecordView
                                     <?php endfor; ?>
                                 </div>
                             </div>
-                        </section>
-
-                        <div class="grid-column-right">
-
-                            <section class="card-section consultations-card">
-                                <div class="card-header">
-                                    <h2>Consultations & Examens</h2>
-                                    <a href="?page=medicalprocedure&id_patient=<?= $h($this->patientData['id_patient'] ?? '') ?>" 
-                                       class="btn-view-all">Gérer</a>
-                                </div>
-                                <div class="consultations-list">
-                                    <?php if (!empty($this->futureConsultations)) : ?>
-                                        <div class="consultation-subset">
-                                            <h3>À venir</h3>
-                                            <?php foreach ($this->futureConsultations as $cons) : ?>
-                                                <div class="consultation-item future">
-                                                    <div class="item-date"><?= $h($cons->getDate()) ?></div>
-                                                    <div class="item-content">
-                                                        <span class="item-title"><?= $h($cons->getTitle() ?: $cons->getType()) ?></span>
-                                                        <span class="item-doctor">Dr. <?= $h($cons->getDoctor()) ?></span>
-                                                    </div>
-                                                </div>
-                                            <?php endforeach; ?>
-                                        </div>
-                                    <?php endif; ?>
-
-                                    <?php if (!empty($this->pastConsultations)) : ?>
-                                        <div class="consultation-subset">
-                                            <h3>Historique récent</h3>
-                                            <?php foreach (array_slice($this->pastConsultations, 0, 5) as $cons) : ?>
-                                                <div class="consultation-item past">
-                                                    <div class="item-date"><?= $h($cons->getDate()) ?></div>
-                                                    <div class="item-content">
-                                                        <span class="item-title"><?= $h($cons->getTitle() ?: $cons->getType()) ?></span>
-                                                        <span class="item-doctor">Dr. <?= $h($cons->getDoctor()) ?></span>
-                                                    </div>
-                                                </div>
-                                            <?php endforeach; ?>
-                                        </div>
-                                    <?php endif; ?>
-
-                                    <?php if (empty($this->pastConsultations) && empty($this->futureConsultations)) : ?>
-                                        <div class="empty-state">
-                                            <p>Aucune consultation enregistrée.</p>
-                                        </div>
-                                    <?php endif; ?>
-                                </div>
-                            </section>
-                        </div>
 
                         </div>
                     </div>
@@ -262,7 +252,8 @@ class PatientrecordView
                                 </div>
                             </div>
                             <div class="header-actions" style="display: flex; gap: 12px;">
-                                <button type="button" class="btn-edit-patient" onclick="openThresholdsModal()" aria-label="Modifier les seuils d'alerte">
+                                <button type="button" class="btn-edit-patient" onclick="openThresholdsModal()"
+                                    aria-label="Modifier les seuils d'alerte">
                                     <img src="assets/img/icons/edit.svg" alt="" />
                                     <span>Modifier Seuils</span>
                                 </button>
@@ -328,6 +319,8 @@ class PatientrecordView
                                 </section>
 
                             </div>
+
+
                         </div>
 
                     </div>
@@ -388,15 +381,17 @@ class PatientrecordView
 
             <!-- Thresholds Edit Modal -->
             <div id="thresholdsEditModal" class="modal-overlay" aria-hidden="true">
-                <div class="modal-dialog" style="width: 700px; max-width: 95%; max-height: 90vh; display: flex; flex-direction: column;">
+                <div class="modal-dialog"
+                    style="width: 700px; max-width: 95%; max-height: 90vh; display: flex; flex-direction: column;">
                     <div class="modal-header">
                         <h2>Modifier les Seuils d'Alerte</h2>
                         <button class="btn-close" type="button" onclick="closeThresholdsModal()">×</button>
                     </div>
                     <div class="modal-body" style="overflow-y: auto; flex: 1; padding: 20px;">
-                        <p class="form-hint" style="margin-bottom: 20px;">Ajustez les seuils spécifiques pour ce patient. Les valeurs par défaut seront appliquées pour les champs laissés vides.</p>
-                        
-                        <?php if (!empty($this->thresholds)) : ?>
+                        <p class="form-hint" style="margin-bottom: 20px;">Ajustez les seuils spécifiques pour ce patient. Les
+                            valeurs par défaut seront appliquées pour les champs laissés vides.</p>
+
+                        <?php if (!empty($this->thresholds)): ?>
                             <?php
                             $groupedModal = [];
                             foreach ($this->thresholds as $t) {
@@ -406,20 +401,18 @@ class PatientrecordView
                             }
                             ?>
                             <div class="thresholds-container">
-                                <?php foreach ($groupedModal as $category => $params) : ?>
+                                <?php foreach ($groupedModal as $category => $params): ?>
                                     <div class="threshold-category" style="margin-bottom: 12px;">
-                                        <button class="category-toggle" type="button"
-                                                onclick="toggleCategory(this)"
-                                                aria-expanded="false">
+                                        <button class="category-toggle" type="button" onclick="toggleCategory(this)" aria-expanded="false">
                                             <span class="category-name"><?= $h($category) ?></span>
                                             <span class="category-count"><?= count($params) ?> paramètre(s)</span>
-                                            <svg class="toggle-icon" width="16" height="16" viewBox="0 0 24 24"
-                                                 fill="none" stroke="currentColor" stroke-width="2">
+                                            <svg class="toggle-icon" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                                                stroke="currentColor" stroke-width="2">
                                                 <polyline points="6 9 12 15 18 9"></polyline>
                                             </svg>
                                         </button>
                                         <div class="category-params" style="display: none;">
-                                            <?php foreach ($params as $param) :
+                                            <?php foreach ($params as $param):
                                                 $pid = $h($param['parameter_id']);
                                                 $isCustom = $param['custom_normal_min'] !== null
                                                     || $param['custom_normal_max'] !== null
@@ -435,14 +428,13 @@ class PatientrecordView
                                                             <span class="param-unit">
                                                                 (<?= $h($param['unit']) ?>)
                                                             </span>
-                                                            <?php if ($isCustom) : ?>
+                                                            <?php if ($isCustom): ?>
                                                                 <span class="badge-custom">Personnalisé</span>
                                                             <?php endif; ?>
                                                         </div>
                                                         <div class="param-values-preview">
-                                                            <svg class="edit-icon" width="14" height="14"
-                                                                 viewBox="0 0 24 24" fill="none"
-                                                                 stroke="currentColor" stroke-width="2">
+                                                            <svg class="edit-icon" width="14" height="14" viewBox="0 0 24 24" fill="none"
+                                                                stroke="currentColor" stroke-width="2">
                                                                 <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
                                                                 <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
                                                             </svg>
@@ -454,7 +446,8 @@ class PatientrecordView
                                                             <input type="hidden" name="action" value="update_thresholds">
                                                             <input type="hidden" name="csrf" value="<?= $h($csrfToken) ?>">
                                                             <input type="hidden" name="parameter_id" value="<?= $pid ?>">
-                                                            <input type="hidden" name="id_patient" value="<?= $h($this->patientData['id_patient'] ?? '') ?>">
+                                                            <input type="hidden" name="id_patient"
+                                                                value="<?= $h($this->patientData['id_patient'] ?? '') ?>">
 
                                                             <div class="threshold-grid">
                                                                 <div class="threshold-group normal-group">
@@ -463,21 +456,21 @@ class PatientrecordView
                                                                         <div class="input-pair">
                                                                             <label>Min</label>
                                                                             <input type="number" step="0.01" name="normal_min"
-                                                                                   value="<?= $h($param['effective_normal_min'] ?? '') ?>"
-                                                                                   placeholder="<?= $h($param['default_normal_min'] ?? '—') ?>">
+                                                                                value="<?= $h($param['effective_normal_min'] ?? '') ?>"
+                                                                                placeholder="<?= $h($param['default_normal_min'] ?? '—') ?>">
                                                                         </div>
                                                                         <div class="input-pair">
                                                                             <label>Max</label>
                                                                             <input type="number" step="0.01" name="normal_max"
-                                                                                   value="<?= $h($param['effective_normal_max'] ?? '') ?>"
-                                                                                   placeholder="<?= $h($param['default_normal_max'] ?? '—') ?>">
+                                                                                value="<?= $h($param['effective_normal_max'] ?? '') ?>"
+                                                                                placeholder="<?= $h($param['default_normal_max'] ?? '—') ?>">
                                                                         </div>
                                                                     </div>
                                                                     <span class="defaults-hint">
                                                                         Défaut :
-                                                                        <?= (isset($param['default_normal_min']) && is_numeric($param['default_normal_min'])) ? $h(number_format((float)$param['default_normal_min'], 1)) : '—' ?>
+                                                                        <?= (isset($param['default_normal_min']) && is_numeric($param['default_normal_min'])) ? $h(number_format((float) $param['default_normal_min'], 1)) : '—' ?>
                                                                         →
-                                                                        <?= (isset($param['default_normal_max']) && is_numeric($param['default_normal_max'])) ? $h(number_format((float)$param['default_normal_max'], 1)) : '—' ?>
+                                                                        <?= (isset($param['default_normal_max']) && is_numeric($param['default_normal_max'])) ? $h(number_format((float) $param['default_normal_max'], 1)) : '—' ?>
                                                                     </span>
                                                                 </div>
                                                                 <div class="threshold-group critical-group">
@@ -486,35 +479,35 @@ class PatientrecordView
                                                                         <div class="input-pair">
                                                                             <label>Min</label>
                                                                             <input type="number" step="0.01" name="critical_min"
-                                                                                   value="<?= $h($param['effective_critical_min'] ?? '') ?>"
-                                                                                   placeholder="<?= $h($param['default_critical_min'] ?? '—') ?>">
+                                                                                value="<?= $h($param['effective_critical_min'] ?? '') ?>"
+                                                                                placeholder="<?= $h($param['default_critical_min'] ?? '—') ?>">
                                                                         </div>
                                                                         <div class="input-pair">
                                                                             <label>Max</label>
                                                                             <input type="number" step="0.01" name="critical_max"
-                                                                                   value="<?= $h($param['effective_critical_max'] ?? '') ?>"
-                                                                                   placeholder="<?= $h($param['default_critical_max'] ?? '—') ?>">
+                                                                                value="<?= $h($param['effective_critical_max'] ?? '') ?>"
+                                                                                placeholder="<?= $h($param['default_critical_max'] ?? '—') ?>">
                                                                         </div>
                                                                     </div>
                                                                     <span class="defaults-hint">
                                                                         Défaut :
-                                                                        <?= (isset($param['default_critical_min']) && is_numeric($param['default_critical_min'])) ? $h(number_format((float)$param['default_critical_min'], 1)) : '—' ?>
+                                                                        <?= (isset($param['default_critical_min']) && is_numeric($param['default_critical_min'])) ? $h(number_format((float) $param['default_critical_min'], 1)) : '—' ?>
                                                                         →
-                                                                        <?= (isset($param['default_critical_max']) && is_numeric($param['default_critical_max'])) ? $h(number_format((float)$param['default_critical_max'], 1)) : '—' ?>
+                                                                        <?= (isset($param['default_critical_max']) && is_numeric($param['default_critical_max'])) ? $h(number_format((float) $param['default_critical_max'], 1)) : '—' ?>
                                                                     </span>
                                                                 </div>
                                                             </div>
 
                                                             <div class="threshold-actions">
-                                                                <?php if ($isCustom) : ?>
+                                                                <?php if ($isCustom): ?>
                                                                     <button type="submit" name="threshold_action" value="reset"
-                                                                            class="btn-reset-threshold"
-                                                                            onclick="return confirm('Réinitialiser aux valeurs par défaut ?')">
+                                                                        class="btn-reset-threshold"
+                                                                        onclick="return confirm('Réinitialiser aux valeurs par défaut ?')">
                                                                         Réinitialiser
                                                                     </button>
                                                                 <?php endif; ?>
                                                                 <button type="submit" name="threshold_action" value="save"
-                                                                        class="btn-save-threshold">
+                                                                    class="btn-save-threshold">
                                                                     Enregistrer
                                                                 </button>
                                                             </div>
@@ -542,7 +535,7 @@ class PatientrecordView
                     if (el) el.classList.remove('active');
                 }
 
-                document.getElementById('thresholdsEditModal')?.addEventListener('click', function(e) {
+                document.getElementById('thresholdsEditModal')?.addEventListener('click', function (e) {
                     if (e.target === this) {
                         closeThresholdsModal();
                     }
