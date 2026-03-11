@@ -1,5 +1,17 @@
 <?php
 
+/**
+ * app/controllers/AuthController.php
+ *
+ * Controller file for the DashMed-SAE project.
+ *
+ * Notes:
+ * - This docblock is intentionally file-scoped.
+ * - Detailed PHPDoc for classes/methods is maintained near declarations.
+ *
+ * @package DashMed\SAE
+ */
+
 declare(strict_types=1);
 
 namespace modules\controllers;
@@ -87,7 +99,7 @@ class AuthController
     {
         $sessionCsrf = isset($_SESSION['_csrf']) && is_string($_SESSION['_csrf']) ? $_SESSION['_csrf'] : '';
         $postCsrf = isset($_POST['_csrf']) && is_string($_POST['_csrf']) ? $_POST['_csrf'] : '';
-        if ($sessionCsrf !== '' && $postCsrf !== '' && !hash_equals($sessionCsrf, $postCsrf)) {
+        if ($sessionCsrf === '' || $postCsrf === '' || !hash_equals($sessionCsrf, $postCsrf)) {
             $_SESSION['error'] = "Requête invalide. Veuillez réessayer.";
             header('Location: /?page=login');
             exit;
@@ -109,6 +121,9 @@ class AuthController
             header('Location: /?page=login');
             exit;
         }
+
+        // Prevent session fixation
+        session_regenerate_id(true);
 
         $_SESSION['user_id'] = $user->getId();
         $_SESSION['email'] = $user->getEmail();
@@ -164,7 +179,7 @@ class AuthController
     {
         $sessionCsrf = isset($_SESSION['_csrf']) && is_string($_SESSION['_csrf']) ? $_SESSION['_csrf'] : '';
         $postCsrf = isset($_POST['_csrf']) && is_string($_POST['_csrf']) ? $_POST['_csrf'] : '';
-        if ($sessionCsrf !== '' && $postCsrf !== '' && !hash_equals($sessionCsrf, $postCsrf)) {
+        if ($sessionCsrf === '' || $postCsrf === '' || !hash_equals($sessionCsrf, $postCsrf)) {
             $_SESSION['error'] = "Requête invalide. Veuillez réessayer.";
             header('Location: /?page=signup');
             exit;
@@ -400,8 +415,9 @@ class AuthController
                 : 'localhost';
             $appUrl = $protocol . '://' . $host;
         }
-        $emailLink = $appUrl . "/?page=password&token={$token}&code={$code}";
-        $redirectLink = $appUrl . "/?page=password&token={$token}";
+        // Security: do NOT include the reset code in the URL (it leaks via history/logs/referrers).
+        $emailLink = $appUrl . "/?page=password&token={$token}";
+        $redirectLink = $emailLink;
 
         if (is_array($user) && isset($user['id_user'], $user['email'])) {
             $upd = $this->pdo->prepare(

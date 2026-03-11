@@ -1,5 +1,17 @@
 <?php
 
+/**
+ * app/models/repositories/MonitorPreferenceRepository.php
+ *
+ * Repository file for the DashMed-SAE project.
+ *
+ * Notes:
+ * - This docblock is intentionally file-scoped.
+ * - Detailed PHPDoc for classes/methods is maintained near declarations.
+ *
+ * @package DashMed\SAE
+ */
+
 declare(strict_types=1);
 
 namespace modules\models\repositories;
@@ -43,8 +55,8 @@ class MonitorPreferenceRepository extends BaseRepository
 
     /**
      * Saves user chart preference for a parameter.
-     * 
-     * This method handles both standard dashboard card chart preferences, 
+     *
+     * This method handles both standard dashboard card chart preferences,
      * modal-specific chart preferences, and display duration.
      *
      * @param int $userId The ID of the user.
@@ -71,8 +83,8 @@ class MonitorPreferenceRepository extends BaseRepository
             $col = $colMap[$type] ?? 'chart_type';
 
             if ($exists->fetchColumn()) {
-                $sql = "UPDATE user_parameter_chart_pref 
-                        SET $col = :val, updated_at = CURRENT_TIMESTAMP 
+                $sql = "UPDATE user_parameter_chart_pref
+                        SET $col = :val, updated_at = CURRENT_TIMESTAMP
                         WHERE id_user = :uid AND parameter_id = :pid";
                 $this->pdo->prepare($sql)->execute([
                     ':uid' => $userId,
@@ -85,7 +97,7 @@ class MonitorPreferenceRepository extends BaseRepository
                 $defChart = $defStmt->fetchColumn() ?: 'line';
 
                 if ($type === 'modal_chart' || $type === 'duration' || $type === 'card_duration') {
-                    $sql = "INSERT INTO user_parameter_chart_pref (id_user, parameter_id, chart_type, $col, updated_at) 
+                    $sql = "INSERT INTO user_parameter_chart_pref (id_user, parameter_id, chart_type, $col, updated_at)
                             VALUES (:uid, :pid, :defChart, :val, CURRENT_TIMESTAMP)";
                     $this->pdo->prepare($sql)->execute([
                         ':uid' => $userId,
@@ -94,7 +106,7 @@ class MonitorPreferenceRepository extends BaseRepository
                         ':defChart' => $defChart
                     ]);
                 } else {
-                    $sql = "INSERT INTO user_parameter_chart_pref (id_user, parameter_id, chart_type, updated_at) 
+                    $sql = "INSERT INTO user_parameter_chart_pref (id_user, parameter_id, chart_type, updated_at)
                             VALUES (:uid, :pid, :val, CURRENT_TIMESTAMP)";
                     $this->pdo->prepare($sql)->execute([
                         ':uid' => $userId,
@@ -122,26 +134,46 @@ class MonitorPreferenceRepository extends BaseRepository
             $sqlChart = 'SELECT parameter_id, chart_type, modal_chart_type, display_duration, card_display_duration FROM user_parameter_chart_pref WHERE id_user = :uid';
             $stChart = $this->pdo->prepare($sqlChart);
             $stChart->execute([':uid' => $userId]);
-            
+
             $chartPrefs = [];
-            while ($row = $stChart->fetch()) {
-                $chartPrefs[$row['parameter_id']] = [
-                    'chart_type' => $row['chart_type'] ?? null,
-                    'modal_chart_type' => $row['modal_chart_type'] ?? null,
-                    'display_duration' => $row['display_duration'] ?? null,
-                    'card_display_duration' => $row['card_display_duration'] ?? null
+            while (true) {
+                $row = $stChart->fetch(PDO::FETCH_ASSOC);
+                if (!is_array($row)) {
+                    break;
+                }
+                $pid = isset($row['parameter_id']) && is_string($row['parameter_id']) ? $row['parameter_id'] : '';
+                if ($pid === '') {
+                    continue;
+                }
+
+                $chartPrefs[$pid] = [
+                    'chart_type' => isset($row['chart_type']) && is_string($row['chart_type']) ? $row['chart_type'] : null,
+                    'modal_chart_type' => isset($row['modal_chart_type']) && is_string($row['modal_chart_type']) ? $row['modal_chart_type'] : null,
+                    'display_duration' => isset($row['display_duration']) && is_scalar($row['display_duration']) ? (string) $row['display_duration'] : null,
+                    'card_display_duration' => isset($row['card_display_duration']) && is_scalar($row['card_display_duration']) ? (string) $row['card_display_duration'] : null,
                 ];
             }
 
 
             $this->ensureLayoutColumns();
-            $sqlOrder = 'SELECT parameter_id, display_order, is_hidden 
-                         FROM user_parameter_order 
-                         WHERE id_user = :uid 
+            $sqlOrder = 'SELECT parameter_id, display_order, is_hidden
+                         FROM user_parameter_order
+                         WHERE id_user = :uid
                          ORDER BY display_order';
             $stOrder = $this->pdo->prepare($sqlOrder);
             $stOrder->execute([':uid' => $userId]);
-            $orderPrefs = $stOrder->fetchAll(PDO::FETCH_UNIQUE);
+            $rows = $stOrder->fetchAll(PDO::FETCH_ASSOC);
+            $orderPrefs = [];
+            foreach ($rows as $row) {
+                if (!is_array($row)) {
+                    continue;
+                }
+                $pid = isset($row['parameter_id']) && is_string($row['parameter_id']) ? $row['parameter_id'] : '';
+                if ($pid === '') {
+                    continue;
+                }
+                $orderPrefs[$pid] = $row;
+            }
 
             return ['charts' => $chartPrefs, 'orders' => $orderPrefs];
         } catch (PDOException $e) {
@@ -191,8 +223,8 @@ class MonitorPreferenceRepository extends BaseRepository
                 ->execute([':uid' => $userId]);
 
             $insert = $this->pdo->prepare(
-                'INSERT INTO user_parameter_order 
-                (id_user, parameter_id, display_order, is_hidden, grid_x, grid_y, grid_w, grid_h, updated_at) 
+                'INSERT INTO user_parameter_order
+                (id_user, parameter_id, display_order, is_hidden, grid_x, grid_y, grid_w, grid_h, updated_at)
                 VALUES (:uid, :pid, :ord, :hid, :x, :y, :w, :h, CURRENT_TIMESTAMP)'
             );
 
@@ -241,9 +273,9 @@ class MonitorPreferenceRepository extends BaseRepository
             $this->ensureLayoutColumns();
 
             $st = $this->pdo->prepare(
-                'SELECT parameter_id, display_order, is_hidden, grid_x, grid_y, grid_w, grid_h 
-                FROM user_parameter_order 
-                WHERE id_user = :uid 
+                'SELECT parameter_id, display_order, is_hidden, grid_x, grid_y, grid_w, grid_h
+                FROM user_parameter_order
+                WHERE id_user = :uid
                 ORDER BY display_order'
             );
             $st->execute([':uid' => $userId]);
@@ -291,10 +323,10 @@ class MonitorPreferenceRepository extends BaseRepository
 
             if ($checkStmt === false || !$checkStmt->fetch()) {
                 $this->pdo->exec(
-                    'ALTER TABLE user_parameter_order 
-                    ADD COLUMN grid_x INT DEFAULT 0, 
-                    ADD COLUMN grid_y INT DEFAULT 0, 
-                    ADD COLUMN grid_w INT DEFAULT 4, 
+                    'ALTER TABLE user_parameter_order
+                    ADD COLUMN grid_x INT DEFAULT 0,
+                    ADD COLUMN grid_y INT DEFAULT 0,
+                    ADD COLUMN grid_w INT DEFAULT 4,
                     ADD COLUMN grid_h INT DEFAULT 3'
                 );
             }
@@ -326,7 +358,7 @@ class MonitorPreferenceRepository extends BaseRepository
 
             if ($checkStmt === false || !$checkStmt->fetch()) {
                 $this->pdo->exec(
-                    "ALTER TABLE user_parameter_chart_pref 
+                    "ALTER TABLE user_parameter_chart_pref
                     ADD COLUMN modal_chart_type VARCHAR(20) DEFAULT NULL"
                 );
             }
@@ -334,7 +366,7 @@ class MonitorPreferenceRepository extends BaseRepository
             $checkDuration = $this->pdo->query("SHOW COLUMNS FROM user_parameter_chart_pref LIKE 'display_duration'");
             if ($checkDuration === false || !$checkDuration->fetch()) {
                 $this->pdo->exec(
-                    "ALTER TABLE user_parameter_chart_pref 
+                    "ALTER TABLE user_parameter_chart_pref
                     ADD COLUMN display_duration VARCHAR(20) DEFAULT '0.0333'"
                 );
             }
@@ -342,7 +374,7 @@ class MonitorPreferenceRepository extends BaseRepository
             $checkCardDur = $this->pdo->query("SHOW COLUMNS FROM user_parameter_chart_pref LIKE 'card_display_duration'");
             if ($checkCardDur === false || !$checkCardDur->fetch()) {
                 $this->pdo->exec(
-                    "ALTER TABLE user_parameter_chart_pref 
+                    "ALTER TABLE user_parameter_chart_pref
                     ADD COLUMN card_display_duration VARCHAR(20) DEFAULT '0.0333'"
                 );
             }

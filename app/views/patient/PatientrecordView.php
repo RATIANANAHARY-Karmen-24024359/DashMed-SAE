@@ -1,5 +1,17 @@
 <?php
 
+/**
+ * app/views/patient/PatientrecordView.php
+ *
+ * View file for the DashMed-SAE project.
+ *
+ * Notes:
+ * - This docblock is intentionally file-scoped.
+ * - Detailed PHPDoc for classes/methods is maintained near declarations.
+ *
+ * @package DashMed\SAE
+ */
+
 namespace modules\views\patient;
 
 /**
@@ -17,7 +29,7 @@ class PatientrecordView
 {
     /** @var array<string, mixed> Patient medical/admin data */
     private array $patientData;
-    
+
     /** @var array<int, \modules\models\entities\Consultation> Past consultations */
     private array $pastConsultations;
 
@@ -40,8 +52,8 @@ class PatientrecordView
      *
      * Initializes patient record view.
      *
-     * @param array<int, mixed> $consultationsPassees History
-     * @param array<int, mixed> $consultationsFutures Appointments
+     * @param array<int, \modules\models\entities\Consultation> $consultationsPassees History
+     * @param array<int, \modules\models\entities\Consultation> $consultationsFutures Appointments
      * @param array<string, mixed> $patientData Patient Data
      * @param array<int, array{
      *   id_user: int,
@@ -229,7 +241,7 @@ class PatientrecordView
                             <section class="card-section consultations-card">
                                 <div class="card-header">
                                     <h2>Consultations & Examens</h2>
-                                    <a href="?page=medicalprocedure&id_patient=<?= $h($this->patientData['id_patient'] ?? '') ?>" 
+                                    <a href="?page=medicalprocedure&id_patient=<?= $h($this->patientData['id_patient'] ?? '') ?>"
                                        class="btn-view-all">Gérer</a>
                                 </div>
                                 <div class="consultations-list">

@@ -1,5 +1,19 @@
 <?php
 
+/**
+ * app/services/MonitoringService.php
+ *
+ * Service file for the DashMed-SAE project.
+ *
+ * Notes:
+ * - This docblock is intentionally file-scoped.
+ * - Detailed PHPDoc for classes/methods is maintained near declarations.
+ *
+ * @package DashMed\SAE
+ */
+
+declare(strict_types=1);
+
 namespace modules\services;
 
 use modules\models\entities\Indicator;
@@ -23,7 +37,7 @@ class MonitoringService
      * @param array<int, Indicator> $metrics    Raw metrics data
      * @param array<int, array<string, mixed>> $rawHistory Raw history data
      * @param array{
-     *   charts?: array<string, string>,
+     *   charts?: array<string, array<string, mixed>>,
      *   orders?: array<string, array<string, mixed>>
      * } $prefs User preferences
      * @param bool  $showAll    Show all metrics ignoring hidden prefs
@@ -49,8 +63,12 @@ class MonitoringService
         }
 
         $processed = [];
-        $chartPrefs = $prefs['charts'] ?? [];
-        $orderPrefs = $prefs['orders'] ?? [];
+
+        /** @var array<string, array<string, mixed>> $chartPrefs */
+        $chartPrefs = is_array($prefs['charts'] ?? null) ? $prefs['charts'] : [];
+
+        /** @var array<string, array<string, mixed>> $orderPrefs */
+        $orderPrefs = is_array($prefs['orders'] ?? null) ? $prefs['orders'] : [];
 
         foreach ($metrics as $m) {
             $pid = $m->getId();
@@ -99,34 +117,45 @@ class MonitoringService
             }
 
             // Assign chart preferences.
-            // The modal chart type gracefully falls back to the card's assigned chart type, 
+            // The modal chart type gracefully falls back to the card's assigned chart type,
             // which itself falls back to the system-defined default for this metric.
-            $userChart = $chartPrefs[$pid]['chart_type'] ?? null;
-            $userModalChart = $chartPrefs[$pid]['modal_chart_type'] ?? null;
-            $userDuration = $chartPrefs[$pid]['display_duration'] ?? '0.0333';
-            $userCardDuration = $chartPrefs[$pid]['card_display_duration'] ?? '0.0333';
-            
+            $cp = $chartPrefs[$pid] ?? null;
+            $userChart = is_array($cp) ? ($cp['chart_type'] ?? null) : null;
+            $userModalChart = is_array($cp) ? ($cp['modal_chart_type'] ?? null) : null;
+            $userDuration = is_array($cp) ? ($cp['display_duration'] ?? '0.0333') : '0.0333';
+            $userCardDuration = is_array($cp) ? ($cp['card_display_duration'] ?? '0.0333') : '0.0333';
+
             $defaultChart = $m->getDefaultChart();
-            $m->setChartType($userChart ?: $defaultChart);
-            $m->setModalChartType($userModalChart ?: ($userChart ?: $defaultChart));
-            
+
+            $chartType = (is_string($userChart) && $userChart !== '') ? $userChart : $defaultChart;
+            $modalChartType = (is_string($userModalChart) && $userModalChart !== '')
+                ? $userModalChart
+                : ((is_string($userChart) && $userChart !== '') ? $userChart : $defaultChart);
+
+            $m->setChartType($chartType);
+            $m->setModalChartType($modalChartType);
+
             $order = $orderPrefs[$pid]['display_order'] ?? 9999;
             $m->setDisplayOrder(is_numeric($order) ? (int) $order : 9999);
 
             $viewData = $this->prepareViewData($m);
             $viewData['display_duration'] = $userDuration;
             $viewData['card_display_duration'] = $userCardDuration;
-            
+
             // Re-generate chart_config to include the card duration
-            $chartConfig = json_decode($viewData['chart_config'], true);
-            $chartConfig['initialZoomMs'] = (float)$userCardDuration * 3600 * 1000;
+            $rawChartConfig = $viewData['chart_config'] ?? '';
+            $chartConfigJson = is_string($rawChartConfig) ? $rawChartConfig : '';
+            $chartConfig = json_decode($chartConfigJson, true);
+            if (!is_array($chartConfig)) {
+                $chartConfig = [];
+            }
+            $dur = is_numeric($userCardDuration) ? (float) $userCardDuration : 0.0333;
+            $chartConfig['initialZoomMs'] = $dur * 3600 * 1000;
             $viewData['chart_config'] = json_encode($chartConfig);
-            
+
             $m->setViewData($viewData);
 
             $processed[] = $m;
-
-
         }
 
         usort($processed, function (Indicator $a, Indicator $b) {
@@ -185,9 +214,10 @@ class MonitoringService
         $viewData['slug'] = strtolower(trim(is_string($slugResult) ? $slugResult : ''));
 
         $timeRaw = $row->getTimestamp();
-        $rawTs = (is_string($timeRaw) && strpos($timeRaw, '+') === false && strpos($timeRaw, 'Z') === false) ? $timeRaw . ' UTC' : $timeRaw;
-        $viewData['time_iso'] = $timeRaw ? date('c', (int) strtotime($rawTs)) : null;
-        $viewData['time_formatted'] = $timeRaw ? date('H:i', (int) strtotime($rawTs)) : '—';
+        $timeStr = is_string($timeRaw) ? $timeRaw : '';
+        $rawTs = ($timeStr !== '' && strpos($timeStr, '+') === false && strpos($timeStr, 'Z') === false) ? $timeStr . ' UTC' : $timeStr;
+        $viewData['time_iso'] = $timeStr !== '' ? date('c', (int) strtotime($rawTs)) : null;
+        $viewData['time_formatted'] = $timeStr !== '' ? date('H:i', (int) strtotime($rawTs)) : '—';
 
         $nmin = $row->getNormalMin();
         $nmax = $row->getNormalMax();
@@ -220,7 +250,7 @@ class MonitoringService
         });
 
         /**
-         * Limits the number of points for dashboard sparklines to optimize 
+         * Limits the number of points for dashboard sparklines to optimize
          * frontend rendering performance while maintaining recent trend visibility.
          * Detailed modal charts remain unlimited.
          */
@@ -233,16 +263,15 @@ class MonitoringService
             $ts = $hItem['timestamp'] ?? null;
             $tsStr = is_string($ts) ? $ts : '';
             $rawTsStr = ($tsStr !== '' && strpos($tsStr, '+') === false && strpos($tsStr, 'Z') === false) ? $tsStr . ' UTC' : $tsStr;
-            
+
             $rawHVal = $hItem['value'] ?? '';
             $rawHFlag = $hItem['alert_flag'] ?? 0;
-            
+
             $viewData['history_html_data'][] = [
                 'time_iso' => $tsStr !== '' ? date('c', (int) strtotime($rawTsStr)) : '',
                 'value' => is_numeric($rawHVal) ? (string)$rawHVal : null,
                 'flag' => (is_numeric($rawHFlag) && (int) $rawHFlag === 1) ? '1' : '0'
             ];
-
         }
 
         if (count($viewData['history_html_data']) === 0) {
@@ -257,7 +286,7 @@ class MonitoringService
         }
 
         $lastHistItem = end($viewData['history_html_data']);
-        if ($lastHistItem['value'] !== '') {
+        if ($lastHistItem['value'] !== null) {
             $viewData['value'] = $lastHistItem['value'];
             $viewData['time_iso'] = $lastHistItem['time_iso'];
             $viewData['time_formatted'] = $viewData['time_iso'] !== ''

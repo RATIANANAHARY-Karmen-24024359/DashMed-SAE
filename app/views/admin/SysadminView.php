@@ -1,5 +1,17 @@
 <?php
 
+/**
+ * app/views/admin/SysadminView.php
+ *
+ * View file for the DashMed-SAE project.
+ *
+ * Notes:
+ * - This docblock is intentionally file-scoped.
+ * - Detailed PHPDoc for classes/methods is maintained near declarations.
+ *
+ * @package DashMed\SAE
+ */
+
 namespace modules\views\admin;
 
 /**
@@ -86,13 +98,13 @@ class SysadminView
                 <section class="dashboard-content-container">
                     <h1>Administrateur système</h1>
 
-                    <?php if (!empty($error)): ?>
+                    <?php if (!empty($error)) : ?>
                         <div class="alert error" role="alert">
                             <?= htmlspecialchars((string) $error, ENT_QUOTES, 'UTF-8') ?>
                         </div>
                     <?php endif; ?>
 
-                    <?php if (!empty($success)): ?>
+                    <?php if (!empty($success)) : ?>
                         <div class="alert success" role="alert">
                             <?= htmlspecialchars((string) $success, ENT_QUOTES, 'UTF-8') ?>
                         </div>
@@ -193,7 +205,7 @@ class SysadminView
                                                 $id = (int) $s['id_profession'];
                                                 $name = $s['label_profession'];
                                                 $sel = ($current !== null && (int) $current === $id) ? 'selected' : '';
-                                                echo '<option 
+                                                echo '<option
                                                 value="' . $id . '" ' . $sel . '>' . $h($name) . '
                                                 </option>';
                                             }
@@ -216,7 +228,7 @@ class SysadminView
                                     </div>
                                 </div>
 
-                                <?php if (!empty($csrf)): ?>
+                                <?php if (!empty($csrf)) : ?>
                                     <input type="hidden" name="_csrf" value="<?= $h($csrf) ?>">
                                 <?php endif; ?>
 
@@ -350,7 +362,7 @@ class SysadminView
                                     </div>
                                 </div>
 
-                                <?php if (!empty($csrf)): ?>
+                                <?php if (!empty($csrf)) : ?>
                                     <input type="hidden" name="_csrf" value="<?= $h($csrf) ?>">
                                 <?php endif; ?>
 
@@ -376,10 +388,10 @@ class SysadminView
                         </div>
 
                         <div class="profiles-grid" id="profiles-list">
-                            <?php if (empty($users)): ?>
+                            <?php if (empty($users)) : ?>
                                 <p class="no-profiles">Aucun profil trouvé.</p>
-                            <?php else: ?>
-                                <?php foreach ($users as $u): ?>
+                            <?php else : ?>
+                                <?php foreach ($users as $u) : ?>
                                     <div class="profile-card-item" data-user-id="<?= (int) $u['id_user'] ?>"
                                         data-name="<?= $h($u['last_name'] . ' ' . $u['first_name']) ?>"
                                         data-first-name="<?= $h($u['first_name']) ?>" data-last-name="<?= $h($u['last_name']) ?>"
@@ -396,12 +408,12 @@ class SysadminView
                                             <div class="profile-details">
                                                 <div class="profile-name">
                                                     <?= $h($u['last_name'] . ' ' . $u['first_name']) ?>
-                                                    <?php if ((int) $u['admin_status'] === 1): ?>
+                                                    <?php if ((int) $u['admin_status'] === 1) : ?>
                                                         <span class="badge-admin">Admin</span>
                                                     <?php endif; ?>
                                                 </div>
                                                 <div class="profile-email"><?= $h($u['email']) ?></div>
-                                                <?php if (!empty($u['profession_label'])): ?>
+                                                <?php if (!empty($u['profession_label'])) : ?>
                                                     <div class="profile-profession">
                                                         <?= $h($u['profession_label']) ?>
                                                     </div>
@@ -409,7 +421,7 @@ class SysadminView
                                             </div>
                                         </div>
                                         <div class="profile-card-actions">
-                                            <?php if ((int) $u['admin_status'] !== 1): ?>
+                                            <?php if ((int) $u['admin_status'] !== 1) : ?>
                                                 <button type="button" class="delete-profile-btn" data-user-id="<?= (int) $u['id_user'] ?>"
                                                     data-user-name="<?= $h($u['last_name'] . ' ' . $u['first_name']) ?>"
                                                     title="Supprimer ce profil">
@@ -433,7 +445,7 @@ class SysadminView
                             <form action="?page=sysadmin" method="POST" id="edit-form" novalidate>
                                 <input type="hidden" name="action" value="edit_user">
                                 <input type="hidden" name="edit_user_id" id="edit-user-id" value="">
-                                <?php if (!empty($csrf)): ?>
+                                <?php if (!empty($csrf)) : ?>
                                     <input type="hidden" name="_csrf" value="<?= $h($csrf) ?>">
                                 <?php endif; ?>
 
@@ -487,7 +499,7 @@ class SysadminView
                                         </svg>
                                         <select id="edit_profession_id" name="edit_profession_id">
                                             <option value="">-- Sélectionnez la profession --</option>
-                                            <?php foreach ($professions as $s):
+                                            <?php foreach ($professions as $s) :
                                                 $profId = (int) $s['id_profession'];
                                                 $profName = $s['label_profession'];
                                                 ?>
@@ -535,7 +547,7 @@ class SysadminView
                         <form action="?page=sysadmin" method="POST" id="delete-form">
                             <input type="hidden" name="action" value="delete_user">
                             <input type="hidden" name="delete_user_id" id="delete-user-id" value="">
-                            <?php if (!empty($csrf)): ?>
+                            <?php if (!empty($csrf)) : ?>
                                 <input type="hidden" name="_csrf" value="<?= $h($csrf) ?>">
                             <?php endif; ?>
                             <div class="delete-modal-actions">

@@ -1,5 +1,17 @@
 <?php
 
+/**
+ * app/views/auth/PasswordView.php
+ *
+ * View file for the DashMed-SAE project.
+ *
+ * Notes:
+ * - This docblock is intentionally file-scoped.
+ * - Detailed PHPDoc for classes/methods is maintained near declarations.
+ *
+ * @package DashMed\SAE
+ */
+
 namespace modules\views\auth;
 
 /**

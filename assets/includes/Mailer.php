@@ -1,5 +1,17 @@
 <?php
 
+/**
+ * assets/includes/Mailer.php
+ *
+ * Infrastructure file for the DashMed-SAE project.
+ *
+ * Notes:
+ * - This docblock is intentionally file-scoped.
+ * - Detailed PHPDoc for classes/methods is maintained near declarations.
+ *
+ * @package DashMed\SAE
+ */
+
 declare(strict_types=1);
 
 namespace assets\includes;
