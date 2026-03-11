@@ -483,6 +483,8 @@ function createEChart(type, title, rawData, target, color, thresholds, view, ext
         };
     }
 
+    options.animation = localStorage.getItem('dashmed_chart_animation') !== 'false';
+
     chartInstance.setOption(options);
 
     chartInstance.on('dataZoom', function () {

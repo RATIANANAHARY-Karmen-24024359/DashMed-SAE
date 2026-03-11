@@ -325,6 +325,8 @@
             }
         }
 
+        options.animation = localStorage.getItem('dashmed_chart_animation') !== 'false';
+
         chartInstance.setOption(options);
 
         const ro = new ResizeObserver(() => {

@@ -213,6 +213,49 @@ class ProfileView
                             </script>
                         </div>
 
+                        <div class="settings-card"
+                            style="background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: 16px; padding: 2rem; margin-bottom: 2rem; margin-top: 1rem;">
+                            <div class="settings-info" style="margin-bottom: 1rem;">
+                                <h3 style="margin: 0 0 0.5rem 0; color: var(--text-primary); font-size: 1.1rem; font-weight: 600;">
+                                    Animations des graphiques</h3>
+                                <p style="margin: 0; color: var(--text-secondary); font-size: 0.9rem;">Désactiver les animations peut améliorer les performances et réduire les mouvements visuels.</p>
+                            </div>
+                            <div style="display: flex; align-items: center; gap: 1rem;">
+                                <label class="toggle-switch"
+                                    style="display: flex; align-items: center; cursor: pointer; gap: 0.5rem; font-size: 0.95rem; color: var(--text-main);">
+                                    <input type="checkbox" id="chart-animation-toggle"
+                                        style="width: 1.2rem; height: 1.2rem; cursor: pointer;" <?= ($user['chart_animation'] ?? 1) ? 'checked' : '' ?>>
+                                    <span>Activer les animations des graphiques</span>
+                                </label>
+                            </div>
+                            <script>
+                                document.addEventListener('DOMContentLoaded', () => {
+                                    const toggle = document.getElementById('chart-animation-toggle');
+                                    if (toggle) {
+                                        localStorage.setItem('dashmed_chart_animation', toggle.checked ? 'true' : 'false');
+                                        toggle.addEventListener('change', (e) => {
+                                            const enabled = e.target.checked;
+                                            localStorage.setItem('dashmed_chart_animation', enabled ? 'true' : 'false');
+
+                                            fetch('/api-alerts.php', {
+                                                method: 'POST',
+                                                headers: { 'Content-Type': 'application/json' },
+                                                body: JSON.stringify({ action: 'update_settings', chart_animation: enabled ? 1 : 0 })
+                                            });
+
+                                            if (typeof iziToast !== 'undefined') {
+                                                iziToast.success({
+                                                    title: 'Succès',
+                                                    message: enabled ? 'Animations activées.' : 'Animations désactivées.',
+                                                    position: 'topRight'
+                                                });
+                                            }
+                                        });
+                                    }
+                                });
+                            </script>
+                        </div>
+
                         <div class="danger-zone-card">
                             <div class="danger-info">
                                 <h3>Supprimer mon compte</h3>
