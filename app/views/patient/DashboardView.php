@@ -1,5 +1,17 @@
 <?php
 
+/**
+ * app/views/patient/DashboardView.php
+ *
+ * View file for the DashMed-SAE project.
+ *
+ * Notes:
+ * - This docblock is intentionally file-scoped.
+ * - Detailed PHPDoc for classes/methods is maintained near declarations.
+ *
+ * @package DashMed\SAE
+ */
+
 namespace modules\views\patient;
 
 /**
@@ -132,7 +144,8 @@ class DashboardView
             <title>DashMed - Dashboard</title>
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
             <meta name="robots" content="noindex, nofollow">
-            <input type="hidden" id="context-patient-id" value="<?= htmlspecialchars((string)($this->patientData['id_patient'] ?? '')) ?>">
+            <?php $ctxPid = $this->patientData['id_patient'] ?? ''; ?>
+            <input type="hidden" id="context-patient-id" value="<?= htmlspecialchars(is_scalar($ctxPid) ? (string) $ctxPid : '') ?>">
             <meta name="author" content="DashMed Team">
             <meta name="keywords" content="dashboard, santé, médecins, patients, DashMed">
             <meta name="description" content="Tableau de bord privé pour les médecins,
@@ -147,7 +160,7 @@ class DashboardView
             <link rel="stylesheet" href="assets/css/components/card.css">
             <link rel="stylesheet" href="assets/css/components/popup.css">
             <link rel="stylesheet" href="assets/css/components/modal.css?v=<?= time() ?>">
-            <link rel="stylesheet" href="assets/css/layout/aside/calendar.css">
+            <!-- calendar.css removed: no calendar component in aside anymore -->
             <link rel="stylesheet" href="assets/css/layout/aside/patient-info.css">
             <link rel="stylesheet" href="assets/css/layout/aside/events.css">
             <link rel="stylesheet" href="assets/css/layout/aside/doctor-list.css">
@@ -211,7 +224,7 @@ class DashboardView
                         $lastName = htmlspecialchars(
                             is_scalar($v = $this->patientData['last_name']) ? (string) $v : 'Inconnu'
                         );
-                        $birthDateStr = is_scalar($v = $this->patientData['birth_date']) ? (string) $v : '';
+                        $birthDateStr = is_scalar($v = ($this->patientData['birth_date'] ?? '')) ? (string) $v : '';
                         $age = 'Âge inconnu';
                         if ($birthDateStr !== '') {
                             $bDate = date_create($birthDateStr);
@@ -221,10 +234,9 @@ class DashboardView
                             }
                         }
                         $admissionCause = htmlspecialchars(
-                            is_scalar(
-                                $v = $this->patientData['admission_cause']
-                            ) ?
-                            (string) $v : 'Aucun motif renseigné'
+                            is_scalar($v = ($this->patientData['admission_cause'] ?? ''))
+                                ? (string) $v
+                                : 'Aucun motif renseigné'
                         );
                         ?>
                         <div class="pi-header">
