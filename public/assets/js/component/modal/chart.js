@@ -152,15 +152,17 @@ async function updatePanelChart(panelId, chartId, title) {
         max: parseDatasetNumber(panel.dataset.dmax)
     };
 
-    if (chartType === 'pie' || chartType === 'doughnut') {
+    if (chartType === 'pie' || chartType === 'doughnut' || chartType === 'gauge') {
         const item = list[idx];
         const val = Number(item?.dataset?.value);
         let max = 100;
         if (unit.includes('%')) max = 100;
         else if (Number.isFinite(view.max)) max = view.max;
+        let min = 0;
+        if (Number.isFinite(view.min)) min = view.min;
 
         if (canvas) canvas.style.display = 'block';
-        createEChart(chartType, title, [[Date.now(), val]], canvas, 'var(--chart-color)', thresholds, view, { mode: 'singlePercent', max });
+        createEChart(chartType, title, [[Date.now(), val]], canvas, 'var(--chart-color)', thresholds, view, { mode: 'singlePercent', max, min });
         hideLoader();
 
     } else {
@@ -281,31 +283,59 @@ function createEChart(type, title, rawData, target, color, thresholds, view, ext
     let options = {};
     const eType = type === 'scatter' ? 'scatter' : (type === 'bar' ? 'bar' : 'line');
 
-    if (type === 'pie' || type === 'doughnut') {
+    if (type === 'gauge') {
+        const currentVal = rawData.length > 0 ? rawData[rawData.length - 1][1] : 0;
+        const gaugeMin = (extra.min != null && Number.isFinite(extra.min)) ? extra.min : (Number.isFinite(view.min) ? view.min : 0);
+        const gaugeMax = extra.max || (Number.isFinite(view.max) ? view.max : 100);
+        const nmin = thresholds.nmin, nmax = thresholds.nmax, cmin = thresholds.cmin, cmax = thresholds.cmax;
+        const range = gaugeMax - gaugeMin;
+        const c_red = resolveColor('var(--chart-band-red)') || 'rgba(239,68,68,0.45)';
+        const c_yellow = resolveColor('var(--chart-band-yellow)') || 'rgba(245,158,11,0.45)';
+        const c_green = resolveColor('var(--chart-band-green)') || 'rgba(34,197,94,0.45)';
+        const axisLineColors = [];
+        if (range > 0) {
+            const r = (v) => Math.max(0, Math.min(1, (v - gaugeMin) / range));
+            if (Number.isFinite(cmin) && Number.isFinite(nmin) && Number.isFinite(nmax) && Number.isFinite(cmax)) {
+                axisLineColors.push([r(cmin), c_red], [r(nmin), c_yellow], [r(nmax), c_green], [r(cmax), c_yellow], [1, c_red]);
+            } else if (Number.isFinite(nmin) && Number.isFinite(nmax)) {
+                axisLineColors.push([r(nmin), c_yellow], [r(nmax), c_green], [1, c_yellow]);
+            } else { axisLineColors.push([1, chartColor]); }
+        } else { axisLineColors.push([1, chartColor]); }
+        options = {
+            series: [{
+                type: 'gauge', min: gaugeMin, max: gaugeMax,
+                center: ['50%', '58%'], radius: '80%',
+                startAngle: 210, endAngle: -30, splitNumber: 4,
+                axisLine: { lineStyle: { width: 14, color: axisLineColors } },
+                axisTick: { distance: 2, length: 4, lineStyle: { color: 'auto', width: 1 } },
+                splitLine: { distance: 2, length: 10, lineStyle: { color: 'auto', width: 2 } },
+                axisLabel: { color: tickColor, distance: 18, fontSize: 12 },
+                pointer: { length: '55%', width: 5, itemStyle: { color: chartColor } },
+                anchor: { show: true, showAbove: true, size: 10, itemStyle: { borderWidth: 2, borderColor: chartColor, color: tooltipBg } },
+                title: { show: false },
+                detail: {
+                    valueAnimation: true, fontSize: 26, fontWeight: 700,
+                    color: chartColor, offsetCenter: [0, '75%'],
+                    formatter: function(v) { return v.toFixed(2); }
+                },
+                data: [{ value: Math.round(currentVal * 100) / 100 }]
+            }]
+        };
+    } else if (type === 'pie' || type === 'doughnut') {
         const currentVal = rawData[0][1];
         const max = extra.max || 100;
         const remaining = Math.max(0, max - currentVal);
         const radius = type === 'doughnut' ? ['40%', '70%'] : '70%';
-
         options = {
-            tooltip: {
-                trigger: 'item',
-                backgroundColor: tooltipBg,
-                textStyle: { color: tooltipText },
-                borderColor: tooltipBorder,
-            },
-            series: [
-                {
-                    type: 'pie',
-                    radius: radius,
-                    center: ['50%', '50%'],
-                    data: [
-                        { value: currentVal, name: 'Mesure', itemStyle: { color: chartColor } },
-                        { value: remaining, name: 'Reste', itemStyle: { color: 'rgba(0,0,0,0.1)' } }
-                    ],
-                    label: { show: true, position: 'inside', formatter: '{c}' },
-                }
-            ]
+            tooltip: { trigger: 'item', backgroundColor: tooltipBg, textStyle: { color: tooltipText }, borderColor: tooltipBorder },
+            series: [{
+                type: 'pie', radius: radius, center: ['50%', '50%'],
+                data: [
+                    { value: currentVal, name: 'Mesure', itemStyle: { color: chartColor } },
+                    { value: remaining, name: 'Reste', itemStyle: { color: 'rgba(0,0,0,0.1)' } }
+                ],
+                label: { show: true, position: 'inside', formatter: '{c}' }
+            }]
         };
     } else {
         const markArea = [];
@@ -711,7 +741,11 @@ document.addEventListener('change', function (e) {
             const val = Number(metric.value);
             const chart = canvas.chartInstance;
 
-            if (metric.chart_type === 'pie' || metric.chart_type === 'doughnut') {
+            const currentChartType = panel.dataset.chart || metric.chart_type || 'line';
+
+            if (currentChartType === 'gauge') {
+                chart.setOption({ series: [{ data: [{ value: Math.round(val * 100) / 100 }] }] });
+            } else if (currentChartType === 'pie' || currentChartType === 'doughnut') {
                 const max = parseFloat(panel.dataset.max || panel.dataset.nmax || panel.dataset.dmax) || 100;
                 chart.setOption({
                     series: [{
@@ -721,6 +755,8 @@ document.addEventListener('change', function (e) {
                         ]
                     }]
                 });
+            } else if (currentChartType === 'value') {
+                // value-only mode: just update the text, no chart update needed
             } else {
                 const option = chart.getOption();
                 if (option.series && option.series.length > 0) {

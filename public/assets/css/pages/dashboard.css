@@ -167,6 +167,12 @@ a {
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
+.urgent-filter.active {
+    color: #ffffff !important;
+    background: var(--color-critical, #EF4444);
+    border-color: var(--color-critical, #EF4444);
+}
+
 .category-vert-separator {
     width: 1px;
     height: 28px;
