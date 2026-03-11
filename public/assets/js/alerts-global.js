@@ -27,6 +27,23 @@ const VOL_HIGH = `
     </svg>`;
 
 function scrollToCard(parameterId) {
+    const currentUrl = new URL(window.location.href);
+    const isMonitoring = currentUrl.pathname.includes('/monitoring') ||
+        currentUrl.searchParams.get('page') === 'monitoring';
+
+    if (!isMonitoring) {
+        const monitoringUrl = new URL(window.location.href);
+        monitoringUrl.searchParams.set('page', 'monitoring');
+        monitoringUrl.searchParams.set('highlight', parameterId);
+
+        if (monitoringUrl.pathname.endsWith('/dashboard')) {
+            monitoringUrl.pathname = monitoringUrl.pathname.replace(/\/dashboard$/, '/monitoring');
+        }
+
+        window.location.href = monitoringUrl.toString();
+        return;
+    }
+
     const panel = document.querySelector(`[data-param-id="${parameterId}"]`);
     let found = false;
 
@@ -50,24 +67,6 @@ function scrollToCard(parameterId) {
             cardByParam.classList.add('card--highlight');
             setTimeout(() => cardByParam.classList.remove('card--highlight'), 2000);
             found = true;
-        }
-    }
-
-    if (!found) {
-        const currentUrl = new URL(window.location.href);
-        const isMonitoring = currentUrl.pathname.includes('/monitoring') ||
-            currentUrl.searchParams.get('page') === 'monitoring';
-
-        if (!isMonitoring) {
-            const monitoringUrl = new URL(window.location.href);
-            monitoringUrl.searchParams.set('page', 'monitoring');
-            monitoringUrl.searchParams.set('highlight', parameterId);
-
-            if (monitoringUrl.pathname.endsWith('/dashboard')) {
-                monitoringUrl.pathname = monitoringUrl.pathname.replace(/\/dashboard$/, '/monitoring');
-            }
-
-            window.location.href = monitoringUrl.toString();
         }
     }
 }
@@ -131,7 +130,9 @@ const DashMedGlobalAlerts = (function () {
         let t = new Date();
         if (timestamp) {
             if (typeof timestamp === 'string') {
-                t = new Date(timestamp.replace(' ', 'T'));
+                let tStr = timestamp.replace(' ', 'T');
+                if (!tStr.endsWith('Z')) tStr += 'Z';
+                t = new Date(tStr);
             } else {
                 t = new Date(timestamp);
             }
@@ -377,14 +378,16 @@ const DashMedGlobalAlerts = (function () {
                         const card = document.querySelector(`[data-slug="${slug}"]`);
                         if (card) {
                             card.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                            card.click();
+                            card.classList.add('card--highlight');
+                            setTimeout(() => card.classList.remove('card--highlight'), 2000);
                         }
                     }
                 } else {
                     const cardByParam = document.querySelector(`.card[data-detail-id*="${highlight}"]`);
                     if (cardByParam) {
                         cardByParam.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                        cardByParam.click();
+                        cardByParam.classList.add('card--highlight');
+                        setTimeout(() => cardByParam.classList.remove('card--highlight'), 2000);
                     }
                 }
                 const url = new URL(window.location.href);
@@ -726,7 +729,9 @@ const NotifHistory = (function () {
                 let t = new Date();
                 if (n.timestamp) {
                     if (typeof n.timestamp === 'string') {
-                        t = new Date(n.timestamp.replace(' ', 'T'));
+                        let tStr = n.timestamp.replace(' ', 'T');
+                        if (!tStr.endsWith('Z')) tStr += 'Z';
+                        t = new Date(tStr);
                     } else {
                         t = new Date(n.timestamp);
                     }
