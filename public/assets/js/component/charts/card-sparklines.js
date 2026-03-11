@@ -10,6 +10,19 @@
         return val;
     };
 
+
+    const fetchRemoteHistory = async (parameterId) => {
+        try {
+            const url = `/?page=api_history&param=${parameterId}`;
+            const response = await fetch(url);
+            if (!response.ok) throw new Error('API Error');
+            return await response.json();
+        } catch (e) {
+            console.error('Fetch error:', e);
+            return [];
+        }
+    };
+
     const resolveColor = (color) => {
         if (typeof color === 'string' && color.startsWith('var(')) {
             const match = color.match(/var\((--[^)]+)\)/);
@@ -252,7 +265,7 @@
                 }]
             };
 
-            const durationVal = card.dataset.displayDuration;
+            const durationVal = card.dataset.cardDisplayDuration || card.dataset.displayDuration;
             if (durationVal && durationVal !== 'all' && rawData.length > 0) {
                 const hours = parseFloat(durationVal);
                 if (!isNaN(hours)) {
@@ -325,8 +338,8 @@
     });
 
     document.addEventListener('change', function (e) {
-        if (e.target.classList.contains('card-interval-select')) {
-            const select = e.target;
+        const select = e.target.closest('.card-interval-select');
+        if (select) {
             const card = select.closest('article.card');
             if (!card) return;
 
@@ -336,7 +349,7 @@
             card.dataset.cardDisplayDuration = val;
 
             const formData = new FormData();
-            formData.append('parameter_id', slug);
+            formData.append('parameter_id', card.dataset.parameterId || slug);
             formData.append('chart_type', val);
             formData.append('chart_pref_submit', '1');
             formData.append('preference_type', 'card_duration');
@@ -344,24 +357,55 @@
 
             const canvas = card.querySelector(".card-spark-canvas");
             if (canvas && canvas.chartInstance) {
-                const chart = canvas.chartInstance;
-                if (val === 'all') {
-                    chart.dispatchAction({ type: 'dataZoom', start: 0, end: 100 });
-                } else {
-                    const hours = parseFloat(val);
-                    if (!isNaN(hours)) {
-                        const opt = chart.getOption();
-                        const data = opt.series[0].data;
-                        if (data && data.length > 0) {
-                            const lastTime = data[data.length - 1][0];
-                            const minTime = lastTime - (hours * 3600 * 1000);
-                            chart.dispatchAction({ type: 'dataZoom', startValue: minTime, endValue: lastTime });
+                const hours = parseFloat(val);
+                if (val !== 'all' && !isNaN(hours)) {
+                    const dataList = card.querySelector("ul[data-spark]");
+                    const items = dataList ? dataList.querySelectorAll("li") : [];
+                    let hasEnough = false;
+
+                    if (items.length > 0) {
+                        const firstTime = new Date(items[0].dataset.time).getTime();
+                        const lastTime = new Date(items[items.length - 1].dataset.time).getTime();
+                        if (lastTime - firstTime >= (hours * 3600 * 1000)) {
+                            hasEnough = true;
                         }
                     }
+
+                    if (!hasEnough) {
+                        const paramId = card.dataset.parameterId;
+                        fetchRemoteHistory(paramId).then(data => {
+                            if (data && Array.isArray(data)) {
+                                if (dataList) {
+                                    const existingTimes = new Set();
+                                    items.forEach(li => existingTimes.add(li.dataset.time));
+
+                                    data.forEach(item => {
+                                        if (!existingTimes.has(item.time_iso)) {
+                                            const li = document.createElement('li');
+                                            li.dataset.time = item.time_iso;
+                                            li.dataset.value = item.value;
+                                            li.dataset.flag = item.flag;
+                                            dataList.appendChild(li);
+                                        }
+                                    });
+                                }
+                                window.renderSparkline(card);
+                            }
+                        });
+                        return;
+                    }
                 }
+
+                window.renderSparkline(card);
             }
         }
     });
+
+    document.addEventListener('click', function (e) {
+        if (e.target.closest('.card-interval-select')) {
+            e.stopPropagation();
+        }
+    }, true);
 
     window.addEventListener('DashMedDurationChange', function (e) {
     });
@@ -465,7 +509,7 @@
 
                                         const updateObj = { series: [{ data: ds }] };
 
-                                        const durationVal = card.dataset.displayDuration;
+                                        const durationVal = card.dataset.cardDisplayDuration || card.dataset.displayDuration;
                                         if (durationVal && durationVal !== 'all') {
                                             const hours = parseFloat(durationVal);
                                             const minTime = timeMs - (hours * 3600 * 1000);
