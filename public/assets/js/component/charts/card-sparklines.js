@@ -121,7 +121,46 @@
 
         let options = {};
 
-        if (type === 'pie' || type === 'doughnut') {
+        if (type === 'gauge') {
+            const currentVal = rawData[rawData.length - 1][1];
+            const gaugeMin = Number.isFinite(view.min) ? view.min : 0;
+            const gaugeMax = parseFloat(card.dataset.max) || (Number.isFinite(view.max) ? view.max : 100);
+            const nmin = thresholds.nmin, nmax = thresholds.nmax, cmin = thresholds.cmin, cmax = thresholds.cmax;
+            const range = gaugeMax - gaugeMin;
+            const c_red = resolveColor('var(--chart-band-red)') || 'rgba(239,68,68,0.45)';
+            const c_yellow = resolveColor('var(--chart-band-yellow)') || 'rgba(245,158,11,0.45)';
+            const c_green = resolveColor('var(--chart-band-green)') || 'rgba(34,197,94,0.45)';
+            const axisLineColors = [];
+            if (range > 0) {
+                const r = (v) => Math.max(0, Math.min(1, (v - gaugeMin) / range));
+                if (Number.isFinite(cmin) && Number.isFinite(nmin) && Number.isFinite(nmax) && Number.isFinite(cmax)) {
+                    axisLineColors.push([r(cmin), c_red], [r(nmin), c_yellow], [r(nmax), c_green], [r(cmax), c_yellow], [1, c_red]);
+                } else if (Number.isFinite(nmin) && Number.isFinite(nmax)) {
+                    axisLineColors.push([r(nmin), c_yellow], [r(nmax), c_green], [1, c_yellow]);
+                } else { axisLineColors.push([1, chartColor]); }
+            } else { axisLineColors.push([1, chartColor]); }
+
+            options = {
+                series: [{
+                    type: 'gauge', min: gaugeMin, max: gaugeMax,
+                    center: ['50%', '58%'], radius: '90%',
+                    startAngle: 210, endAngle: -30, splitNumber: 4,
+                    axisLine: { lineStyle: { width: 10, color: axisLineColors } },
+                    axisTick: { distance: 2, length: 3, lineStyle: { color: 'auto', width: 1 } },
+                    splitLine: { distance: 2, length: 8, lineStyle: { color: 'auto', width: 1.5 } },
+                    axisLabel: { color: tickColor, distance: 12, fontSize: 9 },
+                    pointer: { length: '50%', width: 4, itemStyle: { color: chartColor } },
+                    anchor: { show: true, showAbove: true, size: 8, itemStyle: { borderWidth: 2, borderColor: chartColor, color: tooltipBg } },
+                    title: { show: false },
+                    detail: {
+                        valueAnimation: true, fontSize: 16, fontWeight: 700,
+                        color: chartColor, offsetCenter: [0, '75%'],
+                        formatter: function(v) { return v.toFixed(1); }
+                    },
+                    data: [{ value: Math.round(currentVal * 100) / 100 }]
+                }]
+            };
+        } else if (type === 'pie' || type === 'doughnut') {
             const currentVal = rawData[0][1];
             const max = parseFloat(card.dataset.max) || 100;
             const remaining = Math.max(0, max - currentVal);
@@ -322,10 +361,20 @@
         const newType = btn.dataset.cardChartType;
         const paramId = panel.dataset.paramId;
 
-        const card = document.querySelector(`article.card[data-slug="${panel.id.replace(/^.*panel-/, '')}"]`);
+        const slug = panel.id.replace(/^.*panel-/, '');
+        const card = document.querySelector(`article.card[data-slug="${slug}"]`);
         if (card) {
             card.dataset.chartType = newType;
             window.renderSparkline(card);
+        }
+
+        // Sync active state back to the source detail element so reopening the modal preserves it
+        const detailId = card ? card.getAttribute('data-detail-id') : null;
+        const sourceDetail = detailId ? document.getElementById(detailId) : null;
+        if (sourceDetail) {
+            sourceDetail.querySelectorAll('.card-chart-btn').forEach(b => b.classList.remove('active'));
+            const match = sourceDetail.querySelector(`.card-chart-btn[data-card-chart-type="${newType}"]`);
+            if (match) match.classList.add('active');
         }
 
         if (paramId) {
@@ -463,7 +512,14 @@
                 }
 
                 const canvas = card.querySelector(".card-spark-canvas");
-                if (metric.chart_type === 'pie' || metric.chart_type === 'doughnut') {
+                const cardChartType = card.dataset.chartType || metric.chart_type;
+                if (cardChartType === 'gauge') {
+                    if (canvas && canvas.chartInstance && metric.value !== '') {
+                        canvas.chartInstance.setOption({
+                            series: [{ data: [{ value: Math.round(Number(metric.value) * 100) / 100 }] }]
+                        });
+                    }
+                } else if (metric.chart_type === 'pie' || metric.chart_type === 'doughnut') {
                     if (canvas && canvas.chartInstance && metric.value !== '') {
                         const chart = canvas.chartInstance;
                         const currentVal = Number(metric.value);

@@ -193,7 +193,7 @@ class PatientController
 
             if ($patientId) {
                 $metrics = $this->monitorModel->getLatestMetrics($patientId);
-                $rawHistory = $this->monitorModel->getRawHistory($patientId);
+                $rawHistory = $this->monitorModel->getLatestHistoryForAllParameters($patientId, 1000);
             }
 
             $rawUserId = $_SESSION['user_id'] ?? 0;

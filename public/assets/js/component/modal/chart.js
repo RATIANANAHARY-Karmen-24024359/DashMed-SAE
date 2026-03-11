@@ -635,18 +635,32 @@ document.addEventListener('click', function (e) {
 
         const panel = btn.closest('.modal-grid');
         if (panel) {
-            panel.dataset.chart = btn.dataset.modalChartType;
+            const newModalType = btn.dataset.modalChartType;
+            panel.dataset.chart = newModalType;
             const chartId = panel.querySelector('.modal-chart')?.dataset.id;
             const display = panel.dataset.display || '';
             if (chartId) {
                 updatePanelChart(panel.id, chartId, display);
             }
 
+            // Sync active state back to the source detail element so reopening the modal preserves it
+            const slug = panel.id.replace(/^.*panel-/, '');
+            const card = document.querySelector(`article.card[data-slug="${slug}"]`);
+            const detailId = card ? card.getAttribute('data-detail-id') : null;
+            const sourceDetail = detailId ? document.getElementById(detailId) : null;
+            if (sourceDetail) {
+                const sourcePanel = sourceDetail.querySelector('.modal-grid');
+                if (sourcePanel) sourcePanel.dataset.chart = newModalType;
+                sourceDetail.querySelectorAll('.modal-chart-btn').forEach(b => b.classList.remove('active'));
+                const match = sourceDetail.querySelector(`.modal-chart-btn[data-modal-chart-type="${newModalType}"]`);
+                if (match) match.classList.add('active');
+            }
+
             const paramId = panel.dataset.paramId;
             if (paramId) {
                 const formData = new FormData();
                 formData.append('parameter_id', paramId);
-                formData.append('chart_type', btn.dataset.modalChartType);
+                formData.append('chart_type', newModalType);
                 formData.append('chart_pref_submit', '1');
                 formData.append('is_modal_pref', '1');
                 fetch(window.location.href, { method: 'POST', body: formData }).catch(console.error);
