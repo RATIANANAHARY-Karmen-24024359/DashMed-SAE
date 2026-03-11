@@ -52,11 +52,19 @@ async function updatePanelChart(panelId, chartId, title) {
     if (!root) return;
 
     const panel = root.querySelector('#' + panelId);
-    if (!panel) return;
+    if (!panel) {
+        console.warn("[DashMed] Modal panel not found in modalDetails:", panelId);
+        return;
+    }
 
     const list = panel.querySelectorAll('ul[data-hist]>li');
     const noDataPlaceholder = panel.querySelector('.modal-no-data-placeholder');
-    const canvas = document.getElementById(chartId);
+    let canvas = panel.querySelector('.modal-chart');
+    if (canvas) {
+        canvas.id = chartId;
+    } else {
+        canvas = document.getElementById(chartId);
+    }
     const valueContainer = panel.querySelector('.modal-value-only');
 
     const chartType = panel.dataset.chart || 'line';
@@ -64,8 +72,53 @@ async function updatePanelChart(panelId, chartId, title) {
     const unit = (panel.dataset.unit || '').trim().toLowerCase();
 
     const modalLoader = panel.querySelector('.modal-chart-loader');
-    const hideLoader = () => { if (modalLoader) modalLoader.classList.add('hidden'); };
-    const showLoader = () => { if (modalLoader) modalLoader.classList.remove('hidden'); };
+    let finishLoader = null;
+
+    const showLoader = () => {
+        if (!modalLoader) return;
+        modalLoader.classList.remove('hidden');
+
+        const bar = modalLoader.querySelector('.loader-progress-bar');
+        const text = modalLoader.querySelector('.loader-progress-text');
+        if (!bar || !text) return;
+
+        bar.style.width = '0%';
+        text.textContent = '0%';
+
+        let active = true;
+        let progress = 0;
+        const animate = () => {
+            if (!active) return;
+            if (progress < 40) progress += Math.random() * 5;
+            else if (progress < 70) progress += Math.random() * 2;
+            else if (progress < 85) progress += Math.random() * 0.8;
+            else if (progress < 95) progress += Math.random() * 0.2;
+            if (progress > 95) progress = 95;
+
+            bar.style.width = progress + '%';
+            text.textContent = Math.floor(progress) + '%';
+            setTimeout(animate, 30);
+        };
+        animate();
+
+        finishLoader = () => {
+            active = false;
+            bar.style.width = '100%';
+            text.textContent = '100%';
+            setTimeout(() => {
+                modalLoader.classList.add('hidden');
+            }, 300);
+        };
+    };
+
+    const hideLoader = () => {
+        if (finishLoader) { finishLoader(); finishLoader = null; }
+        else if (modalLoader) modalLoader.classList.add('hidden');
+        if (canvas) {
+            canvas.style.display = 'block';
+            canvas.style.opacity = '1';
+        }
+    };
 
     if (chartType === 'value') {
         const valueRaw = panel.dataset.value || '—';
@@ -79,9 +132,12 @@ async function updatePanelChart(panelId, chartId, title) {
             valueContainer.style.display = 'block';
         }
 
-        if (canvas) canvas.style.display = 'none';
         if (noDataPlaceholder) noDataPlaceholder.style.display = 'none';
+        const syncBtn = panel.querySelector('.sync-realtime-btn');
+        if (syncBtn) syncBtn.style.display = 'none';
         hideLoader();
+        // Hide canvas AFTER hideLoader since hideLoader sets display:block
+        if (canvas) canvas.style.display = 'none';
         return;
     }
 
@@ -99,14 +155,18 @@ async function updatePanelChart(panelId, chartId, title) {
         max: parseDatasetNumber(panel.dataset.dmax)
     };
 
-    if (chartType === 'pie' || chartType === 'doughnut') {
+    if (chartType === 'pie' || chartType === 'doughnut' || chartType === 'gauge') {
         const item = list[idx];
         const val = Number(item?.dataset?.value);
         let max = 100;
         if (unit.includes('%')) max = 100;
         else if (Number.isFinite(view.max)) max = view.max;
+        let min = 0;
+        if (Number.isFinite(view.min)) min = view.min;
 
-        createEChart(chartType, title, [[Date.now(), val]], chartId, 'var(--chart-color)', thresholds, view, { mode: 'singlePercent', max });
+        if (canvas) canvas.style.display = 'block';
+        createEChart(chartType, title, [[Date.now(), val]], canvas, 'var(--chart-color)', thresholds, view, { mode: 'singlePercent', max, min });
+        hideLoader();
 
     } else {
         const targetDate = panel.dataset.targetDate || '';
@@ -122,21 +182,30 @@ async function updatePanelChart(panelId, chartId, title) {
             const cacheKey = `${paramId}-${targetDate || 'now'}`;
 
             let dataArr;
-            const useCache = !!targetDate; // Disable cache for 'now' queries to prevent stale live data
+            const useCache = !!targetDate;
             if (useCache && historyCache[cacheKey]) {
                 dataArr = historyCache[cacheKey];
             } else {
-                const res = await fetch(`${window.location.origin}/api_history?param=${encodeURIComponent(paramId)}${dateParam}`);
-                if (!res.ok) throw new Error('Fetch failed');
+                const fetchUrl = `/api_history?param=${encodeURIComponent(paramId)}${dateParam}`;
+                console.log('[DashMed] Fetching chart data:', fetchUrl);
+
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 60000);
+
+                const res = await fetch(fetchUrl, { signal: controller.signal });
+                clearTimeout(timeoutId);
+                console.log('[DashMed] Fetch response:', res.status, res.statusText);
+
+                if (!res.ok) throw new Error('Fetch failed: ' + res.status);
                 dataArr = await res.json();
                 if (dataArr.error) throw new Error(dataArr.error);
+                console.log('[DashMed] Data received:', dataArr.length, 'points');
                 if (useCache) historyCache[cacheKey] = dataArr;
             }
 
-            // --- Configure CSV Download Link ---
             const csvBtn = panel.querySelector('.btn-csv-download');
             if (csvBtn) {
-                csvBtn.href = `${window.location.origin}/api_history?param=${encodeURIComponent(paramId)}${dateParam}&raw=1&format=csv`;
+                csvBtn.href = `/api_history?param=${encodeURIComponent(paramId)}${dateParam}&raw=1&format=csv`;
             }
 
             const htmlBtn = panel.querySelector('.btn-html-export');
@@ -182,7 +251,7 @@ async function updatePanelChart(panelId, chartId, title) {
                 initialZoom = 0;
             }
 
-            createEChart(chartType, title, rawData, chartId, 'var(--chart-color)', thresholds, view, { initialZoomMs: initialZoom });
+            createEChart(chartType, title, rawData, canvas, 'var(--chart-color)', thresholds, view, { initialZoomMs: initialZoom });
             setupRealtimeSyncButton(panel, chartId, title);
 
         } catch (err) {
@@ -199,12 +268,16 @@ function updatePanelPieChart(panelId, chartId, title) {
 
 function createEChart(type, title, rawData, target, color, thresholds, view, extra) {
     if (!window.echarts) return;
-    const canvas = document.getElementById(target);
+    const canvas = (typeof target === 'string') ? (document.getElementById('modalDetails')?.querySelector('#' + target) || document.getElementById(target)) : target;
     if (!canvas) return;
 
     if (canvas.chartInstance) {
         canvas.chartInstance.dispose();
     }
+
+    canvas.style.width = '100%';
+    canvas.style.height = '100%';
+    canvas.style.display = 'block';
 
     const chartInstance = echarts.init(canvas, null, {
         renderer: 'canvas',
@@ -222,31 +295,59 @@ function createEChart(type, title, rawData, target, color, thresholds, view, ext
     let options = {};
     const eType = type === 'scatter' ? 'scatter' : (type === 'bar' ? 'bar' : 'line');
 
-    if (type === 'pie' || type === 'doughnut') {
+    if (type === 'gauge') {
+        const currentVal = rawData.length > 0 ? rawData[rawData.length - 1][1] : 0;
+        const gaugeMin = (extra.min != null && Number.isFinite(extra.min)) ? extra.min : (Number.isFinite(view.min) ? view.min : 0);
+        const gaugeMax = extra.max || (Number.isFinite(view.max) ? view.max : 100);
+        const nmin = thresholds.nmin, nmax = thresholds.nmax, cmin = thresholds.cmin, cmax = thresholds.cmax;
+        const range = gaugeMax - gaugeMin;
+        const c_red = resolveColor('var(--chart-band-red)') || 'rgba(239,68,68,0.45)';
+        const c_yellow = resolveColor('var(--chart-band-yellow)') || 'rgba(245,158,11,0.45)';
+        const c_green = resolveColor('var(--chart-band-green)') || 'rgba(34,197,94,0.45)';
+        const axisLineColors = [];
+        if (range > 0) {
+            const r = (v) => Math.max(0, Math.min(1, (v - gaugeMin) / range));
+            if (Number.isFinite(cmin) && Number.isFinite(nmin) && Number.isFinite(nmax) && Number.isFinite(cmax)) {
+                axisLineColors.push([r(cmin), c_red], [r(nmin), c_yellow], [r(nmax), c_green], [r(cmax), c_yellow], [1, c_red]);
+            } else if (Number.isFinite(nmin) && Number.isFinite(nmax)) {
+                axisLineColors.push([r(nmin), c_yellow], [r(nmax), c_green], [1, c_yellow]);
+            } else { axisLineColors.push([1, chartColor]); }
+        } else { axisLineColors.push([1, chartColor]); }
+        options = {
+            series: [{
+                type: 'gauge', min: gaugeMin, max: gaugeMax,
+                center: ['50%', '58%'], radius: '80%',
+                startAngle: 210, endAngle: -30, splitNumber: 4,
+                axisLine: { lineStyle: { width: 14, color: axisLineColors } },
+                axisTick: { distance: 2, length: 4, lineStyle: { color: 'auto', width: 1 } },
+                splitLine: { distance: 2, length: 10, lineStyle: { color: 'auto', width: 2 } },
+                axisLabel: { color: tickColor, distance: 18, fontSize: 12 },
+                pointer: { length: '55%', width: 5, itemStyle: { color: chartColor } },
+                anchor: { show: true, showAbove: true, size: 10, itemStyle: { borderWidth: 2, borderColor: chartColor, color: tooltipBg } },
+                title: { show: false },
+                detail: {
+                    valueAnimation: true, fontSize: 26, fontWeight: 700,
+                    color: chartColor, offsetCenter: [0, '75%'],
+                    formatter: function (v) { return v.toFixed(2); }
+                },
+                data: [{ value: Math.round(currentVal * 100) / 100 }]
+            }]
+        };
+    } else if (type === 'pie' || type === 'doughnut') {
         const currentVal = rawData[0][1];
         const max = extra.max || 100;
         const remaining = Math.max(0, max - currentVal);
         const radius = type === 'doughnut' ? ['40%', '70%'] : '70%';
-
         options = {
-            tooltip: {
-                trigger: 'item',
-                backgroundColor: tooltipBg,
-                textStyle: { color: tooltipText },
-                borderColor: tooltipBorder,
-            },
-            series: [
-                {
-                    type: 'pie',
-                    radius: radius,
-                    center: ['50%', '50%'],
-                    data: [
-                        { value: currentVal, name: 'Mesure', itemStyle: { color: chartColor } },
-                        { value: remaining, name: 'Reste', itemStyle: { color: 'rgba(0,0,0,0.1)' } }
-                    ],
-                    label: { show: true, position: 'inside', formatter: '{c}' },
-                }
-            ]
+            tooltip: { trigger: 'item', backgroundColor: tooltipBg, textStyle: { color: tooltipText }, borderColor: tooltipBorder },
+            series: [{
+                type: 'pie', radius: radius, center: ['50%', '50%'],
+                data: [
+                    { value: currentVal, name: 'Mesure', itemStyle: { color: chartColor } },
+                    { value: remaining, name: 'Reste', itemStyle: { color: 'rgba(0,0,0,0.1)' } }
+                ],
+                label: { show: true, position: 'inside', formatter: '{c}' }
+            }]
         };
     } else {
         const markArea = [];
@@ -346,7 +447,6 @@ function createEChart(type, title, rawData, target, color, thresholds, view, ext
                 axisTick: { show: false },
                 axisLine: { show: false }
             },
-            dataset: { source: [[0, 0]] },
             yAxis: {
                 type: 'value',
                 min: view.min,
@@ -360,9 +460,10 @@ function createEChart(type, title, rawData, target, color, thresholds, view, ext
             series: [{
                 data: rawData,
                 type: eType,
+                step: type === 'step' ? 'middle' : false,
                 showSymbol: type === 'scatter',
                 symbolSize: type === 'scatter' ? 6 : 0,
-                smooth: true,
+                smooth: type !== 'step',
                 connectNulls: true,
                 sampling: null,
                 large: false,
@@ -384,27 +485,35 @@ function createEChart(type, title, rawData, target, color, thresholds, view, ext
 
     chartInstance.setOption(options);
 
-    chartInstance.on('dataZoom', function (evt) {
+    chartInstance.on('dataZoom', function () {
         const canvas = chartInstance.getDom();
-        if (evt.batch) {
-            const opt = chartInstance.getOption();
-            const dz = opt.dataZoom[0];
-            const lastData = rawData.length > 0 ? rawData[rawData.length - 1][0] : 0;
+        const opt = chartInstance.getOption();
+        const dz = opt.dataZoom && opt.dataZoom[0];
+        if (!dz) return;
 
-            let isAtEnd = false;
-            if (dz.endValue !== undefined) {
-                isAtEnd = (lastData - dz.endValue <= 1000);
-            } else if (dz.end !== undefined) {
-                isAtEnd = (dz.end >= 99.5);
+        const seriesData = opt.series && opt.series[0] && opt.series[0].data;
+        const lastData = seriesData && seriesData.length > 0 ? seriesData[seriesData.length - 1][0] : 0;
+
+        let isAtEnd = false;
+        if (dz.endValue !== undefined && dz.endValue !== null) {
+            isAtEnd = (lastData - dz.endValue <= 2000);
+        } else if (dz.end !== undefined) {
+            isAtEnd = (dz.end >= 99.5);
+        }
+
+        if (!isAtEnd) {
+            canvas.dataset.isSynced = "false";
+            const panel = canvas.closest('.modal-grid');
+            if (panel) {
+                const syncBtn = panel.querySelector('.sync-realtime-btn');
+                if (syncBtn) syncBtn.style.display = 'flex';
             }
-
-            if (!isAtEnd) {
-                canvas.dataset.isSynced = "false";
-                const panel = canvas.closest('.modal-grid');
-                if (panel) {
-                    const syncBtn = panel.querySelector('.sync-realtime-btn');
-                    if (syncBtn) syncBtn.style.display = 'flex';
-                }
+        } else {
+            canvas.dataset.isSynced = "true";
+            const panel = canvas.closest('.modal-grid');
+            if (panel) {
+                const syncBtn = panel.querySelector('.sync-realtime-btn');
+                if (syncBtn) syncBtn.style.display = 'none';
             }
         }
         canvas.dispatchEvent(new CustomEvent('chartInteract'));
@@ -412,6 +521,12 @@ function createEChart(type, title, rawData, target, color, thresholds, view, ext
 
     const ro = new ResizeObserver(() => chartInstance.resize());
     ro.observe(canvas.parentElement);
+
+    setTimeout(() => {
+        if (chartInstance && !chartInstance.isDisposed()) {
+            chartInstance.resize();
+        }
+    }, 400);
 }
 
 function getChartVisibleDurationMs(chart, panel) {
@@ -462,7 +577,7 @@ function setupRealtimeSyncButton(panel, chartId, title) {
         syncBtn.style.justifyContent = 'center';
 
         syncBtn.onclick = () => {
-            const canvas = document.getElementById(chartId);
+            const canvas = panel.querySelector('.modal-chart') || document.getElementById(chartId);
             if (canvas && canvas.chartInstance) {
                 const chart = canvas.chartInstance;
                 const opt = chart.getOption();
@@ -535,18 +650,32 @@ document.addEventListener('click', function (e) {
 
         const panel = btn.closest('.modal-grid');
         if (panel) {
-            panel.dataset.chart = btn.dataset.modalChartType;
+            const newModalType = btn.dataset.modalChartType;
+            panel.dataset.chart = newModalType;
             const chartId = panel.querySelector('.modal-chart')?.dataset.id;
             const display = panel.dataset.display || '';
             if (chartId) {
                 updatePanelChart(panel.id, chartId, display);
             }
 
+            // Sync active state back to the source detail element so reopening the modal preserves it
+            const slug = panel.id.replace(/^.*panel-/, '');
+            const card = document.querySelector(`article.card[data-slug="${slug}"]`);
+            const detailId = card ? card.getAttribute('data-detail-id') : null;
+            const sourceDetail = detailId ? document.getElementById(detailId) : null;
+            if (sourceDetail) {
+                const sourcePanel = sourceDetail.querySelector('.modal-grid');
+                if (sourcePanel) sourcePanel.dataset.chart = newModalType;
+                sourceDetail.querySelectorAll('.modal-chart-btn').forEach(b => b.classList.remove('active'));
+                const match = sourceDetail.querySelector(`.modal-chart-btn[data-modal-chart-type="${newModalType}"]`);
+                if (match) match.classList.add('active');
+            }
+
             const paramId = panel.dataset.paramId;
             if (paramId) {
                 const formData = new FormData();
                 formData.append('parameter_id', paramId);
-                formData.append('chart_type', btn.dataset.modalChartType);
+                formData.append('chart_type', newModalType);
                 formData.append('chart_pref_submit', '1');
                 formData.append('is_modal_pref', '1');
                 fetch(window.location.href, { method: 'POST', body: formData }).catch(console.error);
@@ -564,12 +693,6 @@ document.addEventListener('change', function (e) {
 
         const val = select.value;
         const paramId = panel.dataset.paramId;
-
-        // Persist preference for ALL parameters (global behavior requested)
-        // We'll iterate over all visible panels or just send one global request if the server supports it.
-        // The current server logic saves per parameter. To make it "the same for everyone", 
-        // we can either send multiple requests or update the server. 
-        // User said "la même chose pour la modale et que ça soit sauvegardé", implying global.
 
         const allPanels = document.querySelectorAll('.modal-grid');
         allPanels.forEach(p => {
@@ -620,7 +743,6 @@ document.addEventListener('change', function (e) {
 
 
 
-// SSE Modal Sync
 (function () {
     window.addEventListener('DashMedMetricsUpdate', function (event) {
         const modal = document.querySelector(".modal");
@@ -648,7 +770,11 @@ document.addEventListener('change', function (e) {
             const val = Number(metric.value);
             const chart = canvas.chartInstance;
 
-            if (metric.chart_type === 'pie' || metric.chart_type === 'doughnut') {
+            const currentChartType = panel.dataset.chart || metric.chart_type || 'line';
+
+            if (currentChartType === 'gauge') {
+                chart.setOption({ series: [{ data: [{ value: Math.round(val * 100) / 100 }] }] });
+            } else if (currentChartType === 'pie' || currentChartType === 'doughnut') {
                 const max = parseFloat(panel.dataset.max || panel.dataset.nmax || panel.dataset.dmax) || 100;
                 chart.setOption({
                     series: [{
@@ -658,6 +784,7 @@ document.addEventListener('change', function (e) {
                         ]
                     }]
                 });
+            } else if (currentChartType === 'value') {
             } else {
                 const option = chart.getOption();
                 if (option.series && option.series.length > 0) {

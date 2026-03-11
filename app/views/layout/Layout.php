@@ -154,8 +154,8 @@ class Layout
                 <?php include $partialsDir . '/_scroll-to-top.php'; ?>
             <?php endif; ?>
 
-            <script src="assets/js/components/loader.js"></script>
-            <script src="assets/js/components/skeleton.js"></script>
+            <script src="assets/js/component/loader.js"></script>
+            <script src="assets/js/component/skeleton.js"></script>
 
             <?php foreach ($this->jsFiles as $js): ?>
                 <script src="<?= htmlspecialchars($js, ENT_QUOTES, 'UTF-8') ?>"></script>

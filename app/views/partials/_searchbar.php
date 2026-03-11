@@ -70,6 +70,6 @@
         </div>
     </div>
 </form>
-<script src="assets/js/components/search.js"></script>
+<script src="assets/js/component/search.js"></script>
 <script src="assets/js/pages/static/profilmenu.js"></script>
 <script src="assets/js/pages/dash.js"></script>

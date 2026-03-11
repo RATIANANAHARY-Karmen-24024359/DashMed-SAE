@@ -28,6 +28,9 @@ class MonitoringView
     /** @var int|null Context patient ID */
     private ?int $patientId;
 
+    /** @var array<string, mixed> Selected patient data */
+    private array $patientData;
+
 
     /**
      * Constructor.
@@ -35,13 +38,18 @@ class MonitoringView
      * @param array<int, \modules\models\entities\Indicator> $patientMetrics Processed metrics
      * @param array<string, string> $chartTypes Available charts
      * @param int|null $patientId Patient ID for search context
-
+     * @param array<string, mixed> $patientData Patient info
      */
-    public function __construct(array $patientMetrics = [], array $chartTypes = [], ?int $patientId = null)
-    {
+    public function __construct(
+            array $patientMetrics = [],
+            array $chartTypes = [],
+            ?int $patientId = null,
+            array $patientData = []
+    ) {
         $this->patientMetrics = $patientMetrics;
         $this->chartTypes = $chartTypes;
         $this->patientId = $patientId;
+        $this->patientData = $patientData;
     }
 
     /**
@@ -52,8 +60,8 @@ class MonitoringView
     public function show(): void
     {
         $layout = new \modules\views\layout\Layout(
-            title: 'Monitoring',
-            cssFiles: [
+            'Monitoring',
+            [
                 'https://cdn.jsdelivr.net/npm/izitoast@1.4.0/dist/css/iziToast.min.css',
                 'assets/css/pages/monitoring.css',
                 'assets/css/components/card.css',
@@ -63,8 +71,14 @@ class MonitoringView
                 'assets/css/components/modal.css',
                 'assets/css/components/alerts-toast.css',
             ],
-            jsFiles: [
+            [
                 'https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js',
+                'https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js',
+                'https://cdn.jsdelivr.net/npm/moment@2.30.1/moment.min.js',
+                'https://cdn.jsdelivr.net/npm/moment@2.30.1/locale/fr.js',
+                'https://cdn.jsdelivr.net/npm/chartjs-adapter-moment@1.0.1/dist/chartjs-adapter-moment.min.js',
+                'https://cdn.jsdelivr.net/npm/hammerjs@2.0.8',
+                'https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1/dist/chartjs-plugin-zoom.min.js',
                 'assets/js/service/stream.js?v=' . time(),
                 'assets/js/service/history-cache.js?v=' . time(),
                 'assets/js/component/charts/sparkline-loader.js?v=' . time(),
@@ -74,24 +88,59 @@ class MonitoringView
                 'assets/js/component/modal/navigation.js',
                 'assets/js/component/modal/modal.js',
             ],
-            showSidebar: true,
-            showAlerts: true
+            '',
+            true,
+            true
         );
-
 
         $layout->render(function () {
             ?>
-
-
             <main class="container">
                 <section class="dashboard-content-container">
 
-                    <?php include dirname(__DIR__) . '/partials/_searchbar.php'; ?>
+                    <div class="searchbar-with-patient">
+                        <span class="patient-name-label">
+                             <?= htmlspecialchars(
+                                     trim(
+                                             (is_scalar($v = $this->patientData['first_name'] ?? '') ? (string)$v : '') . ' ' .
+                                             (is_scalar($v = $this->patientData['last_name'] ?? '') ? (string)$v : '')
+                                     ),
+                                     ENT_QUOTES, 'UTF-8'
+                             ) ?>
+
+    </span>
+                        <?php include dirname(__DIR__) . '/partials/_searchbar.php'; ?>
+                        <div class="live-clock" id="live-clock">
+                            <span class="live-clock__time" id="live-clock-time"></span>
+                            <span class="live-clock__date" id="live-clock-date"></span>
+                        </div>
+                    </div>
+                    <script>
+                        (function () {
+                            const timeEl = document.getElementById('live-clock-time');
+                            const dateEl = document.getElementById('live-clock-date');
+                            const days = ['Dimanche','Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi'];
+                            const months = ['jan.','fév.','mars','avr.','mai','juin','juil.','août','sept.','oct.','nov.','déc.'];
+
+                            function tick() {
+                                const now = new Date();
+                                const h = String(now.getHours()).padStart(2, '0');
+                                const m = String(now.getMinutes()).padStart(2, '0');
+                                const s = String(now.getSeconds()).padStart(2, '0');
+                                timeEl.textContent = h + ':' + m + ':' + s;
+                                dateEl.textContent = days[now.getDay()] + ' ' + now.getDate() + ' ' + months[now.getMonth()];
+                            }
+
+                            tick();
+                            setInterval(tick, 1000);
+                        })();
+                    </script>
+
 
                     <input type="hidden" id="context-patient-id" value="<?= htmlspecialchars((string) $this->patientId) ?>">
 
                     <section class="skeleton-wrapper skeleton-monitoring-grid" id="skeleton-monitoring"
-                        data-skeleton-for="real-monitoring" data-skeleton-auto data-skeleton-delay="400">
+                             data-skeleton-for="real-monitoring" data-skeleton-auto data-skeleton-delay="400">
                         <?php for ($i = 0; $i < 6; $i++): ?>
                             <div class="skeleton-card">
                                 <div class="skeleton-card-header">
@@ -110,6 +159,7 @@ class MonitoringView
                         <?php
                         $patientMetrics = $this->patientMetrics;
                         $chartTypes = $this->chartTypes;
+                        $showNoLayoutMessage = false;
                         include dirname(__DIR__) . '/partials/_monitoring-cards.php';
                         ?>
                     </section>
@@ -121,7 +171,17 @@ class MonitoringView
                     <div id="modalDetails"></div>
                 </div>
             </div>
-<?php
+            <script>
+                document.addEventListener('DOMContentLoaded', () => {
+                    const hash = window.location.hash;
+                    if (!hash.startsWith('#indicateurs-')) return;
+
+                    const target = document.querySelector(hash);
+                    if (!target) return;
+                });
+            </script>
+
+            <?php
         });
     }
 }

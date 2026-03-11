@@ -7,11 +7,13 @@
             menu.classList.remove('open');
             btnProfile.setAttribute('aria-expanded', 'false');
             menu.setAttribute('aria-hidden', 'true');
+            document.body.classList.remove('profile-menu-open');
         };
         const openMenu = () => {
             menu.classList.add('open');
             btnProfile.setAttribute('aria-expanded', 'true');
             menu.setAttribute('aria-hidden', 'false');
+            document.body.classList.add('profile-menu-open');
         };
         btnProfile.addEventListener('click', (e) => {
             e.preventDefault();

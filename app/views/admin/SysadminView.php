@@ -50,7 +50,7 @@ class SysadminView
         $old = isset($_SESSION['old_sysadmin']) && is_array($_SESSION['old_sysadmin']) ? $_SESSION['old_sysadmin'] : [];
         unset($_SESSION['old_sysadmin']);
 
-        $h = static function ($v): string {
+        $h = static function ($v) {
             return htmlspecialchars(is_scalar($v) ? (string) $v : '', ENT_QUOTES, 'UTF-8');
         };
 
@@ -59,19 +59,20 @@ class SysadminView
         $genderFemmeChecked = (isset($old['gender']) && $old['gender'] === 'F') ? 'checked' : '';
 
         $layout = new \modules\views\layout\Layout(
-            title: 'Sysadmin',
-            cssFiles: [
+            'Sysadmin',
+            [
                 'assets/css/components/alerts-toast.css',
                 'assets/css/pages/sysadmin.css',
                 'assets/css/components/password-strength.css',
             ],
-            jsFiles: [
+            [
                 'assets/js/auth/password-strength.js',
                 'assets/js/auth/form.js',
                 'assets/js/pages/dash.js',
             ],
-            showSidebar: true,
-            showAlerts: false
+            '',
+            true,
+            true
         );
 
         $layout->render(function () use ($professions, $users, $rooms, $csrf, $error, $success, $old, $h, $adminNoChecked, $genderHommeChecked, $genderFemmeChecked) {
@@ -84,13 +85,13 @@ class SysadminView
 
                     <?php if (!empty($error)): ?>
                         <div class="alert error" role="alert">
-                            <?= htmlspecialchars((string) $error, ENT_QUOTES, 'UTF-8') ?>
+                            <?= $h($error) ?>
                         </div>
                     <?php endif; ?>
 
                     <?php if (!empty($success)): ?>
                         <div class="alert success" role="alert">
-                            <?= htmlspecialchars((string) $success, ENT_QUOTES, 'UTF-8') ?>
+                            <?= $h($success) ?>
                         </div>
                     <?php endif; ?>
 
@@ -747,6 +748,15 @@ class SysadminView
                                 }
                             });
                         }
+
+
+                        <?php if (isset($_SESSION['success'])): ?>
+                        <?php unset($_SESSION['success']); ?>
+                        <?php endif; ?>
+
+                        <?php if (isset($_SESSION['error'])): ?>
+                        <?php unset($_SESSION['error']); ?>
+                        <?php endif; ?>
                     });
                 </script>
             </main>

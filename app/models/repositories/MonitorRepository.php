@@ -230,15 +230,46 @@ class MonitorRepository extends BaseRepository
     }
 
     /**
-     * Efficiently retrieves the latest history points for ALL parameters of a patient.
-     * 
-     * Uses a window function (if MySQL 8+) or a specific optimized join strategy 
-     * to avoid loading the entire historical table when only sparklines are needed.
+     * Efficiently retrieves the latest history points for SPECIFIC parameters of a patient.
      *
      * @param int $patientId Patient ID
+     * @param array<int, string> $parameterIds List of parameter IDs
      * @param int $limitPerParam Max points per parameter (default 1000)
      * @return array<int, array{parameter_id: string, value: float|null, timestamp: string, alert_flag: int}>
      */
+    public function getLatestHistoryForSpecificParameters(int $patientId, array $parameterIds, int $limitPerParam = 1000): array
+    {
+        if (empty($parameterIds)) {
+            return [];
+        }
+
+        try {
+            $placeholders = implode(',', array_fill(0, count($parameterIds), '?'));
+
+            $sql = "
+                SELECT parameter_id, value, `timestamp`, alert_flag
+                FROM (
+                    SELECT 
+                        parameter_id, value, `timestamp`, alert_flag,
+                        ROW_NUMBER() OVER(PARTITION BY parameter_id ORDER BY `timestamp` DESC) as rn
+                    FROM {$this->table}
+                    WHERE id_patient = ? AND archived = 0 AND parameter_id IN ($placeholders)
+                ) ranked
+                WHERE rn <= ?
+                ORDER BY parameter_id, `timestamp` ASC
+            ";
+
+            $st = $this->pdo->prepare($sql);
+            $params = array_merge([$patientId], $parameterIds, [$limitPerParam]);
+            $st->execute($params);
+
+            return $st->fetchAll();
+        } catch (\PDOException $e) {
+            error_log("MonitorRepository::getLatestHistoryForSpecificParameters Error: " . $e->getMessage());
+            return [];
+        }
+    }
+
     public function getLatestHistoryForAllParameters(int $patientId, int $limitPerParam = 1000): array
     {
         try {
@@ -408,7 +439,8 @@ class MonitorRepository extends BaseRepository
             $st->execute();
 
             while ($row = $st->fetch(\PDO::FETCH_ASSOC)) {
-                /** @var array{parameter_id: string, value: string|null, timestamp: string, alert_flag: int|string} $row */ yield $row;
+                /** @var array{parameter_id: string, value: string|null, timestamp: string, alert_flag: int|string} $row */
+                yield $row;
             }
         } catch (\PDOException $e) {
             error_log("MonitorRepository::streamRawHistoryByParameter Error: " . $e->getMessage());

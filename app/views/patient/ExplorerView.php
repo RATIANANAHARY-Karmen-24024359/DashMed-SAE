@@ -192,18 +192,29 @@ class ExplorerView
                     width: 100%; 
                     padding: 12px 15px; 
                     border-radius: 10px; 
-                    background: var(--explorer-input-bg); 
+                    background: var(--bg-surface); 
                     border: 1px solid var(--explorer-glass-stroke); 
                     color: var(--text-main); 
                     cursor: pointer; 
                     font-size: 0.95rem; 
                     transition: all 0.2s;
                     outline: none;
+                    appearance: none;
+                    -webkit-appearance: none;
+                    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+                    background-repeat: no-repeat;
+                    background-position: right 12px center;
                 }
                 
                 select:hover, select:focus {
                     border-color: var(--explorer-accent);
-                    background: rgba(39, 90, 254, 0.05);
+                    background-color: var(--bg-surface-hover);
+                }
+
+                select option {
+                    background-color: var(--bg-surface);
+                    color: var(--text-main);
+                    padding: 10px;
                 }
                 
                 .btn-primary { 
