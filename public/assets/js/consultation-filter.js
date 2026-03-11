@@ -62,13 +62,26 @@ class ConsultationManager {
             this.closeAllMenus();
             if (!isOpen) {
                 menu.style.display = 'block';
+                this.setParentOverflow(true);
             }
         });
+    }
+
+    setParentOverflow(visible) {
+        const aside = this.container ? this.container.closest('aside') : null;
+        if (aside) {
+            aside.style.overflow = visible ? 'visible' : '';
+        }
+        const wrapper = this.container ? this.container.closest('.consultations-sidebar-wrapper') : null;
+        if (wrapper) {
+            wrapper.style.overflow = visible ? 'visible' : '';
+        }
     }
 
     closeAllMenus() {
         if (this.sortMenu) this.sortMenu.style.display = 'none';
         if (this.filterMenu) this.filterMenu.style.display = 'none';
+        this.setParentOverflow(false);
     }
 
     handleOutsideClick(e) {
