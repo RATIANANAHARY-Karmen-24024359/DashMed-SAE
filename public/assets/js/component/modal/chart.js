@@ -132,9 +132,10 @@ async function updatePanelChart(panelId, chartId, title) {
             valueContainer.style.display = 'block';
         }
 
-        if (canvas) canvas.style.display = 'none';
         if (noDataPlaceholder) noDataPlaceholder.style.display = 'none';
         hideLoader();
+        // Hide canvas AFTER hideLoader since hideLoader sets display:block
+        if (canvas) canvas.style.display = 'none';
         return;
     }
 
