@@ -188,7 +188,7 @@
                 ]
             };
         } else {
-            const eType = type === 'line' ? 'line' : (type === 'bar' ? 'bar' : 'scatter');
+            const eType = (type === 'step' || type === 'line') ? 'line' : (type === 'bar' ? 'bar' : 'scatter');
 
             const markArea = [];
             const nmin = thresholds.nmin;
@@ -292,9 +292,10 @@
                 series: [{
                     data: rawData,
                     type: eType,
+                    step: type === 'step' ? 'middle' : false,
                     showSymbol: type === 'scatter',
                     symbolSize: type === 'scatter' ? 4 : 0,
-                    smooth: true,
+                    smooth: type !== 'step',
                     itemStyle: { color: chartColor },
                     lineStyle: { color: chartColor, width: 2 },
                     markArea: {

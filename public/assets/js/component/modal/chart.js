@@ -450,9 +450,10 @@ function createEChart(type, title, rawData, target, color, thresholds, view, ext
             series: [{
                 data: rawData,
                 type: eType,
+                step: type === 'step' ? 'middle' : false,
                 showSymbol: type === 'scatter',
                 symbolSize: type === 'scatter' ? 6 : 0,
-                smooth: true,
+                smooth: type !== 'step',
                 sampling: null,
                 large: false,
                 itemStyle: { color: chartColor },

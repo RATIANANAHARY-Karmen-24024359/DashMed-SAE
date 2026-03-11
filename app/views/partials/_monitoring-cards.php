@@ -71,7 +71,7 @@ if (!empty($patientMetrics)): ?>
         $stateClass = $viewData['card_class'] ?? '';
         $critFlag = (bool) ($viewData['is_crit_flag'] ?? false);
         $chartConfig = $viewData['chart_config'] ?? '{}';
-        $chartAllowed = $viewData['chart_allowed'] ?? ['line'];
+        $chartAllowed = array_filter($viewData['chart_allowed'] ?? ['line'], fn($t) => $t !== 'radar');
         $category = $viewData['category'] ?? '';
 
         $dmax = $viewData['view_limits']['max'] ?? null;
@@ -327,11 +327,6 @@ viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-li
 <circle cx="7.5" cy="7.5" r="2.5"/><circle cx="16.5" cy="16.5" r="2.5"/><circle cx="7.5" cy="16.5" r="2.5"/>
 <circle cx="16.5" cy="7.5" r="2.5"/></svg>';
                                                 break;
-                                            case 'radar':
-                                                $icon = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" 
-viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-<polygon points="12 2 19 8 17 17 7 17 5 8"></polygon><circle cx="12" cy="11" r="2"></circle></svg>';
-                                                break;
                                             case 'step':
                                                 $icon = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" 
 viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -386,11 +381,6 @@ viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-li
 viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
 <circle cx="7.5" cy="7.5" r="2.5"/><circle cx="16.5" cy="16.5" r="2.5"/><circle cx="7.5" cy="16.5" r="2.5"/>
 <circle cx="16.5" cy="7.5" r="2.5"/></svg>';
-                                                break;
-                                            case 'radar':
-                                                $icon = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" 
-viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-<polygon points="12 2 19 8 17 17 7 17 5 8"></polygon><circle cx="12" cy="11" r="2"></circle></svg>';
                                                 break;
                                             case 'step':
                                                 $icon = '<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" 
