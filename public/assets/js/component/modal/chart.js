@@ -128,15 +128,37 @@ async function updatePanelChart(panelId, chartId, title) {
             const dateParam = targetDate ? `&date=${encodeURIComponent(targetDate)}` : '';
             const cacheKey = `${paramId}-${targetDate || 'now'}`;
 
+            const durationVal = panel.dataset.displayDuration || '0.0333';
+            const durationHours = durationVal !== 'all' ? parseFloat(durationVal) : NaN;
+            const durationSeconds = Number.isFinite(durationHours) ? Math.round(durationHours * 3600) : 0;
+
+            // Prefer exact tail data for short live windows (prevents downsampling artifacts).
+            // The full /api_history endpoint may downsample large histories, which can look like "missing seconds"
+            // when you zoom into a small time window.
+            const ctxPidEl = document.getElementById('context-patient-id');
+            const ctxPid = ctxPidEl && ctxPidEl.value ? ctxPidEl.value : '';
+            const patientParam = ctxPid ? `&patient_id=${encodeURIComponent(ctxPid)}` : '';
+
+            const useTail = !targetDate && durationVal !== 'all' && durationSeconds > 0 && durationSeconds <= 5000;
+            const apiUrl = useTail
+                ? `${window.location.origin}/api_history_tail?param=${encodeURIComponent(paramId)}${patientParam}&limit=${encodeURIComponent(durationSeconds + 5)}`
+                : `${window.location.origin}/api_history?param=${encodeURIComponent(paramId)}${dateParam}`;
+
             let dataArr;
             const useCache = !!targetDate; // Disable cache for 'now' queries to prevent stale live data
             if (useCache && historyCache[cacheKey]) {
                 dataArr = historyCache[cacheKey];
             } else {
-                const res = await fetch(`${window.location.origin}/api_history?param=${encodeURIComponent(paramId)}${dateParam}`);
+                const res = await fetch(apiUrl);
                 if (!res.ok) throw new Error('Fetch failed');
                 dataArr = await res.json();
                 if (dataArr.error) throw new Error(dataArr.error);
+
+                // Normalize tail payload shape
+                if (useTail && dataArr && dataArr.points) {
+                    dataArr = dataArr.points;
+                }
+
                 if (useCache) historyCache[cacheKey] = dataArr;
             }
 
@@ -181,7 +203,6 @@ async function updatePanelChart(panelId, chartId, title) {
             if (canvas) canvas.style.opacity = '1';
             spinner.style.display = 'none';
 
-            const durationVal = panel.dataset.displayDuration || '0.0333';
             let initialZoom = 2 * 60 * 1000;
             if (durationVal !== 'all') {
                 initialZoom = parseFloat(durationVal) * 3600 * 1000;
@@ -574,8 +595,8 @@ document.addEventListener('change', function (e) {
 
         // Persist preference for ALL parameters (global behavior requested)
         // We'll iterate over all visible panels or just send one global request if the server supports it.
-        // The current server logic saves per parameter. To make it "the same for everyone", 
-        // we can either send multiple requests or update the server. 
+        // The current server logic saves per parameter. To make it "the same for everyone",
+        // we can either send multiple requests or update the server.
         // User said "la même chose pour la modale et que ça soit sauvegardé", implying global.
 
         const allPanels = document.querySelectorAll('.modal-grid');
@@ -714,7 +735,7 @@ document.addEventListener('change', function (e) {
 /**
  * Generates and downloads a standalone interactive HTML file.
  * Fetches FULL raw history to allow the user to navigate the entire dataset.
- * 
+ *
  * @param {string} title - The parameter name.
  * @param {string} paramId - The technical ID to fetch raw data.
  */
@@ -771,7 +792,7 @@ async function downloadHTMLHistory(title, paramId) {
     <div class="container">
         <h1>Historique Interactif : ${title}</h1>
         <p class="subtitle">Export complet généré le ${new Date().toLocaleString('fr-FR')} par DashMed</p>
-        
+
         <div id="chart-container"></div>
 
         <h2>Détail des mesures</h2>
