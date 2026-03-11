@@ -186,14 +186,10 @@ class PatientController
                 exit();
             }
 
-            $roomId = $this->getRoomId();
-            $patientId = null;
+            $this->contextService->handleRequest();
+            $patientId = $this->contextService->getCurrentPatientId();
             $metrics = [];
             $rawHistory = [];
-
-            if ($roomId) {
-                $patientId = $this->patientRepo->getPatientIdByRoom($roomId);
-            }
 
             if ($patientId) {
                 $metrics = $this->monitorModel->getLatestMetrics($patientId);
