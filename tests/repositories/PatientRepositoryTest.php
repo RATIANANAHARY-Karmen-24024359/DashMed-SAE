@@ -1,13 +1,15 @@
 <?php
 
-namespace Tests\Models;
+declare(strict_types=1);
+
+namespace Tests\Repositories;
 
 use PHPUnit\Framework\TestCase;
 use modules\models\repositories\PatientRepository;
 use PDO;
 
 /**
- * Class PatientModelTest | Tests du Modèle Patient
+ * Class PatientRepositoryTest | Tests du repository Patient
  *
  * Tests for patient management (CRUD, searching linked doctors).
  * Tests pour la gestion des patients (CRUD, recherche de médecins liés).
@@ -15,7 +17,7 @@ use PDO;
  * @package Tests\Models
  * @author DashMed Team
  */
-class PatientModelTest extends TestCase
+class PatientRepositoryTest extends TestCase
 {
     private PDO $pdo;
     private PatientRepository $patientModel;
@@ -104,7 +106,7 @@ class PatientModelTest extends TestCase
      */
     public function testFindById(): void
     {
-        $this->pdo->exec("INSERT INTO patients (first_name, last_name, email, description) 
+        $this->pdo->exec("INSERT INTO patients (first_name, last_name, email, description)
             VALUES ('Jean', 'Valjean', 'jv@mis.com', 'Cause admission')");
         $id = $this->pdo->lastInsertId();
 
@@ -122,7 +124,7 @@ class PatientModelTest extends TestCase
      */
     public function testUpdatePatient(): void
     {
-        $this->pdo->exec("INSERT INTO patients (first_name, last_name, email, description) 
+        $this->pdo->exec("INSERT INTO patients (first_name, last_name, email, description)
             VALUES ('Old', 'Name', 'old@e.com', 'Old Desc')");
         $id = $this->pdo->lastInsertId();
 
@@ -152,15 +154,15 @@ class PatientModelTest extends TestCase
     public function testGetDoctors(): void
     {
         $this->pdo->exec(
-            "INSERT INTO professions (id_profession, label_profession) 
+            "INSERT INTO professions (id_profession, label_profession)
             VALUES (10, 'Cardio')"
         );
         $this->pdo->exec(
-            "INSERT INTO users (id_user, first_name, last_name, id_profession) 
+            "INSERT INTO users (id_user, first_name, last_name, id_profession)
             VALUES (1, 'Dr', 'House', 10)"
         );
         $this->pdo->exec(
-            "INSERT INTO patients (id_patient, first_name, last_name, email) 
+            "INSERT INTO patients (id_patient, first_name, last_name, email)
             VALUES (5, 'Pat', 'Ient', 'p@i.com')"
         );
 
@@ -179,7 +181,7 @@ class PatientModelTest extends TestCase
     public function testGetPatientIdByRoom(): void
     {
         $this->pdo->exec(
-            "INSERT INTO patients (first_name, last_name, email, room_id) 
+            "INSERT INTO patients (first_name, last_name, email, room_id)
             VALUES ('In', 'Room', 'r@r.com', 1)"
         );
 
