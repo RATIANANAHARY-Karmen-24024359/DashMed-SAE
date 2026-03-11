@@ -1,74 +1,79 @@
-# Guide d'utilisation de DashMed avec Docker
+# DashMed-SAE – Docker Guide
 
-Ce projet est configuré pour fonctionner entièrement sous Docker, orchestrant le serveur web PHP, la base de données MariaDB, et le générateur asynchrone Python.
-
-## Prérequis
-
-1. Avoir **Docker Desktop** (ou Docker Engine) installé et démarré sur votre machine.
-2. Avoir téléchargé/cloné le code source du projet.
+This project can run fully in Docker using three services:
+- `web` (PHP/Apache)
+- `db` (MariaDB)
+- `generator` (Python time-series inserter)
 
 ---
 
-## 🚀 Démarrer le projet
+## Requirements
 
-Ouvrez un terminal à la racine du projet (là où se trouve le fichier `docker-compose.yml`) et exécutez :
+- Docker Desktop (or Docker Engine)
+- Docker Compose
+
+---
+
+## Start
+
+From the repository root:
 
 ```bash
-docker compose up -d
+docker compose up -d --build
 ```
 
-- Le flag `-d` permet de lancer les conteneurs en arrière-plan (mode détaché) pour rendre la main au terminal.
-- Lors du tout premier lancement :
-  - Docker va télécharger les images nécessaires.
-  - La base de données va s'initialiser automatiquement à l'aide des scripts présents dans le dossier `database` (`dashmed_dev.sql`, `dashmed_inserts.sql`, `dashmed_consultations.sql`).
-
-**Une fois démarré, le site est accessible sur : [http://localhost:8000](http://localhost:8000)**
+Open:
+- Web UI: http://localhost:8000
 
 ---
 
-## 🛑 Arrêter le projet
-
-Pour stopper tous les conteneurs proprement, exécutez :
+## Stop
 
 ```bash
 docker compose down
 ```
 
-*Note : Vos données (dont celles de la base de données) sont conservées d'un lancement à l'autre grâce au volume Docker que nous avons configuré.*
-
 ---
 
-## 🧹 Réinitialiser complètement la Base de Données
-
-Si vous souhaitez effacer complètement la base de données et forcer les scripts SQL à se rejouer (pour repartir à zéro) :
+## Reset database (re-seed SQL)
 
 ```bash
-# Coupe les conteneurs et supprime le volume contenant les données
 docker compose down -v
-
-# Relance les conteneurs (qui vont réexécuter les scripts d'initialisation)
-docker compose up -d
+docker compose up -d --build
 ```
 
 ---
 
-## 🔍 Voir les journaux (Logs)
-
-Si vous souhaitez vérifier ce qu'il se passe en arrière-plan (erreurs PHP, progression du générateur Python, requêtes SQL) :
+## Logs
 
 ```bash
-# Voir tous les logs en direct
+# all services
 docker compose logs -f
 
-# Voir les logs d'un service spécifique (ex: web, db, ou generator)
+# a single service
+docker compose logs -f web
+docker compose logs -f db
 docker compose logs -f generator
 ```
-*(Utilisez `Ctrl+C` pour quitter l'affichage des logs)*
 
 ---
 
-## ⚙️ Détails de l'architecture
+## What the generator does
 
-- **`web`** (Port 8000) : Image `php:8.2-apache`. Le code PHP/HTML/CSS qui s'y trouve est synchronisé en temps réel avec votre dossier local. Vous pouvez modifier votre code et rafraîchir la page, les changements seront immédiats.
-- **`db`** (Port 3306) : Image `mariadb:10.11`. Stocke toutes les données.
-- **`generator`** : Un conteneur Python `3.11` qui exécute en boucle infinie (toutes les 10 secondes) le fichier `database/main.py`. Celui-ci a pour rôle de générer des données patient en continu pour que les graphiques du tableau de bord soit alimentés et animés en temps réel.
+The `generator` container runs `database/main.py`.
+
+- It inserts measurements continuously.
+- The insertion rate is controlled by `INSERT_DELAY_SECONDS` (default 1 second).
+- It can also ingest a CSV if present (see `database/README_PYTHON.md`).
+
+---
+
+## Environment
+
+For local runs without Docker, create `.env` from `.env.example`.
+
+```bash
+cp .env.example .env
+```
+
+Do not commit `.env`.
