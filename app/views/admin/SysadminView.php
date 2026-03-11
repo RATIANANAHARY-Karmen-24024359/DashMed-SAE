@@ -85,13 +85,13 @@ class SysadminView
 
                     <?php if (!empty($error)): ?>
                         <div class="alert error" role="alert">
-                            <?= htmlspecialchars((string) $error, ENT_QUOTES, 'UTF-8') ?>
+                            <?= $h($error) ?>
                         </div>
                     <?php endif; ?>
 
                     <?php if (!empty($success)): ?>
                         <div class="alert success" role="alert">
-                            <?= htmlspecialchars((string) $success, ENT_QUOTES, 'UTF-8') ?>
+                            <?= $h($success) ?>
                         </div>
                     <?php endif; ?>
 
@@ -748,6 +748,15 @@ class SysadminView
                                 }
                             });
                         }
+
+
+                        <?php if (isset($_SESSION['success'])): ?>
+                        <?php unset($_SESSION['success']); ?>
+                        <?php endif; ?>
+
+                        <?php if (isset($_SESSION['error'])): ?>
+                        <?php unset($_SESSION['error']); ?>
+                        <?php endif; ?>
                     });
                 </script>
             </main>
