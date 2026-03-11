@@ -133,6 +133,8 @@ async function updatePanelChart(panelId, chartId, title) {
         }
 
         if (noDataPlaceholder) noDataPlaceholder.style.display = 'none';
+        const syncBtn = panel.querySelector('.sync-realtime-btn');
+        if (syncBtn) syncBtn.style.display = 'none';
         hideLoader();
         // Hide canvas AFTER hideLoader since hideLoader sets display:block
         if (canvas) canvas.style.display = 'none';
