@@ -439,7 +439,7 @@
                                     }
                                     const updateObj = { series: [{ data: ds }] };
 
-                                    // Auto-scroll logic for sparkline too? 
+                                    // Auto-scroll logic for sparkline too?
                                     // Sparklines are usually fixed to the duration.
                                     const durationVal = card.dataset.displayDuration;
                                     if (durationVal && durationVal !== 'all') {
