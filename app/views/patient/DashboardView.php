@@ -885,6 +885,16 @@ class DashboardView
 
                         document.querySelectorAll('.category-filter-btn').forEach(btn => {
                             btn.addEventListener('click', () => {
+                                const filter = btn.getAttribute('data-filter');
+                                const groupId = btn.getAttribute('data-group-id');
+
+                                localStorage.setItem('dashboardSelectedFilter', filter);
+                                if (groupId) {
+                                    localStorage.setItem('dashboardSelectedGroupId', groupId);
+                                } else {
+                                    localStorage.removeItem('dashboardSelectedGroupId');
+                                }
+
                                 document.querySelectorAll('.category-filter-btn').forEach(b => b.classList.remove('active'));
                                 btn.classList.add('active');
 
@@ -908,6 +918,19 @@ class DashboardView
                                 syncAllCards({ animate: isUrgentFilter() });
                             });
                         });
+
+                        const savedFilter = localStorage.getItem('dashboardSelectedFilter');
+                        const savedGroupId = localStorage.getItem('dashboardSelectedGroupId');
+                        if (savedFilter) {
+                            const selector = (savedFilter === 'custom_group' && savedGroupId)
+                                ? `.category-filter-btn[data-filter="custom_group"][data-group-id="${savedGroupId}"]`
+                                : `.category-filter-btn[data-filter="${CSS.escape(savedFilter)}"]`;
+                            const target = document.querySelector(selector);
+                            if (target) {
+                                document.querySelectorAll('.category-filter-btn').forEach(b => b.classList.remove('active'));
+                                target.classList.add('active');
+                            }
+                        }
 
                         syncAllCards();
 
