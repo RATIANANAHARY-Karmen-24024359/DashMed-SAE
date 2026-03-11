@@ -49,6 +49,7 @@
 .filter-buttons-container {
     display: flex;
     gap: 8px;
+    margin-left: auto;
 }
 
 #sort-container,
