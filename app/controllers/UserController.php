@@ -553,6 +553,7 @@ class UserController
                     u.alert_volume,
                     u.alert_duration,
                     u.alert_dnd,
+                    u.chart_animation,
                     p.label_profession AS profession_name
                 FROM users u
                 LEFT JOIN professions p

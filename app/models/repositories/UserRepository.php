@@ -197,7 +197,7 @@ class UserRepository extends BaseRepository
      */
     public function updateById(int $id, array $data): bool
     {
-        $allowedFields = ['first_name', 'last_name', 'email', 'admin_status', 'id_profession', 'alert_volume', 'alert_duration', 'alert_dnd'];
+        $allowedFields = ['first_name', 'last_name', 'email', 'admin_status', 'id_profession', 'alert_volume', 'alert_duration', 'alert_dnd', 'chart_animation'];
         $sets = [];
         $values = [':id_user' => $id];
 
@@ -296,7 +296,8 @@ class UserRepository extends BaseRepository
             is_string($profLabel) ? $profLabel : null,
             isset($row['alert_volume']) ? (float) $row['alert_volume'] : 0.50,
             isset($row['alert_duration']) ? (int) $row['alert_duration'] : 20000,
-            isset($row['alert_dnd']) ? (bool) $row['alert_dnd'] : false
+            isset($row['alert_dnd']) ? (bool) $row['alert_dnd'] : false,
+            isset($row['chart_animation']) ? (bool) $row['chart_animation'] : true
         );
     }
 }

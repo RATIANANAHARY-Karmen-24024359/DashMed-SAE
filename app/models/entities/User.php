@@ -28,6 +28,7 @@ class User implements EntityInterface
     private float $alertVolume;
     private int $alertDuration;
     private bool $alertDnd;
+    private bool $chartAnimation;
 
     public function __construct(
         int $id,
@@ -40,7 +41,8 @@ class User implements EntityInterface
         ?string $professionLabel = null,
         float $alertVolume = 0.50,
         int $alertDuration = 20000,
-        bool $alertDnd = false
+        bool $alertDnd = false,
+        bool $chartAnimation = true
     ) {
         $this->id = $id;
         $this->firstName = $firstName;
@@ -53,6 +55,7 @@ class User implements EntityInterface
         $this->alertVolume = $alertVolume;
         $this->alertDuration = $alertDuration;
         $this->alertDnd = $alertDnd;
+        $this->chartAnimation = $chartAnimation;
     }
 
     public function getId(): int
@@ -99,6 +102,10 @@ class User implements EntityInterface
     {
         return $this->alertDnd;
     }
+    public function getChartAnimation(): bool
+    {
+        return $this->chartAnimation;
+    }
 
     public function isAdmin(): bool
     {
@@ -135,6 +142,7 @@ class User implements EntityInterface
             'alert_volume' => $this->alertVolume,
             'alert_duration' => $this->alertDuration,
             'alert_dnd' => $this->alertDnd,
+            'chart_animation' => $this->chartAnimation,
         ];
     }
 }

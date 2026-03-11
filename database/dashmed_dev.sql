@@ -66,6 +66,7 @@ CREATE TABLE `users` (
                          `alert_volume` DECIMAL(3,2) NOT NULL DEFAULT 0.50,
                          `alert_duration` INT NOT NULL DEFAULT 20000,
                          `alert_dnd` TINYINT(1) NOT NULL DEFAULT 0,
+                         `chart_animation` TINYINT(1) NOT NULL DEFAULT 1 COMMENT '1=animations activées, 0=désactivées',
 
                          PRIMARY KEY (`id_user`),
                          UNIQUE KEY `ux_users_email` (`email`),

@@ -294,6 +294,9 @@ const DashMedGlobalAlerts = (function () {
                     const dnd = data.settings.alert_dnd ? 'true' : 'false';
                     localStorage.setItem('dashmed_dnd', dnd);
                 }
+                if (data.settings.chart_animation !== undefined) {
+                    localStorage.setItem('dashmed_chart_animation', data.settings.chart_animation ? 'true' : 'false');
+                }
                 if (typeof NotifHistory !== 'undefined') {
                     if (NotifHistory.syncDnd && data.settings.alert_dnd !== undefined) {
                         NotifHistory.syncDnd(data.settings.alert_dnd);

@@ -43,6 +43,8 @@ try {
                 $updateData['alert_duration'] = (int) $input['alert_duration'];
             if (isset($input['alert_dnd']))
                 $updateData['alert_dnd'] = (int) $input['alert_dnd'];
+            if (isset($input['chart_animation']))
+                $updateData['chart_animation'] = (int) $input['chart_animation'];
 
             if (!empty($updateData)) {
                 $userRepo->updateById($currentUser->getId(), $updateData);
@@ -77,7 +79,8 @@ try {
         'settings' => $currentUser ? [
             'alert_volume' => $currentUser->getAlertVolume(),
             'alert_duration' => $currentUser->getAlertDuration(),
-            'alert_dnd' => $currentUser->getAlertDnd()
+            'alert_dnd' => $currentUser->getAlertDnd(),
+            'chart_animation' => $currentUser->getChartAnimation()
         ] : null
     ];
 

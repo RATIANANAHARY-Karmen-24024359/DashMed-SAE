@@ -413,7 +413,7 @@
         }
 
         const option = {
-            animation: currentChartType === 'effectScatter',
+            animation: localStorage.getItem('dashmed_chart_animation') !== 'false' && currentChartType === 'effectScatter',
             tooltip: { trigger: 'axis', axisPointer: { type: 'cross' } },
             grid: { left: '3%', right: '4%', bottom: '10%', containLabel: true },
             xAxis: { type: 'time', splitLine: { show: false } },
