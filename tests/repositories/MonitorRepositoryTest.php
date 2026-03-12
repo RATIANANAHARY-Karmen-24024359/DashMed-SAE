@@ -180,9 +180,14 @@ class MonitorRepositoryTest extends TestCase
 
     /**
      * Test SQL pre-aggregation logic.
+     * Skipped on SQLite: uses MySQL-specific FLOOR/UNIX_TIMESTAMP/FROM_UNIXTIME.
      */
     public function testStreamPreAggregatedHistory()
     {
+        if ($this->pdo->getAttribute(PDO::ATTR_DRIVER_NAME) === 'sqlite') {
+            $this->markTestSkipped('streamPreAggregatedHistory uses MySQL-specific SQL (FLOOR, UNIX_TIMESTAMP).');
+        }
+
         for ($i = 0; $i < 6; $i++) {
             $seconds = str_pad((string)($i * 10), 2, '0', STR_PAD_LEFT);
             $time = "2023-01-01 10:00:$seconds";

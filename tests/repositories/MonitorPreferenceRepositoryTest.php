@@ -45,7 +45,7 @@ class MonitorPreferenceRepositoryTest extends TestCase
 
     public function testSaveUserChartPreferenceCardOnly()
     {
-        $this->repository->saveUserChartPreference(1, 'p1', 'bar', false);
+        $this->repository->saveUserChartPreference(1, 'p1', 'bar', 'chart');
 
         $stmt = $this->pdo->query("SELECT * FROM user_parameter_chart_pref WHERE id_user = 1 AND parameter_id = 'p1'");
         $pref = $stmt->fetch();
@@ -58,7 +58,7 @@ class MonitorPreferenceRepositoryTest extends TestCase
     public function testSaveUserChartPreferenceModalOnly()
     {
         // When inserting only for the modal, the standard chart_type (NOT NULL in DB) should default down to the parameter's default_chart
-        $this->repository->saveUserChartPreference(1, 'p1', 'value', true);
+        $this->repository->saveUserChartPreference(1, 'p1', 'value', 'modal_chart');
 
         $stmt = $this->pdo->query("SELECT * FROM user_parameter_chart_pref WHERE id_user = 1 AND parameter_id = 'p1'");
         $pref = $stmt->fetch();
@@ -71,10 +71,10 @@ class MonitorPreferenceRepositoryTest extends TestCase
     public function testUpdateExistingPreference()
     {
         // Insert standard preference first
-        $this->repository->saveUserChartPreference(1, 'p1', 'bar', false);
+        $this->repository->saveUserChartPreference(1, 'p1', 'bar', 'chart');
 
         // Update modal preference next
-        $this->repository->saveUserChartPreference(1, 'p1', 'doughnut', true);
+        $this->repository->saveUserChartPreference(1, 'p1', 'doughnut', 'modal_chart');
 
         $stmt = $this->pdo->query("SELECT * FROM user_parameter_chart_pref WHERE id_user = 1 AND parameter_id = 'p1'");
         $pref = $stmt->fetch();

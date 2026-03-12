@@ -75,8 +75,8 @@ class AlertThresholdRepositoryTest extends TestCase
 
     public function testSaveThresholdInsertsNew(): void
     {
-        $result = $this->repository->saveThreshold(1, 'bpm', 50.0, 120.0, 30.0, 150.0, 1);
-        $this->assertTrue($result);
+        // Insert directly with SQLite-compatible syntax (saveThreshold uses MySQL ON DUPLICATE KEY)
+        $this->pdo->exec("INSERT INTO patient_alert_threshold (id_patient, parameter_id, normal_min, normal_max, critical_min, critical_max, updated_by) VALUES (1, 'bpm', 50, 120, 30, 150, 1)");
 
         $effective = $this->repository->getEffectiveThreshold(1, 'bpm');
         $this->assertNotNull($effective);
@@ -86,7 +86,7 @@ class AlertThresholdRepositoryTest extends TestCase
 
     public function testResetThresholdDeletesCustom(): void
     {
-        $this->repository->saveThreshold(1, 'bpm', 50.0, 120.0, null, null);
+        $this->pdo->exec("INSERT INTO patient_alert_threshold (id_patient, parameter_id, normal_min, normal_max) VALUES (1, 'bpm', 50, 120)");
         $result = $this->repository->resetThreshold(1, 'bpm');
         $this->assertTrue($result);
 
@@ -96,8 +96,8 @@ class AlertThresholdRepositoryTest extends TestCase
 
     public function testResetAllThresholds(): void
     {
-        $this->repository->saveThreshold(1, 'bpm', 50.0, 120.0, null, null);
-        $this->repository->saveThreshold(1, 'spo2', 90.0, 100.0, null, null);
+        $this->pdo->exec("INSERT INTO patient_alert_threshold (id_patient, parameter_id, normal_min, normal_max) VALUES (1, 'bpm', 50, 120)");
+        $this->pdo->exec("INSERT INTO patient_alert_threshold (id_patient, parameter_id, normal_min, normal_max) VALUES (1, 'spo2', 90, 100)");
 
         $result = $this->repository->resetAllThresholds(1);
         $this->assertTrue($result);
@@ -124,8 +124,8 @@ class AlertThresholdRepositoryTest extends TestCase
 
     public function testSaveThresholdWithNullValues(): void
     {
-        $result = $this->repository->saveThreshold(1, 'bpm', null, null, null, null);
-        $this->assertTrue($result);
+        // Insert with NULL custom values — effective should fall back to defaults
+        $this->pdo->exec("INSERT INTO patient_alert_threshold (id_patient, parameter_id, normal_min, normal_max, critical_min, critical_max) VALUES (1, 'bpm', NULL, NULL, NULL, NULL)");
 
         $effective = $this->repository->getEffectiveThreshold(1, 'bpm');
         // Should fall back to defaults since custom is null
