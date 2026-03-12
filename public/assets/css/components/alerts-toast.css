@@ -219,6 +219,15 @@
     border-bottom: 1px solid #f1f5f9;
 }
 
+.medical-alert.success {
+    color: var(--text-main);
+}
+
+.medical-alert.success::before {
+    background: #22c55e;
+    box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.18);
+}
+
 .notif-panel-header h2 {
     margin: 0;
     font-size: 0.9375rem;

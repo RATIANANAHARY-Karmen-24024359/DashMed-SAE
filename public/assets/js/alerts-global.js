@@ -522,7 +522,7 @@ const NotifHistory = (function () {
     }
 
     function syncProfileToggle(enabled) {
-        const profileToggle = document.getElementById('dnd-dev-toggle');
+        const profileToggle = document.getElementById('dnd-toggle');
         if (profileToggle) profileToggle.checked = enabled === true || enabled === 1 || enabled === 'true';
     }
 
@@ -713,7 +713,7 @@ const NotifHistory = (function () {
         const toShow = h.slice(currentIndex, currentIndex + itemsPerPage);
 
         footer.style.display = h.length ? '' : 'none';
-        
+
         if (!append && !h.length) {
             body.innerHTML = '<div class="notif-panel-empty">Aucune notification</div>';
             return;
@@ -760,7 +760,7 @@ const NotifHistory = (function () {
         if (append) {
             const temp = document.createElement('div');
             temp.innerHTML = html;
-            while(temp.firstChild) {
+            while (temp.firstChild) {
                 body.appendChild(temp.firstChild);
             }
         } else {
@@ -777,7 +777,7 @@ const NotifHistory = (function () {
                     setTimeout(() => {
                         const idxToRemove = +item.dataset.idx;
                         removeFromHistory(idxToRemove);
-                        
+
                         item.remove();
                         currentIndex = Math.max(0, currentIndex - 1);
 
@@ -797,7 +797,7 @@ const NotifHistory = (function () {
                     }, 250);
                     return;
                 }
-                
+
                 const clickableItem = e.target.closest('.notif-item--clickable');
                 if (clickableItem) {
                     scrollToCard(clickableItem.dataset.paramId);
@@ -820,7 +820,7 @@ const NotifHistory = (function () {
             skeletonLoader.style.flexDirection = 'column';
             skeletonLoader.style.gap = '8px';
             skeletonLoader.style.padding = '12px 16px';
-            
+
             skeletonLoader.innerHTML = Array(3).fill(`
                 <div class="notif-item" style="border: none; box-shadow: none; display: flex; align-items: flex-start; gap: 12px; padding: 12px 0;">
                     <div class="notif-item-content" style="flex: 1; display: flex; flex-direction: column; gap: 8px;">
@@ -881,13 +881,13 @@ const NotifHistory = (function () {
                 const dndToggle = panel?.querySelector('#notif-panel-dnd');
                 if (dndToggle) dndToggle.checked = (e.newValue === 'true');
 
-                const profileToggle = document.getElementById('dnd-dev-toggle');
+                const profileToggle = document.getElementById('dnd-toggle');
                 if (profileToggle) profileToggle.checked = (e.newValue === 'true');
             }
         });
         updateBadge();
 
-        const profileToggle = document.getElementById('dnd-dev-toggle');
+        const profileToggle = document.getElementById('dnd-toggle');
         if (profileToggle) {
             profileToggle.addEventListener('change', e => setDndState(e.target.checked));
         }

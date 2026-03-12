@@ -58,11 +58,11 @@ final class CustomizationView
             [
                 'https://cdn.jsdelivr.net/npm/gridstack@10/dist/gridstack-all.js',
                 'assets/js/pages/customization-grid.js',
-                'assets/js/pages/dash.js',
+                'assets/js/pages/dash.js'
             ],
             '',
             true,
-            false
+            true
         );
 
         $layout->render(function () use ($widgets, $hidden, $h, $allParameters, $existingGroups, $editGroupData) {
