@@ -172,6 +172,14 @@ a {
     border-color: var(--color-critical, #EF4444);
 }
 
+#urgent-clear-btn:hover {
+    background: rgba(0, 0, 0, 0.1);
+}
+
+.urgent-filter.active #urgent-clear-btn:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
 .category-vert-separator {
     width: 1px;
     height: 28px;

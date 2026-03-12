@@ -52,7 +52,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     function updateNoResultsMessage(visibleCount) {
         let noResultsMsg = document.getElementById('no-results-message');
-        
+
         if (visibleCount === 0) {
             if (!noResultsMsg) {
                 noResultsMsg = document.createElement('p');
@@ -95,7 +95,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
 
             const email = this.getAttribute('data-email');
-            
+
             if (email) {
                 emailInput.value = email;
 

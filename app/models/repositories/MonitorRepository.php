@@ -1,5 +1,17 @@
 <?php
 
+/**
+ * app/models/repositories/MonitorRepository.php
+ *
+ * Repository file for the DashMed-SAE project.
+ *
+ * Notes:
+ * - This docblock is intentionally file-scoped.
+ * - Detailed PHPDoc for classes/methods is maintained near declarations.
+ *
+ * @package DashMed\SAE
+ */
+
 namespace modules\models\repositories;
 
 use modules\models\BaseRepository;
@@ -10,7 +22,7 @@ use PDO;
  *
  * High-performance data access layer for physiological time-series data.
  * Optimized for real-time streaming, downsampling (LTTB), and historical analytics.
- * 
+ *
  * Part of the DashMed Core Infrastructure.
  *
  * @package DashMed\Modules\Models\Repositories
@@ -77,7 +89,7 @@ class MonitorRepository extends BaseRepository
             pr.display_max,
 
             pr.default_chart,
-            
+
             (
                 SELECT GROUP_CONCAT(chart_type ORDER BY chart_type)
                 FROM parameter_chart_allowed
@@ -172,7 +184,7 @@ class MonitorRepository extends BaseRepository
 
     /**
      * Retrieves a standard buffered collection of historical data points.
-     * 
+     *
      * Standard implementation for small to medium ranges. For large scale analysis,
      * use streamRawHistoryByParameter() instead to maintain flat memory usage.
      *
@@ -281,7 +293,7 @@ class MonitorRepository extends BaseRepository
             $sql = "
                 SELECT parameter_id, value, `timestamp`, alert_flag
                 FROM (
-                    SELECT 
+                    SELECT
                         parameter_id, value, `timestamp`, alert_flag,
                         ROW_NUMBER() OVER(PARTITION BY parameter_id ORDER BY `timestamp` DESC) as rn
                     FROM {$this->table}
@@ -298,9 +310,9 @@ class MonitorRepository extends BaseRepository
 
             return $st->fetchAll();
         } catch (\PDOException $e) {
-            /** 
+            /**
              * Fallback for older MySQL versions (< 8.0) that don't support Window Functions.
-             * Note: In a real production env, we might want a more complex join here, 
+             * Note: In a real production env, we might want a more complex join here,
              * but for the current stack, Window Functions are the standard.
              */
             error_log("MonitorRepository::getLatestHistoryForAllParameters - Window functions failed, falling back to simple history: " . $e->getMessage());
@@ -343,7 +355,7 @@ class MonitorRepository extends BaseRepository
             }
 
             $sql = "
-            SELECT 
+            SELECT
                 parameter_id,
                 value,
                 `timestamp`,
@@ -381,7 +393,7 @@ class MonitorRepository extends BaseRepository
      *
      * This method utilizes PDO unbuffered queries to yield rows one by one.
      * Ensures O(1) memory footprint regardless of the number of points.
-     * 
+     *
      * @important MUST restore PDO::MYSQL_ATTR_USE_BUFFERED_QUERY after use.
      *
      * @param int $patientId The unique ID of the patient.
@@ -390,6 +402,9 @@ class MonitorRepository extends BaseRepository
      * @param int $limit Maximum number of records to stream. 0 means unlimited.
      *
      * @return \Generator<int, array{parameter_id: string, value: string|null, timestamp: string, alert_flag: string|int}> Ordered chronologically ASC.
+     */
+    /**
+     * @return \Generator<int, array{parameter_id: string, value: string|null, timestamp: string, alert_flag: int|string}>
      */
     public function streamRawHistoryByParameter(
         int $patientId,
@@ -438,7 +453,11 @@ class MonitorRepository extends BaseRepository
 
             $st->execute();
 
-            while ($row = $st->fetch(\PDO::FETCH_ASSOC)) {
+            while (true) {
+                $row = $st->fetch(\PDO::FETCH_ASSOC);
+                if (!is_array($row)) {
+                    break;
+                }
                 /** @var array{parameter_id: string, value: string|null, timestamp: string, alert_flag: int|string} $row */
                 yield $row;
             }
@@ -477,7 +496,7 @@ class MonitorRepository extends BaseRepository
             }
 
             $sql = "
-            SELECT 
+            SELECT
                 parameter_id,
                 AVG(value) as value,
                 FROM_UNIXTIME(FLOOR(UNIX_TIMESTAMP(`timestamp`) / :interval) * :interval) as `timestamp`,
@@ -507,7 +526,11 @@ class MonitorRepository extends BaseRepository
 
             $st->execute();
 
-            while ($row = $st->fetch(\PDO::FETCH_ASSOC)) {
+            while (true) {
+                $row = $st->fetch(\PDO::FETCH_ASSOC);
+                if (!is_array($row)) {
+                    break;
+                }
                 yield $row;
             }
         } catch (\PDOException $e) {
@@ -572,8 +595,14 @@ class MonitorRepository extends BaseRepository
 
             $st->execute();
             $res = $st->fetch(\PDO::FETCH_ASSOC);
-            $total = is_array($res) && is_scalar($res['total'] ?? null) ? (int) $res['total'] : 0;
-            return $total;
+            if (!is_array($res)) {
+                return 0;
+            }
+            if (!isset($res['total'])) {
+                return 0;
+            }
+            $total = $res['total'];
+            return is_numeric($total) ? (int) $total : 0;
         } catch (\PDOException $e) {
             error_log("MonitorRepository::countRawHistoryByParameter Error: " . $e->getMessage());
             return 0;
@@ -812,12 +841,19 @@ class MonitorRepository extends BaseRepository
             $st->bindValue(':paramId', $parameterId, \PDO::PARAM_STR);
             $st->execute();
             $row = $st->fetch(\PDO::FETCH_ASSOC);
+            if (!is_array($row)) {
+                return ['max_ts' => null, 'max_seq' => null, 'count' => null];
+            }
 
             // max_seq may not exist on older schema; keep null-safe.
+            $maxTs = $row['max_ts'] ?? null;
+            $cnt = $row['cnt'] ?? null;
+            $maxSeq = $row['max_seq'] ?? null;
+
             return [
-                'max_ts' => isset($row['max_ts']) ? (string) $row['max_ts'] : null,
-                'count' => isset($row['cnt']) ? (int) $row['cnt'] : null,
-                'max_seq' => isset($row['max_seq']) ? (int) $row['max_seq'] : null,
+                'max_ts' => is_scalar($maxTs) ? (string) $maxTs : null,
+                'count' => is_numeric($cnt) ? (int) $cnt : null,
+                'max_seq' => is_numeric($maxSeq) ? (int) $maxSeq : null,
             ];
         } catch (\PDOException $e) {
             error_log('MonitorRepository::getHistoryMeta Error: ' . $e->getMessage());

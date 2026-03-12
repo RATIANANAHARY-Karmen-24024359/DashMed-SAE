@@ -74,7 +74,7 @@ class MonitorRepositoryTest extends TestCase
         }, 1);
 
         $this->pdo->exec(
-            "INSERT INTO parameter_reference (parameter_id, display_name, category, default_chart) 
+            "INSERT INTO parameter_reference (parameter_id, display_name, category, default_chart)
             VALUES (1, 'BPM', 'Vitals', 'line')"
         );
 
@@ -93,7 +93,7 @@ class MonitorRepositoryTest extends TestCase
             VALUES (1, 1, 80, '2023-01-01 10:00:00')"
         );
         $this->pdo->exec(
-            "INSERT INTO patient_data (id_patient, parameter_id, value, timestamp) 
+            "INSERT INTO patient_data (id_patient, parameter_id, value, timestamp)
             VALUES (1, 1, 85, '2023-01-01 10:05:00')"
         );
 
@@ -115,16 +115,16 @@ class MonitorRepositoryTest extends TestCase
         $this->pdo->exec("INSERT INTO patient_data (id_patient, parameter_id, value, timestamp) VALUES (1, 'BPM', 70, '2023-01-01 09:00:00')");
         $this->pdo->exec("INSERT INTO patient_data (id_patient, parameter_id, value, timestamp) VALUES (1, 'BPM', 75, '2023-01-01 09:10:00')");
         $this->pdo->exec("INSERT INTO patient_data (id_patient, parameter_id, value, timestamp) VALUES (1, 'BPM', 80, '2023-01-01 09:20:00')");
-        
+
         // Patient 1, Param 2: 2 points
         $this->pdo->exec("INSERT INTO patient_data (id_patient, parameter_id, value, timestamp) VALUES (1, 'SpO2', 98, '2023-01-01 09:00:00')");
         $this->pdo->exec("INSERT INTO patient_data (id_patient, parameter_id, value, timestamp) VALUES (1, 'SpO2', 99, '2023-01-01 09:10:00')");
 
         $history = $this->monitorModel->getLatestHistoryForAllParameters(1, 2);
-        
+
         // Should have 2 points for BPM (75, 80) and 2 for SpO2 (98, 99)
         $this->assertCount(4, $history);
-        
+
         $bpm = array_filter($history, fn($h) => $h['parameter_id'] === 'BPM');
         $this->assertCount(2, $bpm);
         $this->assertEquals(75.0, (float)reset($bpm)['value']);

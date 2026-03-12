@@ -1,5 +1,17 @@
 <?php
 
+/**
+ * app/views/patient/ExplorerView.php
+ *
+ * View file for the DashMed-SAE project.
+ *
+ * Notes:
+ * - This docblock is intentionally file-scoped.
+ * - Detailed PHPDoc for classes/methods is maintained near declarations.
+ *
+ * @package DashMed\SAE
+ */
+
 namespace modules\views\patient;
 
 /**
@@ -7,7 +19,7 @@ namespace modules\views\patient;
  *
  * High-performance UI for multidimensional medical data exploration.
  * Integrates interactive ECharts, CSV processing, and clinical analytics.
- * 
+ *
  * Part of the DashMed Visualization Layer.
  *
  * @package DashMed\Modules\Views\Patient
@@ -65,95 +77,95 @@ class ExplorerView
 
                 body { font-family: 'Outfit', sans-serif; }
 
-                .explorer-container { 
-                    padding: 5px 30px 30px 30px; 
-                    display: flex; 
-                    flex-direction: column; 
-                    height: 100vh; 
-                    overflow: hidden; 
-                    gap: 0 !important; 
+                .explorer-container {
+                    padding: 5px 30px 30px 30px;
+                    display: flex;
+                    flex-direction: column;
+                    height: 100vh;
+                    overflow: hidden;
+                    gap: 0 !important;
                     background: radial-gradient(circle at 50% -20%, rgba(39, 90, 254, 0.08) 0%, transparent 50%);
                 }
-                
+
                 .explorer-container .searchbar { margin-bottom: 20px; }
                 .explorer-main-content { margin-top: 0; flex: 1; overflow-y: auto; padding-right: 10px; }
-                
-                .explorer-header { 
-                    display: flex; 
-                    justify-content: space-between; 
-                    align-items: center; 
+
+                .explorer-header {
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
                     margin-bottom: 25px;
                     border-bottom: 1px solid var(--explorer-glass-stroke);
                     padding-bottom: 15px;
                 }
-                
-                .explorer-title h1 { 
-                    font-size: 1.8rem; 
-                    font-weight: 700; 
+
+                .explorer-title h1 {
+                    font-size: 1.8rem;
+                    font-weight: 700;
                     background: var(--explorer-header-gradient);
                     -webkit-background-clip: text;
                     -webkit-text-fill-color: transparent;
-                    margin: 0; 
+                    margin: 0;
                 }
-                
+
                 .explorer-grid { display: grid; grid-template-columns: 340px 1fr; gap: 25px; align-items: start; }
-                
-                .explorer-card { 
+
+                .explorer-card {
                     background: var(--explorer-glass);
                     backdrop-filter: blur(12px);
                     -webkit-backdrop-filter: blur(12px);
-                    border-radius: 16px; 
-                    border: 1px solid var(--explorer-glass-stroke); 
-                    padding: 24px; 
+                    border-radius: 16px;
+                    border: 1px solid var(--explorer-glass-stroke);
+                    padding: 24px;
                     box-shadow: var(--shadow-md);
                     transition: all 0.3s ease;
                 }
-                
+
                 .explorer-card:hover {
                     border-color: var(--explorer-accent);
                     box-shadow: var(--shadow-lg);
                     transform: translateY(-2px);
                 }
 
-                .drop-zone { 
-                    border: 1.5px dashed var(--explorer-glass-stroke); 
-                    border-radius: 12px; 
-                    padding: 30px 15px; 
-                    text-align: center; 
-                    cursor: pointer; 
+                .drop-zone {
+                    border: 1.5px dashed var(--explorer-glass-stroke);
+                    border-radius: 12px;
+                    padding: 30px 15px;
+                    text-align: center;
+                    cursor: pointer;
                     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
                     background: var(--explorer-input-bg);
                     width: 100%;
                     box-sizing: border-box;
                     overflow: hidden;
                 }
-                
-                .drop-zone:hover { 
-                    background: rgba(39, 90, 254, 0.08); 
+
+                .drop-zone:hover {
+                    background: rgba(39, 90, 254, 0.08);
                     border-color: var(--explorer-accent);
                     transform: scale(1.02);
                 }
-                
-                .drop-zone p { 
-                    font-size: 0.85rem; 
-                    color: var(--text-secondary); 
-                    margin-top: 15px; 
+
+                .drop-zone p {
+                    font-size: 0.85rem;
+                    color: var(--text-secondary);
+                    margin-top: 15px;
                     overflow-wrap: anywhere;
                     word-break: break-all;
                     line-height: 1.4;
                     padding: 0 5px;
                 }
-                
-                .chart-viewer { 
-                    height: calc(100vh - 200px); 
-                    width: 100%; 
-                    position: relative; 
+
+                .chart-viewer {
+                    height: calc(100vh - 200px);
+                    width: 100%;
+                    position: relative;
                     background: var(--explorer-card-bg);
                     backdrop-filter: blur(20px);
                     -webkit-backdrop-filter: blur(20px);
-                    border-radius: 20px; 
-                    border: 1px solid var(--explorer-glass-stroke); 
-                    overflow: hidden; 
+                    border-radius: 20px;
+                    border: 1px solid var(--explorer-glass-stroke);
+                    overflow: hidden;
                     box-shadow: var(--shadow-lg);
                     transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
                 }
@@ -174,20 +186,19 @@ class ExplorerView
                 body.chart-full-screen {
                     overflow: hidden !important;
                 }
-                
+
                 #explorer-chart { width: 100%; height: 100%; }
-                
+
                 .data-controls { display: flex; flex-direction: column; gap: 20px; }
                 .control-group { display: flex; flex-direction: column; gap: 10px; }
-                .control-group label { 
-                    font-size: 0.75rem; 
-                    text-transform: uppercase; 
+                .control-group label {
+                    font-size: 0.75rem;
+                    text-transform: uppercase;
                     letter-spacing: 0.05em;
-                    font-weight: 700; 
+                    font-weight: 700;
                     color: var(--text-secondary);
                     opacity: 0.8;
                 }
-                
                 select { 
                     width: 100%; 
                     padding: 12px 15px; 
@@ -205,7 +216,7 @@ class ExplorerView
                     background-repeat: no-repeat;
                     background-position: right 12px center;
                 }
-                
+
                 select:hover, select:focus {
                     border-color: var(--explorer-accent);
                     background-color: var(--bg-surface-hover);
@@ -216,31 +227,31 @@ class ExplorerView
                     color: var(--text-main);
                     padding: 10px;
                 }
-                
-                .btn-primary { 
+
+                .btn-primary {
                     background: linear-gradient(135deg, #275afe 0%, #1a3fb5 100%);
-                    color: white; 
-                    border: none; 
-                    padding: 14px; 
-                    border-radius: 12px; 
-                    font-weight: 600; 
-                    cursor: pointer; 
-                    transition: all 0.3s; 
-                    display: flex; 
-                    align-items: center; 
-                    justify-content: center; 
-                    gap: 12px; 
+                    color: white;
+                    border: none;
+                    padding: 14px;
+                    border-radius: 12px;
+                    font-weight: 600;
+                    cursor: pointer;
+                    transition: all 0.3s;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    gap: 12px;
                     font-size: 0.95rem;
                     box-shadow: 0 4px 15px var(--explorer-accent-glow);
                     border: 1px solid var(--explorer-accent);
                 }
-                
-                .btn-primary:hover { 
-                    transform: translateY(-2px); 
+
+                .btn-primary:hover {
+                    transform: translateY(-2px);
                     box-shadow: 0 6px 20px var(--explorer-accent-glow);
                     filter: brightness(1.1);
                 }
-                
+
                 .btn-primary:active { transform: translateY(0); }
 
                 .stats-panel-inner {
@@ -284,20 +295,20 @@ class ExplorerView
                 .chart-btn svg {
                     opacity: 0.8;
                 }
-                
-                .stat-row { 
-                    display: flex; 
-                    justify-content: space-between; 
-                    padding: 10px 0; 
-                    border-bottom: 1px solid var(--explorer-stat-row-border); 
+
+                .stat-row {
+                    display: flex;
+                    justify-content: space-between;
+                    padding: 10px 0;
+                    border-bottom: 1px solid var(--explorer-stat-row-border);
                 }
-                
+
                 .stat-row:last-child { border-bottom: none; }
                 .stat-label { color: var(--text-secondary); font-size: 0.85rem; }
                 .stat-value { font-weight: 600; color: var(--text-primary); font-family: 'Monaco', 'Consolas', monospace; }
-                
+
                 .container { max-width: 1920px; margin: 0 auto; }
-                
+
                 ::-webkit-scrollbar { width: 6px; }
                 ::-webkit-scrollbar-track { background: transparent; }
                 ::-webkit-scrollbar-thumb { background: var(--explorer-glass-stroke); border-radius: 10px; }
@@ -309,12 +320,18 @@ class ExplorerView
             <?php include dirname(__DIR__, 2) . '/views/partials/_sidebar.php'; ?>
 
             <main class="explorer-container container">
-                
+
                 <?php include dirname(__DIR__, 2) . '/views/partials/_searchbar.php'; ?>
 
                 <!-- Hidden context -->
-                <input type="hidden" id="context-patient-id" value="<?= htmlspecialchars((string)$this->patientData['id_patient']) ?>">
-                <input type="hidden" id="context-patient-name" value="<?= htmlspecialchars((string)($this->patientData['first_name'] . ' ' . $this->patientData['last_name'])) ?>">
+                <?php
+                $ctxPid = $this->patientData['id_patient'] ?? '';
+                $ctxFirst = $this->patientData['first_name'] ?? '';
+                $ctxLast = $this->patientData['last_name'] ?? '';
+                $ctxName = (is_scalar($ctxFirst) ? (string) $ctxFirst : '') . ' ' . (is_scalar($ctxLast) ? (string) $ctxLast : '');
+                ?>
+                <input type="hidden" id="context-patient-id" value="<?= htmlspecialchars(is_scalar($ctxPid) ? (string) $ctxPid : '') ?>">
+                <input type="hidden" id="context-patient-name" value="<?= htmlspecialchars(trim($ctxName)) ?>">
 
                 <div class="explorer-main-content">
                     <div class="explorer-header">
@@ -342,7 +359,7 @@ class ExplorerView
                                         <option value="">-- Charger depuis le patient --</option>
                                     </select>
                                 </div>
-                                
+
                                 <div style="display: flex; align-items: center; gap: 15px; margin: 5px 0;">
                                     <div style="flex: 1; height: 1px; background: var(--explorer-glass-stroke);"></div>
                                     <div style="color: var(--text-secondary/40); font-size: 0.7rem; font-weight: 700; text-transform: uppercase;">OU</div>

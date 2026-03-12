@@ -57,16 +57,16 @@ class RoomRepositoryTest extends TestCase
         $this->pdo->exec("INSERT INTO rooms (id_room, number, type) VALUES (3, '103', 'Standard')");
 
         // Occupy room 1 with an active patient
-        $this->pdo->exec("INSERT INTO patients (id_patient, first_name, last_name, email, status, room_id) 
+        $this->pdo->exec("INSERT INTO patients (id_patient, first_name, last_name, email, status, room_id)
             VALUES (1, 'John', 'Doe', 'john@example.com', 'En réanimation', 1)");
 
         // Occupy room 2 but patient is discharged ('Sorti')
-        $this->pdo->exec("INSERT INTO patients (id_patient, first_name, last_name, email, status, room_id) 
+        $this->pdo->exec("INSERT INTO patients (id_patient, first_name, last_name, email, status, room_id)
             VALUES (2, 'Jane', 'Doe', 'jane@example.com', 'Sorti', 2)");
 
         // Rooms available should be 2 and 3
         $availableRooms = $this->roomRepo->getAvailableRooms();
-        
+
         $this->assertIsArray($availableRooms);
         $this->assertCount(2, $availableRooms);
 

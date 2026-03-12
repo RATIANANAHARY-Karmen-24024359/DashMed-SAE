@@ -72,7 +72,7 @@ class SearchRepositoryTest extends TestCase
             "INSERT INTO users (first_name, last_name, id_profession) VALUES ('Gregory', 'House', 1)"
         );
 
-        $this->pdo->exec("INSERT INTO consultations (id_patient, id_user, title, date) 
+        $this->pdo->exec("INSERT INTO consultations (id_patient, id_user, title, date)
             VALUES (1, 1, 'Consultation cardiaque', '2023-01-01')");
     }
 

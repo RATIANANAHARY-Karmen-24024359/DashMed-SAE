@@ -38,8 +38,8 @@ class MonitorPreferenceRepositoryTest extends TestCase
         $this->pdo->exec("INSERT INTO parameter_reference (parameter_id, display_name, default_chart) VALUES ('p1', 'Heart Rate', 'line')");
 
         $this->repository = new MonitorPreferenceRepository($this->pdo);
-        
-        // Ensure columns exist is mostly handled manually in tests via schema mapping unless SQLite supports dynamically 
+
+        // Ensure columns exist is mostly handled manually in tests via schema mapping unless SQLite supports dynamically
         // We bypass the ensure columns for sqlite tests if it checks SHOW COLUMNS directly, handled by simple structure.
     }
 

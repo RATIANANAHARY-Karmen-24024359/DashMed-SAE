@@ -1,5 +1,17 @@
 <?php
 
+/**
+ * app/views/patient/DashboardView.php
+ *
+ * View file for the DashMed-SAE project.
+ *
+ * Notes:
+ * - This docblock is intentionally file-scoped.
+ * - Detailed PHPDoc for classes/methods is maintained near declarations.
+ *
+ * @package DashMed\SAE
+ */
+
 namespace modules\views\patient;
 
 /**
@@ -252,6 +264,12 @@ class DashboardView
                                 URGENT
                                 <span id="urgent-badge"
                                     style="background: var(--color-critical, #EF4444); color: white; border-radius: 50%; min-width: 20px; height: 20px; display: inline-flex; align-items: center; justify-content: center; font-size: 12px; font-weight: bold; padding: 0 6px;">0</span>
+                                <span id="urgent-clear-btn" title="Tout effacer"
+                                    style="display: none; align-items: center; justify-content: center; margin-left: 4px; padding: 2px; border-radius: 4px; transition: background 0.2s; cursor: pointer;">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M18 6L6 18M6 6l12 12"></path>
+                                    </svg>
+                                </span>
                             </button>
                             <button class="category-filter-btn active" data-filter="all">Toutes</button>
                             <?php foreach ($uniqueCategories as $cat): ?>
@@ -277,23 +295,7 @@ class DashboardView
                     <?php endif; ?>
 
 
-                    <section class="skeleton-wrapper skeleton-monitoring-grid" id="skeleton-cards" data-skeleton-for="real-cards"
-                        data-skeleton-auto data-skeleton-delay="400">
-                        <?php for ($i = 0; $i < 6; $i++): ?>
-                            <div class="skeleton-card">
-                                <div class="skeleton-card-header">
-                                    <div class="skeleton skeleton-text" style="width: 55%; height: 16px;"></div>
-                                    <div class="skeleton skeleton-text" style="width: 25%; height: 14px;"></div>
-                                </div>
-                                <div class="skeleton-card-body">
-                                    <div class="skeleton skeleton-text skeleton-text--xl"></div>
-                                </div>
-                                <div class="skeleton skeleton-card-chart"></div>
-                            </div>
-                        <?php endfor; ?>
-                    </section>
-
-                    <section class="cards-container cards-grid" id="real-cards" style="width: 100%; display: none;">
+                    <section class="cards-container cards-grid" id="real-cards" style="width: 100%;">
                         <?php
                         $patientMetrics = $this->patientMetrics;
                         $chartTypes = $this->chartTypes;
@@ -313,30 +315,7 @@ class DashboardView
                 </button>
                 <button id="aside-show-btn" onclick="toggleAside()">☰</button>
                 <aside id="aside">
-                    <div class="skeleton-wrapper skeleton-aside-section" id="skeleton-aside" data-skeleton-for="real-aside"
-                        data-skeleton-auto data-skeleton-delay="350">
-                        <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 8px;">
-                            <div class="skeleton skeleton-circle" style="width: 48px; height: 48px;"></div>
-                            <div style="flex: 1; display: flex; flex-direction: column; gap: 6px;">
-                                <div class="skeleton skeleton-text skeleton-text--lg" style="width: 70%;"></div>
-                                <div class="skeleton skeleton-text skeleton-text--sm" style="width: 40%;"></div>
-                            </div>
-                        </div>
-                        <div class="skeleton skeleton-text" style="width: 90%; height: 12px;"></div>
-                        <div class="skeleton skeleton-select"></div>
-                        <div style="margin-top: 16px;">
-                            <div class="skeleton skeleton-text skeleton-text--lg" style="width: 50%; margin-bottom: 16px;">
-                            </div>
-                            <?php for ($j = 0; $j < 4; $j++): ?>
-                                <div class="skeleton-aside-consultation">
-                                    <div class="skeleton skeleton-rect" style="width: 90px; height: 28px;"></div>
-                                    <div class="skeleton skeleton-text" style="flex: 1; height: 14px;"></div>
-                                </div>
-                            <?php endfor; ?>
-                        </div>
-                    </div>
-
-                    <div id="real-aside" style="display: none;">
+                    <div id="real-aside">
                         <section class="patient-infos">
                             <?php
                             $firstName = htmlspecialchars(
@@ -886,6 +865,38 @@ class DashboardView
                             });
                         });
 
+                        const clearBtn = document.getElementById('urgent-clear-btn');
+                        if (clearBtn) {
+                            clearBtn.addEventListener('click', (e) => {
+                                e.stopPropagation();
+                                Array.from(mainGrid.querySelectorAll('.card')).forEach(card => {
+                                    const state = cardStates.get(card);
+                                    if (!state || state.animating || !state.isUrgentlyVisible || state.dismissed) return;
+                                    if (isAlertCard(card)) return;
+
+                                    state.dismissed = true;
+                                    state.animating = true;
+                                    state.isUrgentlyVisible = false;
+                                    if (state.isCountingDown) stopCooldown(card);
+
+                                    const anim = card.animate([
+                                        { transform: 'scale(1)', opacity: 1 },
+                                        { transform: 'scale(0.5)', opacity: 0 }
+                                    ], { duration: 300, easing: 'cubic-bezier(0.4, 0, 0.2, 1)' });
+
+                                    anim.onfinish = () => {
+                                        state.animating = false;
+                                        card.classList.remove('card--alert', 'card--warn');
+                                        state.lastAlertColor = null;
+                                        hideCard(card, { animate: true });
+                                        if (window.activeModalCard === card) {
+                                            window.activeModalCard = null;
+                                        }
+                                    };
+                                });
+                            });
+                        }
+
                         document.querySelectorAll('.category-filter-btn').forEach(btn => {
                             btn.addEventListener('click', () => {
                                 const filter = btn.getAttribute('data-filter');
@@ -1015,9 +1026,21 @@ class DashboardView
                                 }
                             });
 
-                            const badge = document.getElementById('urgent-badge');
-                            if (badge) badge.textContent = String(activeAlertsCount);
-                        }, 250);
+                             const badge = document.getElementById('urgent-badge');
+                             if (badge) badge.textContent = String(activeAlertsCount);
+
+                             let dismissibleCount = 0;
+                             Array.from(mainGrid.querySelectorAll('.card')).forEach(card => {
+                                 const state = cardStates.get(card);
+                                 if (state && !state.dismissed && state.isUrgentlyVisible && !isAlertCard(card)) {
+                                     dismissibleCount++;
+                                 }
+                             });
+
+                             if (clearBtn) {
+                                 clearBtn.style.display = (urgentActive && dismissibleCount > 0) ? 'flex' : 'none';
+                             }
+                         }, 250);
                     });
                 </script>
                 <?php include dirname(__DIR__) . '/partials/_scroll-to-top.php'; ?>

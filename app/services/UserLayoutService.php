@@ -1,5 +1,17 @@
 <?php
 
+/**
+ * app/services/UserLayoutService.php
+ *
+ * Service file for the DashMed-SAE project.
+ *
+ * Notes:
+ * - This docblock is intentionally file-scoped.
+ * - Detailed PHPDoc for classes/methods is maintained near declarations.
+ *
+ * @package DashMed\SAE
+ */
+
 declare(strict_types=1);
 
 namespace modules\services;
@@ -119,15 +131,22 @@ final class UserLayoutService
         }
 
         $validatedItems = [];
+        $seen = [];
 
         foreach ($items as $item) {
             if (!$this->isValidLayoutItem($item)) {
                 continue;
             }
 
+            $id = (string) $item['id'];
+            if (isset($seen[$id])) {
+                continue;
+            }
+            $seen[$id] = true;
+
             /** @var array{id: string, x: numeric, y: numeric, w: numeric, h: numeric, visible?: bool} $item */
             $validatedItems[] = [
-                'id' => (string) $item['id'],
+                'id' => $id,
                 'x' => max(0, min(self::GRID_COLUMNS - 1, (int) $item['x'])),
                 'y' => max(0, (int) $item['y']),
                 'w' => max(self::MIN_WIDTH, min(self::GRID_COLUMNS, (int) $item['w'])),

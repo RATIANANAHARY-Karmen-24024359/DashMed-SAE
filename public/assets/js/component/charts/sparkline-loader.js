@@ -42,7 +42,7 @@
   }
 
   async function loadCard(card, patientId) {
-    const param = card.dataset.slug;
+    const param = card.dataset.paramId || card.dataset.slug;
     if (!param) return;
 
     // 1) render cached immediately if present
@@ -104,10 +104,12 @@
     if (!Array.isArray(metrics)) return;
 
     for (const m of metrics) {
-      if (!m || !m.slug || !m.time_iso) continue;
+      if (!m || !m.time_iso) continue;
+      const param = m.parameter_id || m.slug;
+      if (!param) continue;
       const p = { time_iso: m.time_iso, value: m.value ?? null, flag: m.is_crit_flag ? '1' : '0' };
       try {
-        await window.DashMedHistoryCache.put(patientId, m.slug, [p], { maxPoints: CACHE_MAX_POINTS });
+        await window.DashMedHistoryCache.put(patientId, param, [p], { maxPoints: CACHE_MAX_POINTS });
       } catch (_) {}
     }
   });

@@ -42,6 +42,14 @@ class TestableSearchController extends SearchController
         $property->setValue($this, $model);
     }
 
+    /**
+     * Backward-compatible alias expected by some tests.
+     */
+    public function setSearchRepository(SearchRepository $model): void
+    {
+        $this->setSearchModel($model);
+    }
+
     protected function jsonResponse(array $data, int $status = 200): void
     {
         $this->responseStatus = $status;
@@ -55,7 +63,8 @@ class TestableSearchController extends SearchController
             return;
         }
 
-        $query = trim($_GET['q'] ?? '');
+        $rawQ = $_GET['q'] ?? '';
+        $query = trim(is_string($rawQ) ? $rawQ : '');
         $patientId = isset($_GET['patient_id']) && is_numeric($_GET['patient_id']) ? (int) $_GET['patient_id'] : null;
 
         if (mb_strlen($query) < 2) {

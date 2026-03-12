@@ -1,5 +1,17 @@
 <?php
 
+/**
+ * app/controllers/UserController.php
+ *
+ * Controller file for the DashMed-SAE project.
+ *
+ * Notes:
+ * - This docblock is intentionally file-scoped.
+ * - Detailed PHPDoc for classes/methods is maintained near declarations.
+ *
+ * @package DashMed\SAE
+ */
+
 declare(strict_types=1);
 
 namespace modules\controllers;
@@ -320,6 +332,12 @@ class UserController
             exit;
         }
 
+        if (isset($_POST['reset_layout']) && $_POST['reset_layout'] === '1') {
+            $this->layoutService->resetLayout($userId);
+            header('Location: /?page=customization&success=1');
+            exit;
+        }
+
         $rawLayoutData = $_POST['layout_data'] ?? '';
         $layoutJson = is_string($rawLayoutData) ? $rawLayoutData : '';
 
@@ -329,8 +347,8 @@ class UserController
             if (!empty($validatedItems)) {
                 $this->layoutService->saveLayout($userId, $validatedItems);
             }
-        } catch (\InvalidArgumentException $e) {
-            error_log('[UserController::customization] Invalid layout data: ' . $e->getMessage());
+        } catch (\Throwable $e) {
+            error_log('[UserController::customization] Error: ' . $e->getMessage());
         }
 
         header('Location: /?page=customization&success=1');

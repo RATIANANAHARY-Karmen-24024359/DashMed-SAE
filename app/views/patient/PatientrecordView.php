@@ -1,5 +1,17 @@
 <?php
 
+/**
+ * app/views/patient/PatientrecordView.php
+ *
+ * View file for the DashMed-SAE project.
+ *
+ * Notes:
+ * - This docblock is intentionally file-scoped.
+ * - Detailed PHPDoc for classes/methods is maintained near declarations.
+ *
+ * @package DashMed\SAE
+ */
+
 namespace modules\views\patient;
 
 /**
@@ -43,8 +55,8 @@ class PatientrecordView
      *
      * Initializes patient record view.
      *
-     * @param array<int, mixed> $consultationsPassees History
-     * @param array<int, mixed> $consultationsFutures Appointments
+     * @param array<int, \modules\models\entities\Consultation> $consultationsPassees History
+     * @param array<int, \modules\models\entities\Consultation> $consultationsFutures Appointments
      * @param array<string, mixed> $patientData Patient Data
      * @param array<int, array{
      *   id_user: int,
@@ -165,55 +177,7 @@ class PatientrecordView
                     <?php endif; ?>
 
 
-                    <div class="skeleton-wrapper" id="skeleton-patient" data-skeleton-for="real-patient-content" data-skeleton-auto
-                        data-skeleton-delay="350">
-                        <div class="skeleton-patient-header">
-                            <div class="skeleton-patient-info">
-                                <div class="skeleton skeleton-circle" style="width: 56px; height: 56px;"></div>
-                                <div class="skeleton-patient-text">
-                                    <div class="skeleton skeleton-text skeleton-text--lg" style="width: 200px;"></div>
-                                    <div style="display: flex; gap: 10px;">
-                                        <div class="skeleton skeleton-text" style="width: 50px; height: 12px;"></div>
-                                        <div class="skeleton skeleton-text" style="width: 120px; height: 12px;"></div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="skeleton skeleton-btn"></div>
-                        </div>
-
-                        <div style="display: grid; grid-template-columns: 1fr; gap: 1.5rem;">
-                            <div class="skeleton-section">
-                                <div class="skeleton-section-header">
-                                    <div class="skeleton skeleton-text skeleton-text--lg" style="width: 220px;"></div>
-                                </div>
-                                <div class="skeleton-section-body">
-                                    <div class="skeleton skeleton-text" style="width: 100%;"></div>
-                                    <div class="skeleton skeleton-text" style="width: 85%;"></div>
-                                    <div class="skeleton skeleton-text" style="width: 70%;"></div>
-                                    <div class="skeleton skeleton-text" style="width: 90%;"></div>
-                                </div>
-                            </div>
-                            <div class="skeleton-section">
-                                <div class="skeleton-section-header">
-                                    <div class="skeleton skeleton-text skeleton-text--lg" style="width: 180px;"></div>
-                                </div>
-                                <div class="skeleton-section-body">
-                                    <?php for ($d = 0; $d < 3; $d++): ?>
-                                        <div class="skeleton-profile-card">
-                                            <div class="skeleton skeleton-circle" style="width: 40px; height: 40px;"></div>
-                                            <div class="skeleton-profile-text">
-                                                <div class="skeleton skeleton-text" style="width: 60%;"></div>
-                                                <div class="skeleton skeleton-text skeleton-text--sm" style="width: 40%;"></div>
-                                            </div>
-                                        </div>
-                                    <?php endfor; ?>
-                                </div>
-                            </div>
-
-                        </div>
-                    </div>
-
-                    <div id="real-patient-content" style="display: none;">
+                    <div id="real-patient-content">
 
                         <header class="patient-header-card">
                             <div class="patient-info-group">

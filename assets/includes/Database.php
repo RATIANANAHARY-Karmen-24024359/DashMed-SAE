@@ -117,7 +117,7 @@ final class Database
                 if ($port !== null) {
                     $fallbackDsn = "mysql:host={$fallbackHost};port={$port};dbname={$name};charset={$charset}";
                 }
-                
+
                 try {
                     return self::connect($fallbackDsn, $user, $pass, $fallbackHost, $name, $port);
                 } catch (\PDOException $fallbackEx) {

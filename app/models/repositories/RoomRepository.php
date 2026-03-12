@@ -1,5 +1,17 @@
 <?php
 
+/**
+ * app/models/repositories/RoomRepository.php
+ *
+ * Repository file for the DashMed-SAE project.
+ *
+ * Notes:
+ * - This docblock is intentionally file-scoped.
+ * - Detailed PHPDoc for classes/methods is maintained near declarations.
+ *
+ * @package DashMed\SAE
+ */
+
 declare(strict_types=1);
 
 namespace modules\models\repositories;
@@ -41,7 +53,7 @@ class RoomRepository
                 LEFT JOIN patients p ON (p.room_id = r.id_room AND p.status = 'En réanimation')
                 WHERE p.id_patient IS NULL
                 ORDER BY r.id_room ASC";
-        
+
         $stmt = $this->pdo->prepare($sql);
         $stmt->execute();
 

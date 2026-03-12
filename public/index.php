@@ -14,6 +14,7 @@ declare(strict_types=1);
 
 date_default_timezone_set('Europe/Paris');
 
+
 $ROOT = dirname(__DIR__);
 require $ROOT . '/vendor/autoload.php';
 
@@ -64,7 +65,7 @@ if (isset($_SESSION['user_id'])) {
             header('Location: /?page=login');
             exit;
         }
-    } catch (Exception $e) {
+    } catch (\Throwable $e) {
         error_log("[Security] Session check failed: " . $e->getMessage());
     }
 }
@@ -78,76 +79,118 @@ if (isset($_SESSION['user_id'])) {
  * @param string $path URL path
  * @return array{0: string, 1: string|null} [FQCN, action|null]
  */
-function resolveRoute(string $path): array
-{
+$resolveRoute = static function (string $path): array {
     $path = explode('?', $path)[0];
 
     $segments = preg_split('~[/-]+~', trim($path, '/'), -1, PREG_SPLIT_NO_EMPTY);
     if ($segments === false) {
         $segments = [];
     }
+
     $segments = array_map('strtolower', $segments);
 
     if (empty($segments) || $segments[0] === 'home' || $segments[0] === 'homepage') {
         return ['modules\\controllers\\StaticController', 'homepage'];
     }
 
-    if (in_array($segments[0], ['login', 'connexion']))
+    if (in_array($segments[0], ['login', 'connexion'], true)) {
         return ['modules\\controllers\\AuthController', 'login'];
-    if (in_array($segments[0], ['signup', 'register', 'inscription']))
+    }
+
+    if (in_array($segments[0], ['signup', 'register', 'inscription'], true)) {
         return ['modules\\controllers\\AuthController', 'signup'];
-    if (in_array($segments[0], ['logout', 'deconnexion']))
+    }
+
+    if (in_array($segments[0], ['logout', 'deconnexion'], true)) {
         return ['modules\\controllers\\AuthController', 'logout'];
-    if (in_array($segments[0], ['password', 'forgot', 'motdepasse', 'oubli', 'passwordreset']))
+    }
+
+    if (in_array($segments[0], ['password', 'forgot', 'motdepasse', 'oubli', 'passwordreset'], true)) {
         return ['modules\\controllers\\AuthController', 'password'];
+    }
 
-    if ($segments[0] === 'dashboard')
+    if ($segments[0] === 'dashboard') {
         return ['modules\\controllers\\PatientController', 'dashboard'];
-    if ($segments[0] === 'monitoring')
+    }
+
+    if ($segments[0] === 'monitoring') {
         return ['modules\\controllers\\PatientController', 'monitoring'];
-    if (in_array($segments[0], ['patientrecord', 'dossierpatient']))
+    }
+
+    if (in_array($segments[0], ['patientrecord', 'dossierpatient'], true)) {
         return ['modules\\controllers\\PatientController', 'record'];
-    if (in_array($segments[0], ['medicalprocedure', 'consultations']))
+    }
+
+    if (in_array($segments[0], ['medicalprocedure', 'consultations'], true)) {
         return ['modules\\controllers\\PatientController', 'consultations'];
-    if ($segments[0] === 'explorer')
+    }
+
+    if ($segments[0] === 'explorer') {
         return ['modules\\controllers\\PatientController', 'explorer'];
+    }
 
-    if ($segments[0] === 'profile')
+    if ($segments[0] === 'profile') {
         return ['modules\\controllers\\UserController', 'profile'];
-    if ($segments[0] === 'customization')
+    }
+
+    if ($segments[0] === 'customization') {
         return ['modules\\controllers\\UserController', 'customization'];
-    if ($segments[0] === 'custom_group')
+    }
+
+    if ($segments[0] === 'custom_group') {
         return ['modules\\controllers\\UserController', 'customGroup'];
+    }
 
-    if ($segments[0] === 'sysadmin')
+    if (in_array($segments[0], ['sysadmin', 'admin'], true)) {
         return ['modules\\controllers\\AdminController', 'panel'];
+    }
 
-    if ($segments[0] === 'about')
+    if ($segments[0] === 'about') {
         return ['modules\\controllers\\StaticController', 'about'];
-    if (in_array($segments[0], ['legal', 'mentionslegales', 'legalnotice']))
-        return ['modules\\controllers\\StaticController', 'legal'];
-    if (in_array($segments[0], ['sitemap', 'plandusite']))
-        return ['modules\\controllers\\StaticController', 'sitemap'];
+    }
 
-    if ($segments[0] === 'api_search')
+    if (in_array($segments[0], ['legal', 'mentionslegales', 'legalnotice'], true)) {
+        return ['modules\\controllers\\StaticController', 'legal'];
+    }
+
+    if (in_array($segments[0], ['sitemap', 'plandusite'], true)) {
+        return ['modules\\controllers\\StaticController', 'sitemap'];
+    }
+
+    if ($segments[0] === 'api_search') {
         return ['modules\\controllers\\api\\SearchController', null];
-    if ($segments[0] === 'api_history')
+    }
+
+    if ($segments[0] === 'api_history') {
         return ['modules\\controllers\\PatientController', 'apiHistory'];
-    if ($segments[0] === 'api_history_tail')
+    }
+
+    if ($segments[0] === 'api_history_tail') {
         return ['modules\\controllers\\PatientController', 'apiHistoryTail'];
-    if ($segments[0] === 'api_history_chunk')
+    }
+
+    if ($segments[0] === 'api_history_chunk') {
         return ['modules\\controllers\\PatientController', 'apiHistoryChunk'];
-    if ($segments[0] === 'api_history_meta')
+    }
+
+    if ($segments[0] === 'api_history_meta') {
         return ['modules\\controllers\\PatientController', 'apiHistoryMeta'];
-    if ($segments[0] === 'api_patient_name')
+    }
+
+    if ($segments[0] === 'api_patient_name') {
         return ['modules\\controllers\\PatientController', 'apiPatientName'];
-    if ($segments[0] === 'api_live_metrics')
+    }
+
+    if ($segments[0] === 'api_live_metrics') {
         return ['modules\\controllers\\PatientController', 'apiLiveMetrics'];
-    if ($segments[0] === 'api_stream')
+    }
+
+    if ($segments[0] === 'api_stream') {
         return ['modules\\controllers\\PatientController', 'apiStream'];
+    }
 
     return ['RouteNotFound', null];
-}
+};
 
 /**
  * Resolves the requested path relative to the base URL.
@@ -155,18 +198,19 @@ function resolveRoute(string $path): array
  * @param string $baseUrl Base URL of the application
  * @return string Cleaned request path
  */
-function resolveRequestPath(string $baseUrl = '/'): string
-{
+$resolveRequestPath = static function (string $baseUrl = '/'): string {
     $rawUri = $_SERVER['REQUEST_URI'] ?? '/';
     if (!is_string($rawUri)) {
         $rawUri = '/';
     }
+
     $parsed = parse_url($rawUri, PHP_URL_PATH);
     $reqPath = is_string($parsed) ? $parsed : '/';
 
     if ($baseUrl !== '/' && str_starts_with($reqPath, $baseUrl)) {
         $reqPath = (string) substr($reqPath, strlen($baseUrl));
     }
+
     $reqPath = '/' . ltrim($reqPath, '/');
 
     if ($reqPath === '/') {
@@ -175,8 +219,9 @@ function resolveRequestPath(string $baseUrl = '/'): string
             $reqPath = '/' . trim($page, '/ ');
         }
     }
+
     return $reqPath;
-}
+};
 
 /**
  * Maps an HTTP method to a controller action name.
@@ -184,9 +229,9 @@ function resolveRequestPath(string $baseUrl = '/'): string
  * @param string $method HTTP method (GET, POST, etc.)
  * @return string Action method name
  */
-function httpMethodToAction(string $method): string
-{
+$httpMethodToAction = static function (string $method): string {
     $m = strtolower($method);
+
     return match ($m) {
         'get' => 'get',
         'post' => 'post',
@@ -196,7 +241,7 @@ function httpMethodToAction(string $method): string
         'head' => 'head',
         default => 'get',
     };
-}
+};
 
 $scriptName = $_SERVER['SCRIPT_NAME'] ?? '/';
 if (!is_string($scriptName)) {
@@ -207,7 +252,7 @@ if ($BASE_URL === '' || $BASE_URL === '\\') {
     $BASE_URL = '/';
 }
 
-$reqPath = resolveRequestPath($BASE_URL);
+$reqPath = $resolveRequestPath($BASE_URL);
 
 if ($reqPath === '/' || $reqPath === '') {
     $target = rtrim($BASE_URL, '/') . '/?page=homepage';
@@ -216,7 +261,7 @@ if ($reqPath === '/' || $reqPath === '') {
 }
 
 
-[$ctrlClass, $action] = resolveRoute($reqPath);
+[$ctrlClass, $action] = $resolveRoute($reqPath);
 
 
 
@@ -224,7 +269,7 @@ $rawMethod = $_SERVER['REQUEST_METHOD'] ?? 'GET';
 if (!is_string($rawMethod)) {
     $rawMethod = 'GET';
 }
-$httpAction = httpMethodToAction($rawMethod);
+$httpAction = $httpMethodToAction($rawMethod);
 
 try {
     if (!class_exists($ctrlClass)) {

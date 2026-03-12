@@ -1,5 +1,17 @@
 <?php
 
+/**
+ * app/views/user/ProfileView.php
+ *
+ * View file for the DashMed-SAE project.
+ *
+ * Notes:
+ * - This docblock is intentionally file-scoped.
+ * - Detailed PHPDoc for classes/methods is maintained near declarations.
+ *
+ * @package DashMed\SAE
+ */
+
 namespace modules\views\user;
 
 /**
@@ -170,22 +182,21 @@ class ProfileView
                             style="background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: 16px; padding: 2rem; margin-bottom: 2rem; margin-top: 1rem;">
                             <div class="settings-info" style="margin-bottom: 1rem;">
                                 <h3 style="margin: 0 0 0.5rem 0; color: var(--text-primary); font-size: 1.1rem; font-weight: 600;">
-                                    Préférences de développement</h3>
-                                <p style="margin: 0; color: var(--text-secondary); font-size: 0.9rem;">Options de débug : Mode
-                                    ne
-                                    pas déranger.</p>
+                                    Réglages des notifications</h3>
+                                <p style="margin: 0; color: var(--text-secondary); font-size: 0.9rem;">Mode Ne pas déranger : met en
+                                    sourdine les alertes critiques et les sons système.</p>
                             </div>
                             <div style="display: flex; align-items: center; gap: 1rem;">
                                 <label class="toggle-switch"
                                     style="display: flex; align-items: center; cursor: pointer; gap: 0.5rem; font-size: 0.95rem; color: var(--text-main);">
-                                    <input type="checkbox" id="dnd-dev-toggle"
-                                        style="width: 1.2rem; height: 1.2rem; cursor: pointer;" <?= ($user['alert_dnd'] ?? 0) ? 'checked' : '' ?>>
+                                    <input type="checkbox" id="dnd-toggle" style="width: 1.2rem; height: 1.2rem; cursor: pointer;"
+                                        <?= ($user['alert_dnd'] ?? 0) ? 'checked' : '' ?>>
                                     <span>Activer le mode "Ne pas déranger"</span>
                                 </label>
                             </div>
                             <script>
                                 document.addEventListener('DOMContentLoaded', () => {
-                                    const dndToggle = document.getElementById('dnd-dev-toggle');
+                                    const dndToggle = document.getElementById('dnd-toggle');
                                     if (dndToggle) {
                                         dndToggle.addEventListener('change', (e) => {
                                             const enabled = e.target.checked;
@@ -201,11 +212,28 @@ class ProfileView
                                             }));
 
                                             if (typeof iziToast !== 'undefined') {
-                                                if (enabled) {
-                                                    iziToast.info({ title: 'Info', message: 'Mode Ne pas déranger activé.', position: 'topRight' });
-                                                } else {
-                                                    iziToast.success({ title: 'Succès', message: 'Mode Ne pas déranger désactivé.', position: 'topRight' });
-                                                }
+                                                const CLOSE_ICON = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 6L6 18M6 6l12 12"/></svg>`;
+                                                const type = enabled ? 'info' : 'success';
+                                                const title = enabled ? 'Mode Ne pas déranger activé' : 'Mode Ne pas déranger désactivé';
+                                                iziToast.show({
+                                                    message: `
+                                                        <div class="medical-alert ${type}">
+                                                            <div class="medical-alert-body">
+                                                                <div class="medical-alert-param">NOTIFICATIONS</div>
+                                                                <div class="medical-alert-value">${title}</div>
+                                                            </div>
+                                                            <button class="medical-alert-close" data-close>${CLOSE_ICON}</button>
+                                                        </div>`,
+                                                    position: 'topRight',
+                                                    theme: 'light',
+                                                    backgroundColor: 'transparent',
+                                                    progressBar: false,
+                                                    close: false,
+                                                    timeout: 3000,
+                                                    onOpening: (_, t) => {
+                                                        t.querySelector('[data-close]')?.addEventListener('click', () => iziToast.hide({}, t));
+                                                    }
+                                                });
                                             }
                                         });
                                     }
@@ -217,15 +245,16 @@ class ProfileView
                             style="background: var(--bg-surface); border: 1px solid var(--border-subtle); border-radius: 16px; padding: 2rem; margin-bottom: 2rem; margin-top: 1rem;">
                             <div class="settings-info" style="margin-bottom: 1rem;">
                                 <h3 style="margin: 0 0 0.5rem 0; color: var(--text-primary); font-size: 1.1rem; font-weight: 600;">
-                                    Animations des graphiques</h3>
-                                <p style="margin: 0; color: var(--text-secondary); font-size: 0.9rem;">Désactiver les animations peut améliorer les performances et réduire les mouvements visuels.</p>
+                                    Animations de l'interface</h3>
+                                <p style="margin: 0; color: var(--text-secondary); font-size: 0.9rem;">Désactiver les animations
+                                    peut améliorer les performances sur les terminaux moins puissants.</p>
                             </div>
                             <div style="display: flex; align-items: center; gap: 1rem;">
                                 <label class="toggle-switch"
                                     style="display: flex; align-items: center; cursor: pointer; gap: 0.5rem; font-size: 0.95rem; color: var(--text-main);">
                                     <input type="checkbox" id="chart-animation-toggle"
                                         style="width: 1.2rem; height: 1.2rem; cursor: pointer;" <?= ($user['chart_animation'] ?? 1) ? 'checked' : '' ?>>
-                                    <span>Activer les animations des graphiques</span>
+                                    <span>Activer les animations fluides</span>
                                 </label>
                             </div>
                             <script>
@@ -244,10 +273,27 @@ class ProfileView
                                             });
 
                                             if (typeof iziToast !== 'undefined') {
-                                                iziToast.success({
-                                                    title: 'Succès',
-                                                    message: enabled ? 'Animations activées.' : 'Animations désactivées.',
-                                                    position: 'topRight'
+                                                const CLOSE_ICON = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 6L6 18M6 6l12 12"/></svg>`;
+                                                const type = 'success';
+                                                const title = enabled ? 'Animations activées' : 'Animations désactivées';
+                                                iziToast.show({
+                                                    message: `
+                                                        <div class="medical-alert ${type}">
+                                                            <div class="medical-alert-body">
+                                                                <div class="medical-alert-param">INTERFACE</div>
+                                                                <div class="medical-alert-value">${title}</div>
+                                                            </div>
+                                                            <button class="medical-alert-close" data-close>${CLOSE_ICON}</button>
+                                                        </div>`,
+                                                    position: 'topRight',
+                                                    theme: 'light',
+                                                    backgroundColor: 'transparent',
+                                                    progressBar: false,
+                                                    close: false,
+                                                    timeout: 3000,
+                                                    onOpening: (_, t) => {
+                                                        t.querySelector('[data-close]')?.addEventListener('click', () => iziToast.hide({}, t));
+                                                    }
                                                 });
                                             }
                                         });

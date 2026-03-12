@@ -1,5 +1,17 @@
 <?php
 
+/**
+ * app/views/user/CustomizationView.php
+ *
+ * View file for the DashMed-SAE project.
+ *
+ * Notes:
+ * - This docblock is intentionally file-scoped.
+ * - Detailed PHPDoc for classes/methods is maintained near declarations.
+ *
+ * @package DashMed\SAE
+ */
+
 declare(strict_types=1);
 
 namespace modules\views\user;
@@ -58,11 +70,11 @@ final class CustomizationView
             [
                 'https://cdn.jsdelivr.net/npm/gridstack@10/dist/gridstack-all.js',
                 'assets/js/pages/customization-grid.js',
-                'assets/js/pages/dash.js',
+                'assets/js/pages/dash.js'
             ],
             '',
             true,
-            false
+            true
         );
 
         $layout->render(function () use ($widgets, $hidden, $h, $allParameters, $existingGroups, $editGroupData) {
@@ -205,7 +217,7 @@ final class CustomizationView
                                         <?php foreach ($widgets as $w): ?>
                                             <div class="grid-stack-item" gs-x="<?= (int) $w['x'] ?>" gs-y="<?= (int) $w['y'] ?>"
                                                 gs-w="<?= max(4, (int) $w['w']) ?>" gs-h="<?= max(3, (int) $w['h']) ?>" gs-min-w="4"
-                                                gs-min-h="3" data-widget-id="<?= $h($w['id']) ?>">
+                                                gs-min-h="3" gs-id="<?= $h($w['id']) ?>" data-widget-id="<?= $h($w['id']) ?>">
                                                 <div class="grid-stack-item-content">
                                                     <div class="dm-widget">
                                                         <div class="dm-widget-header">
@@ -338,7 +350,7 @@ final class CustomizationView
                                                 <div class="grid-stack-item group-grid-item" gs-x="<?= (int) $w['x'] ?>"
                                                     gs-y="<?= (int) $w['y'] ?>" gs-w="<?= max(4, (int) $w['w']) ?>"
                                                     gs-h="<?= max(3, (int) $w['h']) ?>" gs-min-w="4" gs-min-h="3"
-                                                    data-widget-id="<?= $h($w['id']) ?>">
+                                                    gs-id="<?= $h($w['id']) ?>" data-widget-id="<?= $h($w['id']) ?>">
                                                     <div class="grid-stack-item-content">
                                                         <div class="dm-widget">
                                                             <div class="dm-widget-header">

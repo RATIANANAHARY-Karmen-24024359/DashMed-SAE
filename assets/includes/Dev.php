@@ -1,5 +1,17 @@
 <?php
 
+/**
+ * assets/includes/Dev.php
+ *
+ * Infrastructure file for the DashMed-SAE project.
+ *
+ * Notes:
+ * - This docblock is intentionally file-scoped.
+ * - Detailed PHPDoc for classes/methods is maintained near declarations.
+ *
+ * @package DashMed\SAE
+ */
+
 namespace assets\includes;
 
 /**
@@ -109,7 +121,8 @@ final class Dev
         } else {
             ini_set('display_errors', '0');
             ini_set('display_startup_errors', '0');
-            error_reporting(E_ALL & ~E_NOTICE & ~E_STRICT & ~E_DEPRECATED);
+            // E_STRICT is deprecated in PHP 8.4+, so do not reference it.
+            error_reporting(E_ALL & ~E_NOTICE & ~E_DEPRECATED);
         }
     }
 

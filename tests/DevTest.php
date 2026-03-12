@@ -1,11 +1,13 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Tests;
 
-use PHPUnit\Framework\TestCase;
 use assets\includes\Dev;
+use PHPUnit\Framework\Attributes\DataProvider;
+use PHPUnit\Framework\TestCase;
 
-require_once __DIR__ . '/../vendor/autoload.php';
 require_once __DIR__ . '/../assets/includes/Dev.php';
 
 /**
@@ -115,18 +117,14 @@ final class DevTest extends TestCase
         return [['0'], ['false'], ['off'], ['no'], [''], ['random'], ['  ']];
     }
 
-    /**
-     * @dataProvider trueValuesProvider
-     */
+    #[DataProvider('trueValuesProvider')]
     public function testIsDebugReturnsTrueForTruthyValues(string $val): void
     {
         $this->setAppDebug($val);
         $this->assertTrue(Dev::isDebug(), "isDebug() should be TRUE for '{$val}'");
     }
 
-    /**
-     * @dataProvider falseValuesProvider
-     */
+    #[DataProvider('falseValuesProvider')]
     public function testIsDebugReturnsFalseForFalsyValues(string $val): void
     {
         $this->setAppDebug($val);

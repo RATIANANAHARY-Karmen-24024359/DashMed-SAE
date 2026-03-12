@@ -1,6 +1,6 @@
 /**
  * explorer.js
- * 
+ *
  * Logic for the Data Explorer and CSV Viewer.
  * Handles CSV uploads, parameter loading, and interactive ECharts visualization.
  */

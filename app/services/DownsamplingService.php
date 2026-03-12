@@ -1,5 +1,17 @@
 <?php
 
+/**
+ * app/services/DownsamplingService.php
+ *
+ * Service file for the DashMed-SAE project.
+ *
+ * Notes:
+ * - This docblock is intentionally file-scoped.
+ * - Detailed PHPDoc for classes/methods is maintained near declarations.
+ *
+ * @package DashMed\SAE
+ */
+
 declare(strict_types=1);
 
 namespace modules\services;
@@ -21,7 +33,7 @@ class DownsamplingService
      *
      * @param array<int, array{time_iso: string, value: string, flag: string}> $data The raw historical dataset.
      * @param int $threshold The desired maximum number of data points to return.
-     * 
+     *
      * @return array<int, array{time_iso: string, value: string, flag: string}>
      */
     public function downsampleLTTB(array $data, int $threshold): array
@@ -41,8 +53,8 @@ class DownsamplingService
             // Calculate point average for the next bucket
             $avgX = 0;
             $avgY = 0;
-            $avgRangeStart  = (int)( floor( ($i + 1) * $every ) + 1 );
-            $avgRangeEnd    = (int)( floor( ($i + 2) * $every ) + 1 );
+            $avgRangeStart  = (int)( floor(($i + 1) * $every) + 1 );
+            $avgRangeEnd    = (int)( floor(($i + 2) * $every) + 1 );
             $avgRangeEnd = $avgRangeEnd < $dataLength ? $avgRangeEnd : $dataLength;
 
             $avgRangeLength = $avgRangeEnd - $avgRangeStart;
@@ -55,8 +67,8 @@ class DownsamplingService
             $avgY /= $avgRangeLength;
 
             // Define the range for the current bucket
-            $rangeOffs = (int)(floor( ($i + 0) * $every ) + 1);
-            $rangeTo   = (int)(floor( ($i + 1) * $every ) + 1);
+            $rangeOffs = (int)(floor(($i + 0) * $every) + 1);
+            $rangeTo   = (int)(floor(($i + 1) * $every) + 1);
 
             $pointAX = (float)$a;
             $pointAY = (float)$data[$a]['value'];
@@ -68,7 +80,7 @@ class DownsamplingService
                 $pointBX = (float)$j;
                 $pointBY = (float)$data[$j]['value'];
 
-                $area = abs( ($pointAX - $avgX) * ($pointBY - $pointAY) - ($pointAX - $pointBX) * ($avgY - $pointAY) ) * 0.5;
+                $area = abs(($pointAX - $avgX) * ($pointBY - $pointAY) - ($pointAX - $pointBX) * ($avgY - $pointAY)) * 0.5;
                 if ($area > $maxArea) {
                     $maxArea = $area;
                     $maxAreaPoint = $j;
@@ -96,7 +108,7 @@ class DownsamplingService
      * @param \Iterator<int, array{time_iso: string, value: string, flag: string|int}> $stream Data source
      * @param int $dataLength Total numbers of points in the source (required for interval calculation)
      * @param int $threshold Target number of points
-     * 
+     *
      * @return array<int, array{time_iso: string, value: string, flag: string|int}> Downsampled points
      */
     public function downsampleLTTBStream(\Iterator $stream, int $dataLength, int $threshold): array
@@ -111,14 +123,16 @@ class DownsamplingService
 
         $sampled = [];
         $stream->rewind();
-        if (!$stream->valid()) return [];
+        if (!$stream->valid()) {
+            return [];
+        }
 
         $firstPoint = $stream->current();
         $sampled[] = $firstPoint;
         $stream->next();
 
         $every = ($dataLength - 2) / ($threshold - 2);
-        
+
         $a = $firstPoint;
         $aIdx = 0.0;
         $currentIdx = 1;
@@ -146,7 +160,7 @@ class DownsamplingService
             $avgX = 0;
             $avgY = 0;
             $avgRangeLength = count($nextBucket);
-            
+
             if ($avgRangeLength > 0) {
                 // Indices are absolute within the original sequence
                 $nextBucketStartIdx = (int)(floor(($i + 1) * $every) + 1);
@@ -173,7 +187,7 @@ class DownsamplingService
                 $pointBX = (float)$idx;
                 $pointBY = (float)$row['value'];
 
-                $area = abs( ($pointAX - $avgX) * ($pointBY - $pointAY) - ($pointAX - $pointBX) * ($avgY - $pointAY) ) * 0.5;
+                $area = abs(($pointAX - $avgX) * ($pointBY - $pointAY) - ($pointAX - $pointBX) * ($avgY - $pointAY)) * 0.5;
                 if ($area > $maxArea) {
                     $maxArea = $area;
                     $maxAreaPoint = $row;

@@ -98,8 +98,8 @@ class ConsultationRepositoryTest extends TestCase
     {
         $this->pdo->exec(
             "INSERT INTO view_consultations (
-                                id_consultations, 
-                                id_user, 
+                                id_consultations,
+                                id_user,
                                 id_patient,
                                 last_name,
                                 date,
