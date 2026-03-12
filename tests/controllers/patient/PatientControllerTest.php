@@ -89,7 +89,7 @@ class PatientControllerTest extends TestCase
     {
         $_SESSION['user_id'] = 1;
         $_GET['param'] = 'FC';
-        
+
         $this->contextServiceMock->expects($this->once())
             ->method('handleRequest');
         $this->contextServiceMock->expects($this->once())
@@ -136,7 +136,7 @@ class PatientControllerTest extends TestCase
         $_SESSION['user_id'] = 1;
         $_SESSION['email'] = 'test@example.com';
         $_SESSION['csrf_patient'] = 'valid_token';
-        
+
         $_POST['csrf'] = 'valid_token';
         $_POST['first_name'] = 'Jane';
         $_POST['last_name'] = 'Smith';
@@ -161,7 +161,7 @@ class PatientControllerTest extends TestCase
             // Silence header warnings
         }
         ob_end_clean();
-        
+
         $this->assertEquals('success', $_SESSION['patient_msg']['type'] ?? '');
     }
 }

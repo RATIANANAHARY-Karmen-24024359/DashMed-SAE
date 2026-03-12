@@ -1,7 +1,6 @@
 const historyCache = {};
 
 function applyThemeColors(chartInstance) {
-    // ECharts handles theme partly through initialization, but we can set option
     if (!chartInstance) return;
     const style = getComputedStyle(document.body || document.documentElement);
     const gridColor = style.getPropertyValue('--chart-grid-color').trim();
@@ -136,7 +135,6 @@ async function updatePanelChart(panelId, chartId, title) {
         const syncBtn = panel.querySelector('.sync-realtime-btn');
         if (syncBtn) syncBtn.style.display = 'none';
         hideLoader();
-        // Hide canvas AFTER hideLoader since hideLoader sets display:block
         if (canvas) canvas.style.display = 'none';
         return;
     }
@@ -181,24 +179,41 @@ async function updatePanelChart(panelId, chartId, title) {
             const dateParam = targetDate ? `&date=${encodeURIComponent(targetDate)}` : '';
             const cacheKey = `${paramId}-${targetDate || 'now'}`;
 
+            const durationVal = panel.dataset.displayDuration || '0.0333';
+            const durationHours = durationVal !== 'all' ? parseFloat(durationVal) : NaN;
+            const durationSeconds = Number.isFinite(durationHours) ? Math.round(durationHours * 3600) : 0;
+
+            const ctxPidEl = document.getElementById('context-patient-id');
+            const ctxPid = ctxPidEl && ctxPidEl.value ? ctxPidEl.value : '';
+            const patientParam = ctxPid ? `&patient_id=${encodeURIComponent(ctxPid)}` : '';
+
+            const useTail = !targetDate && durationVal !== 'all' && durationSeconds > 0 && durationSeconds <= 5000;
+            const apiUrl = useTail
+                ? `${window.location.origin}/api_history_tail?param=${encodeURIComponent(paramId)}${patientParam}&limit=${encodeURIComponent(durationSeconds + 5)}`
+                : `${window.location.origin}/api_history?param=${encodeURIComponent(paramId)}${dateParam}`;
+
             let dataArr;
             const useCache = !!targetDate;
             if (useCache && historyCache[cacheKey]) {
                 dataArr = historyCache[cacheKey];
             } else {
-                const fetchUrl = `/api_history?param=${encodeURIComponent(paramId)}${dateParam}`;
-                console.log('[DashMed] Fetching chart data:', fetchUrl);
+                console.log('[DashMed] Fetching chart data:', apiUrl);
 
                 const controller = new AbortController();
                 const timeoutId = setTimeout(() => controller.abort(), 60000);
 
-                const res = await fetch(fetchUrl, { signal: controller.signal });
+                const res = await fetch(apiUrl, { signal: controller.signal });
                 clearTimeout(timeoutId);
                 console.log('[DashMed] Fetch response:', res.status, res.statusText);
 
                 if (!res.ok) throw new Error('Fetch failed: ' + res.status);
                 dataArr = await res.json();
                 if (dataArr.error) throw new Error(dataArr.error);
+
+                // Normalize tail payload shape
+                if (useTail && dataArr && dataArr.points) {
+                    dataArr = dataArr.points;
+                }
                 console.log('[DashMed] Data received:', dataArr.length, 'points');
                 if (useCache) historyCache[cacheKey] = dataArr;
             }
@@ -243,7 +258,6 @@ async function updatePanelChart(panelId, chartId, title) {
             if (canvas) canvas.style.opacity = '1';
             hideLoader();
 
-            const durationVal = panel.dataset.displayDuration || '0.0333';
             let initialZoom = 2 * 60 * 1000;
             if (durationVal !== 'all') {
                 initialZoom = parseFloat(durationVal) * 3600 * 1000;
@@ -660,7 +674,6 @@ document.addEventListener('click', function (e) {
                 updatePanelChart(panel.id, chartId, display);
             }
 
-            // Sync active state back to the source detail element so reopening the modal preserves it
             const slug = panel.id.replace(/^.*panel-/, '');
             const card = document.querySelector(`article.card[data-slug="${slug}"]`);
             const detailId = card ? card.getAttribute('data-detail-id') : null;
@@ -695,6 +708,7 @@ document.addEventListener('change', function (e) {
 
         const val = select.value;
         const paramId = panel.dataset.paramId;
+
 
         const allPanels = document.querySelectorAll('.modal-grid');
         allPanels.forEach(p => {
@@ -831,7 +845,7 @@ document.addEventListener('change', function (e) {
 /**
  * Generates and downloads a standalone interactive HTML file.
  * Fetches FULL raw history to allow the user to navigate the entire dataset.
- * 
+ *
  * @param {string} title - The parameter name.
  * @param {string} paramId - The technical ID to fetch raw data.
  */
@@ -888,7 +902,7 @@ async function downloadHTMLHistory(title, paramId) {
     <div class="container">
         <h1>Historique Interactif : ${title}</h1>
         <p class="subtitle">Export complet généré le ${new Date().toLocaleString('fr-FR')} par DashMed</p>
-        
+
         <div id="chart-container"></div>
 
         <h2>Détail des mesures</h2>

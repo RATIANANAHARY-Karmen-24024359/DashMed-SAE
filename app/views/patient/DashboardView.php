@@ -1,5 +1,17 @@
 <?php
 
+/**
+ * app/views/patient/DashboardView.php
+ *
+ * View file for the DashMed-SAE project.
+ *
+ * Notes:
+ * - This docblock is intentionally file-scoped.
+ * - Detailed PHPDoc for classes/methods is maintained near declarations.
+ *
+ * @package DashMed\SAE
+ */
+
 namespace modules\views\patient;
 
 /**
@@ -283,23 +295,7 @@ class DashboardView
                     <?php endif; ?>
 
 
-                    <section class="skeleton-wrapper skeleton-monitoring-grid" id="skeleton-cards" data-skeleton-for="real-cards"
-                        data-skeleton-auto data-skeleton-delay="400">
-                        <?php for ($i = 0; $i < 6; $i++): ?>
-                            <div class="skeleton-card">
-                                <div class="skeleton-card-header">
-                                    <div class="skeleton skeleton-text" style="width: 55%; height: 16px;"></div>
-                                    <div class="skeleton skeleton-text" style="width: 25%; height: 14px;"></div>
-                                </div>
-                                <div class="skeleton-card-body">
-                                    <div class="skeleton skeleton-text skeleton-text--xl"></div>
-                                </div>
-                                <div class="skeleton skeleton-card-chart"></div>
-                            </div>
-                        <?php endfor; ?>
-                    </section>
-
-                    <section class="cards-container cards-grid" id="real-cards" style="width: 100%; display: none;">
+                    <section class="cards-container cards-grid" id="real-cards" style="width: 100%;">
                         <?php
                         $patientMetrics = $this->patientMetrics;
                         $chartTypes = $this->chartTypes;
@@ -319,30 +315,7 @@ class DashboardView
                 </button>
                 <button id="aside-show-btn" onclick="toggleAside()">☰</button>
                 <aside id="aside">
-                    <div class="skeleton-wrapper skeleton-aside-section" id="skeleton-aside" data-skeleton-for="real-aside"
-                        data-skeleton-auto data-skeleton-delay="350">
-                        <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 8px;">
-                            <div class="skeleton skeleton-circle" style="width: 48px; height: 48px;"></div>
-                            <div style="flex: 1; display: flex; flex-direction: column; gap: 6px;">
-                                <div class="skeleton skeleton-text skeleton-text--lg" style="width: 70%;"></div>
-                                <div class="skeleton skeleton-text skeleton-text--sm" style="width: 40%;"></div>
-                            </div>
-                        </div>
-                        <div class="skeleton skeleton-text" style="width: 90%; height: 12px;"></div>
-                        <div class="skeleton skeleton-select"></div>
-                        <div style="margin-top: 16px;">
-                            <div class="skeleton skeleton-text skeleton-text--lg" style="width: 50%; margin-bottom: 16px;">
-                            </div>
-                            <?php for ($j = 0; $j < 4; $j++): ?>
-                                <div class="skeleton-aside-consultation">
-                                    <div class="skeleton skeleton-rect" style="width: 90px; height: 28px;"></div>
-                                    <div class="skeleton skeleton-text" style="flex: 1; height: 14px;"></div>
-                                </div>
-                            <?php endfor; ?>
-                        </div>
-                    </div>
-
-                    <div id="real-aside" style="display: none;">
+                    <div id="real-aside">
                         <section class="patient-infos">
                             <?php
                             $firstName = htmlspecialchars(

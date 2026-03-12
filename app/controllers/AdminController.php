@@ -1,5 +1,17 @@
 <?php
 
+/**
+ * app/controllers/AdminController.php
+ *
+ * Controller file for the DashMed-SAE project.
+ *
+ * Notes:
+ * - This docblock is intentionally file-scoped.
+ * - Detailed PHPDoc for classes/methods is maintained near declarations.
+ *
+ * @package DashMed\SAE
+ */
+
 declare(strict_types=1);
 
 namespace modules\controllers;
@@ -145,18 +157,37 @@ class AdminController
     {
         $_SESSION['old_sysadmin'] = $_POST;
 
-        $room = $_POST['room'] ?? '';
-        $lastName = trim($_POST['last_name'] ?? '');
-        $firstName = trim($_POST['first_name'] ?? '');
-        $email = trim($_POST['email'] ?? '');
-        $gender = $_POST['gender'] ?? '';
-        $birthDate = $_POST['birth_date'] ?? '';
-        $admissionReason = trim($_POST['admission_reason'] ?? '');
-        $height = trim($_POST['height'] ?? '');
-        $weight = trim($_POST['weight'] ?? '');
+        $rawRoom = $_POST['room'] ?? '';
+        $room = is_string($rawRoom) || is_numeric($rawRoom) ? (string) $rawRoom : '';
 
-        if ($room === '' || $lastName === '' || $firstName === '' || $email === '' ||
-            $gender === '' || $birthDate === '' || $admissionReason === '' || $height === '' || $weight === '') {
+        $rawLastName = $_POST['last_name'] ?? '';
+        $lastName = trim(is_string($rawLastName) ? $rawLastName : '');
+
+        $rawFirstName = $_POST['first_name'] ?? '';
+        $firstName = trim(is_string($rawFirstName) ? $rawFirstName : '');
+
+        $rawEmail = $_POST['email'] ?? '';
+        $email = trim(is_string($rawEmail) ? $rawEmail : '');
+
+        $rawGender = $_POST['gender'] ?? '';
+        $gender = is_string($rawGender) ? $rawGender : '';
+
+        $rawBirthDate = $_POST['birth_date'] ?? '';
+        $birthDate = is_string($rawBirthDate) ? $rawBirthDate : '';
+
+        $rawAdmissionReason = $_POST['admission_reason'] ?? '';
+        $admissionReason = trim(is_string($rawAdmissionReason) ? $rawAdmissionReason : '');
+
+        $rawHeight = $_POST['height'] ?? '';
+        $height = trim(is_string($rawHeight) ? $rawHeight : '');
+
+        $rawWeight = $_POST['weight'] ?? '';
+        $weight = trim(is_string($rawWeight) ? $rawWeight : '');
+
+        if (
+            $room === '' || $lastName === '' || $firstName === '' || $email === '' ||
+            $gender === '' || $birthDate === '' || $admissionReason === '' || $height === '' || $weight === ''
+        ) {
             $_SESSION['error'] = "Tous les champs patient sont obligatoires.";
             header('Location: /?page=sysadmin');
             exit;

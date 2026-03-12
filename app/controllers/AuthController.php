@@ -1,5 +1,17 @@
 <?php
 
+/**
+ * app/controllers/AuthController.php
+ *
+ * Controller file for the DashMed-SAE project.
+ *
+ * Notes:
+ * - This docblock is intentionally file-scoped.
+ * - Detailed PHPDoc for classes/methods is maintained near declarations.
+ *
+ * @package DashMed\SAE
+ */
+
 declare(strict_types=1);
 
 namespace modules\controllers;
@@ -87,7 +99,6 @@ class AuthController
      */
     private function loginPost(): void
     {
-        // A01:2025 - CSRF validation
         $sessionCsrf = isset($_SESSION['_csrf']) && is_string($_SESSION['_csrf']) ? $_SESSION['_csrf'] : '';
         $postCsrf = isset($_POST['_csrf']) && is_string($_POST['_csrf']) ? $_POST['_csrf'] : '';
         if ($sessionCsrf !== '' && $postCsrf !== '' && !hash_equals($sessionCsrf, $postCsrf)) {
@@ -107,10 +118,9 @@ class AuthController
             exit;
         }
 
-        // A07:2025 - Rate limiting: check if account is locked
         if (!SecurityService::checkLoginRateLimit($email)) {
             $remaining = SecurityService::getLockoutRemaining($email);
-            $minutes = (int)ceil($remaining / 60);
+            $minutes = (int) ceil($remaining / 60);
             $_SESSION['error'] = "Compte temporairement verrouillé. Réessayez dans {$minutes} minute(s).";
             header('Location: /?page=login');
             exit;
@@ -118,7 +128,6 @@ class AuthController
 
         $user = $this->userRepo->verifyCredentials($email, $password);
         if (!$user) {
-            // A07:2025 - Record failed attempt
             $attemptsLeft = SecurityService::recordFailedLogin($email);
             if ($attemptsLeft > 0) {
                 $_SESSION['error'] = "Identifiants invalides. {$attemptsLeft} tentative(s) restante(s).";
@@ -129,13 +138,10 @@ class AuthController
             exit;
         }
 
-        // A07:2025 - Reset attempts on successful login
         SecurityService::resetLoginAttempts($email);
 
-        // A07:2025 - Session fixation prevention
         SecurityService::regenerateSession();
 
-        // A09:2025 - Log successful login
         SecurityService::logSecurityEvent('LOGIN_SUCCESS', "User {$email} logged in successfully");
 
         $_SESSION['user_id'] = $user->getId();
@@ -192,7 +198,7 @@ class AuthController
     {
         $sessionCsrf = isset($_SESSION['_csrf']) && is_string($_SESSION['_csrf']) ? $_SESSION['_csrf'] : '';
         $postCsrf = isset($_POST['_csrf']) && is_string($_POST['_csrf']) ? $_POST['_csrf'] : '';
-        if ($sessionCsrf !== '' && $postCsrf !== '' && !hash_equals($sessionCsrf, $postCsrf)) {
+        if ($sessionCsrf === '' || $postCsrf === '' || !hash_equals($sessionCsrf, $postCsrf)) {
             $_SESSION['error'] = "Requête invalide. Veuillez réessayer.";
             header('Location: /?page=signup');
             exit;
@@ -427,8 +433,9 @@ class AuthController
                 : 'localhost';
             $appUrl = $protocol . '://' . $host;
         }
-        $emailLink = $appUrl . "/?page=password&token={$token}&code={$code}";
-        $redirectLink = $appUrl . "/?page=password&token={$token}";
+        // Security: do NOT include the reset code in the URL (it leaks via history/logs/referrers).
+        $emailLink = $appUrl . "/?page=password&token={$token}";
+        $redirectLink = $emailLink;
 
         if (is_array($user) && isset($user['id_user'], $user['email'])) {
             $upd = $this->pdo->prepare(

@@ -233,7 +233,7 @@ if (!empty($patientMetrics)): ?>
             <ul class="card-spark-data" data-spark style="display:none">
                 <?php
                 $history = $viewData['history_html_data'] ?? [];
-                foreach ($history as $historyItem):
+                foreach ($history as $historyItem) :
                     ?>
                     <li data-time="<?= $escape($historyItem['time_iso'] ?? '') ?>"
                         data-value="<?= $escape($historyItem['value'] ?? '') ?>"
@@ -319,8 +319,9 @@ if (!empty($patientMetrics)): ?>
                                     <?php endforeach; ?>
                                 </select>
 
+
                                 <div class="chart-type-group">
-                                    <?php foreach ($chartAllowed as $allowedType):
+                                    <?php foreach ($chartAllowed as $allowedType) :
                                         $icon = '';
                                         switch ($allowedType) {
                                             case 'line':
@@ -457,6 +458,7 @@ viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-li
                         data-id="<?= $escape($idPrefix) ?>modal-chart-<?= $escape($slug) ?>">
                     </div>
                 </div>
+
             </div>
 
             <div class="modal-no-data-placeholder" style="display:none;">

@@ -1,5 +1,17 @@
 <?php
 
+/**
+ * app/models/repositories/UserRepository.php
+ *
+ * Repository file for the DashMed-SAE project.
+ *
+ * Notes:
+ * - This docblock is intentionally file-scoped.
+ * - Detailed PHPDoc for classes/methods is maintained near declarations.
+ *
+ * @package DashMed\SAE
+ */
+
 declare(strict_types=1);
 
 namespace modules\models\repositories;
@@ -115,7 +127,7 @@ class UserRepository extends BaseRepository
      */
     public function create(array $data): int
     {
-        $sql = "INSERT INTO {$this->table} 
+        $sql = "INSERT INTO {$this->table}
                 (first_name, last_name, email, password, admin_status, id_profession, created_at)
                 VALUES (:first_name, :last_name, :email, :password, :admin_status, :id_profession, :created_at)";
 

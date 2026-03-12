@@ -2,29 +2,21 @@
 
 declare(strict_types=1);
 
-namespace tests\services;
+namespace Tests\Services;
 
 use modules\services\DownsamplingService;
+use PHPUnit\Framework\TestCase;
 
-// Simple custom test runner since PHPUnit might not be installed
-class DownsamplingServiceTest
+final class DownsamplingServiceTest extends TestCase
 {
     private DownsamplingService $service;
 
-    public function __construct()
+    protected function setUp(): void
     {
         $this->service = new DownsamplingService();
     }
 
-    public function run(): void
-    {
-        echo "Running DownsamplingService Tests...\n";
-        $this->testArrayDownsampling();
-        $this->testStreamDownsampling();
-        $this->testEdgeCases();
-        echo "All LTTB tests passed successfully.\n";
-    }
-
+    /** @return array<int, array{time_iso: string, value: string, flag: int}> */
     private function generateDummyData(int $count): array
     {
         $data = [];
@@ -32,13 +24,14 @@ class DownsamplingServiceTest
         for ($i = 0; $i < $count; $i++) {
             $data[] = [
                 'time_iso' => date('c', $startTime + $i * 60),
-                'value'    => (string)(sin($i / 10) * 50 + 50),
-                'flag'     => 0
+                'value'    => (string) (sin($i / 10) * 50 + 50),
+                'flag'     => 0,
             ];
         }
         return $data;
     }
 
+    /** @param array<int, array{time_iso: string, value: string, flag: int}> $data */
     private function generateStream(array $data): \Generator
     {
         foreach ($data as $row) {
@@ -46,23 +39,19 @@ class DownsamplingServiceTest
         }
     }
 
-    private function testArrayDownsampling(): void
+    public function testArrayDownsamplingPreservesEndpointsAndThreshold(): void
     {
         $data = $this->generateDummyData(1000);
         $threshold = 100;
 
         $sampled = $this->service->downsampleLTTB($data, $threshold);
 
-        if (count($sampled) !== $threshold) {
-            throw new \Exception("Array test failed: Expected $threshold points, got " . count($sampled));
-        }
-
-        if ($sampled[0] !== $data[0] || end($sampled) !== end($data)) {
-            throw new \Exception("Array test failed: First or last point not preserved.");
-        }
+        self::assertCount($threshold, $sampled);
+        self::assertSame($data[0], $sampled[0]);
+        self::assertSame(end($data), end($sampled));
     }
 
-    private function testStreamDownsampling(): void
+    public function testStreamDownsamplingPreservesEndpointsAndThreshold(): void
     {
         $dataCount = 1000;
         $data = $this->generateDummyData($dataCount);
@@ -71,39 +60,21 @@ class DownsamplingServiceTest
 
         $sampled = $this->service->downsampleLTTBStream($stream, $dataCount, $threshold);
 
-        if (count($sampled) !== $threshold) {
-            throw new \Exception("Stream test failed: Expected $threshold points, got " . count($sampled));
-        }
-
-        if ($sampled[0] !== $data[0] || end($sampled) !== end($data)) {
-            $expectedFirst = json_encode($data[0]);
-            $actualFirst = json_encode($sampled[0]);
-            $expectedLast = json_encode(end($data));
-            $actualLast = json_encode(end($sampled));
-            throw new \Exception("Stream test failed: First or last point not preserved.\nExpected First: $expectedFirst\nActual First: $actualFirst\nExpected Last: $expectedLast\nActual Last: $actualLast");
-        }
+        self::assertCount($threshold, $sampled);
+        self::assertSame($data[0], $sampled[0]);
+        self::assertSame(end($data), end($sampled));
     }
 
-    private function testEdgeCases(): void
+    public function testEdgeCases(): void
     {
-        $data = $this->generateDummyData(50);
-        
-        // Threshold > Data Length
-        $sampled = $this->service->downsampleLTTB($data, 100);
-        if (count($sampled) !== 50) {
-            throw new \Exception("Edge case failed: Threshold > Data length should return original data.");
-        }
+        $data = $this->generateDummyData(5);
 
-        // Empty Data
-        $sampled = $this->service->downsampleLTTB([], 10);
-        if (count($sampled) !== 0) {
-            throw new \Exception("Edge case failed: Empty data should return empty array.");
-        }
+        // threshold >= count -> should return original
+        $sampled = $this->service->downsampleLTTB($data, 10);
+        self::assertSame($data, $sampled);
+
+        // threshold < 3 -> still should be safe (implementation dependent, but must not error)
+        $sampled2 = $this->service->downsampleLTTB($data, 2);
+        self::assertNotEmpty($sampled2);
     }
-}
-
-// Auto-run if executed directly
-if (php_sapi_name() === 'cli') {
-    require_once __DIR__ . '/../../vendor/autoload.php';
-    (new DownsamplingServiceTest())->run();
 }

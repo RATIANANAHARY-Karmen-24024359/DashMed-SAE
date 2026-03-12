@@ -1,5 +1,17 @@
 <?php
 
+/**
+ * app/models/repositories/PatientRepository.php
+ *
+ * Repository file for the DashMed-SAE project.
+ *
+ * Notes:
+ * - This docblock is intentionally file-scoped.
+ * - Detailed PHPDoc for classes/methods is maintained near declarations.
+ *
+ * @package DashMed\SAE
+ */
+
 declare(strict_types=1);
 
 namespace modules\models\repositories;
@@ -83,7 +95,7 @@ class PatientRepository extends BaseRepository
      */
     public function findById(int $id): array|false
     {
-        $sql = "SELECT 
+        $sql = "SELECT
                 p.id_patient,
                 p.first_name,
                 p.last_name,
@@ -128,7 +140,7 @@ class PatientRepository extends BaseRepository
      */
     public function update(int $id, array $data): bool
     {
-        $sql = "UPDATE {$this->table} 
+        $sql = "UPDATE {$this->table}
             SET first_name = :first_name,
                 last_name = :last_name,
                 birth_date = :birth_date,
@@ -165,10 +177,10 @@ class PatientRepository extends BaseRepository
      */
     public function getDoctors(int $patientId): array
     {
-        $sql = "SELECT DISTINCT 
-                    u.id_user, 
-                    u.first_name, 
-                    u.last_name, 
+        $sql = "SELECT DISTINCT
+                    u.id_user,
+                    u.first_name,
+                    u.last_name,
                     p.label_profession as profession_name
                 FROM users u
                 JOIN consultations c ON u.id_user = c.id_user
@@ -222,7 +234,7 @@ class PatientRepository extends BaseRepository
             SELECT room_id,
             id_patient,
             first_name,
-            last_name 
+            last_name
             FROM {$this->table}
             WHERE room_id IS NOT NULL
             ORDER BY room_id";

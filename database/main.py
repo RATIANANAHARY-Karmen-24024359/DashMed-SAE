@@ -70,6 +70,9 @@ _COLUMNS_STR = ', '.join(DB_COLUMNS)
 _PLACEHOLDERS = ', '.join(['%s'] * len(DB_COLUMNS))
 _INSERT_QUERY = f"INSERT INTO {DB_TABLE_NAME} ({_COLUMNS_STR}) VALUES ({_PLACEHOLDERS})"
 
+# Debug counters to understand "holes" (skipped rows)
+SKIP_REASONS = defaultdict(int)
+
 def load_csv_data(filepath: str):
     """Charge le CSV en mémoire sous forme de liste de dictionnaires."""
     print(f"[DEBUG] Chargement du fichier CSV: {filepath}")
@@ -84,10 +87,8 @@ def load_csv_data(filepath: str):
 
 def generate_fill_value(parameter_id: str) -> float:
     """Génère une valeur aléatoire dans la plage display_min/display_max récupérée de la BDD."""
-    if parameter_id in PARAMETER_RANGES:
-        min_val, max_val = PARAMETER_RANGES[parameter_id]
-        return round(random.uniform(min_val, max_val), 2)
-    return round(random.uniform(0, 100), 2)
+    mn, mx = get_param_bounds(parameter_id)
+    return round(random.uniform(mn, mx), 2)
 
 def get_param_bounds(parameter_id: str) -> tuple[float, float]:
     """Retourne (display_min, display_max) pour le clamping."""
@@ -428,9 +429,10 @@ async def insert_cycle(pool, cycle, cycle_num):
     skip_count = 0
 
     for record in cycle:
-        ok, _ = validate_record(record)
+        ok, reason = validate_record(record)
         if not ok:
             skip_count += 1
+            SKIP_REASONS[reason] += 1
             continue
 
         try:
@@ -443,8 +445,9 @@ async def insert_cycle(pool, cycle, cycle_num):
                 int(record['created_by']),
                 int(record.get('archived', 0)),
             ))
-        except Exception:
+        except Exception as e:
             skip_count += 1
+            SKIP_REASONS[f"cast_error: {type(e).__name__}"] += 1
 
     if not values_list:
         return 0, skip_count, 0
@@ -515,6 +518,13 @@ async def insert_all_async(data, delay: float = INSERT_DELAY_SECONDS):
 
             elapsed = (datetime.now() - start_time).total_seconds()
             print_progress_bar(i, len(cycles), total_success, total_skip, total_error, elapsed)
+
+            # Periodic diagnostics for skipped rows
+            if i % 50 == 0 and SKIP_REASONS:
+                top = sorted(SKIP_REASONS.items(), key=lambda kv: kv[1], reverse=True)[:5]
+                print("\n[DIAG] Top skip reasons:")
+                for k, v in top:
+                    print(f"  - {v}× {k}")
 
             if i < len(cycles):
                 sleep_time = next_cycle_target - time.perf_counter()
@@ -593,6 +603,12 @@ async def insert_infinite_async(delay: float = INSERT_DELAY_SECONDS):
 
                 elapsed = (datetime.now() - start_time).total_seconds()
                 print(f"\r[INSERT] Cycle {global_cycle_idx} | ✓{total_success} ⊘{total_skip} ✗{total_error} | Temps: {elapsed:.0f}s ", end='', flush=True)
+
+                if global_cycle_idx % 200 == 0 and SKIP_REASONS:
+                    top = sorted(SKIP_REASONS.items(), key=lambda kv: kv[1], reverse=True)[:5]
+                    print("\n[DIAG] Top skip reasons:")
+                    for k, v in top:
+                        print(f"  - {v}× {k}")
 
                 sleep_time = next_cycle_target - time.perf_counter()
                 if sleep_time > 0:

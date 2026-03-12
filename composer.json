@@ -1,4 +1,7 @@
 {
+  "name": "pgp667/dashmed-projet",
+  "description": "DashMed-SAE: ICU dashboard (pure PHP MVC) + MariaDB time-series demo environment.",
+  "license": "proprietary",
   "autoload": {
     "psr-4": {
       "modules\\": "app/"
@@ -13,6 +16,5 @@
     "phpunit/phpunit": "^11.5",
     "squizlabs/php_codesniffer": "^4.0",
     "phpstan/phpstan": "^2.1"
-  },
-  "name": "pgp667/dashmed-projet"
+  }
 }

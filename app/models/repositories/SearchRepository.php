@@ -1,5 +1,17 @@
 <?php
 
+/**
+ * app/models/repositories/SearchRepository.php
+ *
+ * Repository file for the DashMed-SAE project.
+ *
+ * Notes:
+ * - This docblock is intentionally file-scoped.
+ * - Detailed PHPDoc for classes/methods is maintained near declarations.
+ *
+ * @package DashMed\SAE
+ */
+
 declare(strict_types=1);
 
 namespace modules\models\repositories;
@@ -47,9 +59,9 @@ class SearchRepository extends BaseRepository
         ];
 
         try {
-            $sqlPatients = "SELECT id_patient, first_name, last_name, birth_date, room_id
-                            FROM patients 
-                            WHERE LOWER(first_name) LIKE :q1 OR LOWER(last_name) LIKE :q2 
+            $sqlPatients = "SELECT id_patient, first_name, last_name, birth_date
+                            FROM patients
+                            WHERE LOWER(first_name) LIKE :q1 OR LOWER(last_name) LIKE :q2
                             LIMIT :limit";
 
             $stmt = $this->pdo->prepare($sqlPatients);
@@ -65,7 +77,7 @@ class SearchRepository extends BaseRepository
 
             if ($patientId) {
                 $sqlDoctors .= "
-                    JOIN consultations c_link ON u.id_user = c_link.id_user 
+                    JOIN consultations c_link ON u.id_user = c_link.id_user
                     WHERE c_link.id_patient = :pid AND (LOWER(u.first_name) LIKE :q1 OR LOWER(u.last_name) LIKE :q2)";
             } else {
                 $sqlDoctors .= " WHERE LOWER(u.first_name) LIKE :q1 OR LOWER(u.last_name) LIKE :q2";
@@ -108,9 +120,9 @@ class SearchRepository extends BaseRepository
             $stmt->execute();
             $results['parameter'] = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-            $sqlConsultations = "SELECT c.id_consultations as id_consultation, c.title, c.type, c.date, 
+            $sqlConsultations = "SELECT c.id_consultations as id_consultation, c.title, c.type, c.date,
                                         COALESCE(p.id_patient, c.id_patient) as id_patient,
-                                        COALESCE(p.first_name, 'Inconnu') as p_first, 
+                                        COALESCE(p.first_name, 'Inconnu') as p_first,
                                         COALESCE(p.last_name, '') as p_last,
                                         COALESCE(u.last_name, 'Inconnu') as doc_name
                                  FROM consultations c

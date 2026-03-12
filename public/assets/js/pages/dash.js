@@ -36,4 +36,30 @@
     });
 
     document.addEventListener('DOMContentLoaded', () => { });
+
+    // Safari can suspend background tabs and sometimes leave the page in a blank/render-broken state.
+    // When we come back to the tab, ensure the dashboard is still present; otherwise recover.
+    function dashmedIsDashboardRendered() {
+        const main = document.querySelector('main');
+        if (!main) return false;
+        return !!document.querySelector('article.card');
+    }
+
+    document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState !== 'visible') return;
+
+        try {
+            if (window.DashMedStream && typeof window.DashMedStream.reconnect === 'function') {
+                window.DashMedStream.reconnect();
+            }
+        } catch (_) {
+        }
+        setTimeout(() => {
+            if (!dashmedIsDashboardRendered()) {
+                console.warn('[DashMed] Dashboard looks blank after tab restore; reloading page.');
+                window.location.reload();
+            }
+        }, 500);
+    });
+
 })();

@@ -1,5 +1,17 @@
 <?php
 
+/**
+ * app/views/admin/SysadminView.php
+ *
+ * View file for the DashMed-SAE project.
+ *
+ * Notes:
+ * - This docblock is intentionally file-scoped.
+ * - Detailed PHPDoc for classes/methods is maintained near declarations.
+ *
+ * @package DashMed\SAE
+ */
+
 namespace modules\views\admin;
 
 /**
@@ -83,13 +95,13 @@ class SysadminView
                     <?php include dirname(__DIR__) . '/partials/_searchbar.php'; ?>
                     <h1>Administrateur système</h1>
 
-                    <?php if (!empty($error)): ?>
+                    <?php if (!empty($error)) : ?>
                         <div class="alert error" role="alert">
                             <?= $h($error) ?>
                         </div>
                     <?php endif; ?>
 
-                    <?php if (!empty($success)): ?>
+                    <?php if (!empty($success)) : ?>
                         <div class="alert success" role="alert">
                             <?= $h($success) ?>
                         </div>
@@ -572,8 +584,6 @@ class SysadminView
                         </div>
                     </div>
 
-                    </div>
-
                 </section>
 
                 <div id="delete-modal" class="delete-modal-overlay" style="display:none;">
@@ -591,7 +601,7 @@ class SysadminView
                         <form action="?page=sysadmin" method="POST" id="delete-form">
                             <input type="hidden" name="action" value="delete_user">
                             <input type="hidden" name="delete_user_id" id="delete-user-id" value="">
-                            <?php if (!empty($csrf)): ?>
+                            <?php if (!empty($csrf)) : ?>
                                 <input type="hidden" name="_csrf" value="<?= $h($csrf) ?>">
                             <?php endif; ?>
                             <div class="delete-modal-actions">

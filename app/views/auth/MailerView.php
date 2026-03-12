@@ -1,5 +1,17 @@
 <?php
 
+/**
+ * app/views/auth/MailerView.php
+ *
+ * View file for the DashMed-SAE project.
+ *
+ * Notes:
+ * - This docblock is intentionally file-scoped.
+ * - Detailed PHPDoc for classes/methods is maintained near declarations.
+ *
+ * @package DashMed\SAE
+ */
+
 namespace modules\views\auth;
 
 /**
@@ -51,9 +63,9 @@ class MailerView
         <tr>
             <td align='center'>
                 <table role='presentation' border='0' cellpadding='0' cellspacing='0' width='600' class='container' " .
-            "style='background-color: {$contentColor}; border-radius: 8px; 
+            "style='background-color: {$contentColor}; border-radius: 8px;
                 box-shadow: 0 4px 6px rgba(0,0,0,0.1); overflow: hidden;'>
-                    
+
                     <tr>
                         <td align='center' style='background-color: {$primaryColor}; padding: 30px 0;'>
                             <h1 style='color: #ffffff; margin: 0; font-size: 28px; letter-spacing: 1px;'>DashMed</h1>
@@ -70,15 +82,15 @@ class MailerView
                                 Bonjour,
                             </p>
                             <p style='font-size: 16px; line-height: 1.5; color: #555555;'>
-                                Nous avons reçu une demande de réinitialisation de mot de passe pour votre compte 
+                                Nous avons reçu une demande de réinitialisation de mot de passe pour votre compte
                                 DashMed.
-                                Utilisez le code ci-dessous pour compléter la procédure. Ce code est valable pendant 
+                                Utilisez le code ci-dessous pour compléter la procédure. Ce code est valable pendant
                                 <strong>20 minutes</strong>.
                             </p>
 
                             <div style='background-color: #f8f9fa; border: 1px solid #e9ecef; border-radius: 6px; " .
             "padding: 15px; margin: 25px 0; text-align: center;'>
-                                <span style='font-size: 32px; font-weight: bold; letter-spacing: 
+                                <span style='font-size: 32px; font-weight: bold; letter-spacing:
                                 5px; color: {$primaryColor};'>{$code}</span>
                             </div>
 
@@ -99,7 +111,7 @@ class MailerView
                             </table>
 
                             <p style='font-size: 14px; color: #999999; margin-top: 30px; font-style: italic;'>
-                                Si vous n'êtes pas à l'origine de cette demande, vous pouvez ignorer cet email en 
+                                Si vous n'êtes pas à l'origine de cette demande, vous pouvez ignorer cet email en
                                 toute sécurité.
                             </p>
                         </td>
@@ -108,7 +120,7 @@ class MailerView
                     <tr>
                         <td align='center' style='background-color: #eeeeee; padding: 20px; font-size: 12px; " .
             "color: {$mutedColor}; border-top: 1px solid #e0e0e0;'>
-                            <p style='margin: 0;'>&copy; " . date('Y') . " 
+                            <p style='margin: 0;'>&copy; " . date('Y') . "
                             DashMed. Tous droits réservés.</p>
                             <p style='margin: 5px 0 0 0;'>
                             Ceci est un message automatique, merci de ne pas y répondre.</p>

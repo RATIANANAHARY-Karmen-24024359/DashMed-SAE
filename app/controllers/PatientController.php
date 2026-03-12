@@ -1,5 +1,17 @@
 <?php
 
+/**
+ * app/controllers/PatientController.php
+ *
+ * Controller file for the DashMed-SAE project.
+ *
+ * Notes:
+ * - This docblock is intentionally file-scoped.
+ * - Detailed PHPDoc for classes/methods is maintained near declarations.
+ *
+ * @package DashMed\SAE
+ */
+
 declare(strict_types=1);
 
 namespace modules\controllers;
@@ -39,42 +51,42 @@ use PDO;
  */
 class PatientController
 {
-    /** 
+    /**
      * @var PDO The active database connection instance for multi-repository management.
      */
     private PDO $pdo;
 
-    /** 
+    /**
      * @var PatientRepository Data access layer for patient biographical and structural information.
      */
     private PatientRepository $patientRepo;
 
-    /** 
+    /**
      * @var ConsultationRepository Management of medical appointments and historical records.
      */
     private ConsultationRepository $consultationRepo;
 
-    /** 
+    /**
      * @var UserRepository Identity management for clinical staff and administrative access.
      */
     private UserRepository $userRepo;
 
-    /** 
+    /**
      * @var MonitorRepository Engine for high-frequency time-series medical data retrieval.
      */
     private MonitorRepository $monitorModel;
 
-    /** 
+    /**
      * @var MonitorPreferenceRepository Persistent user-specific UI layout and chart configurations.
      */
     private MonitorPreferenceRepository $prefModel;
 
-    /** 
+    /**
      * @var MonitoringService Business logic for metric processing and health indicator calculation.
      */
     private MonitoringService $monitoringService;
 
-    /** 
+    /**
      * @var PatientContextService State manager for tracking the currently active patient across sessions.
      */
     private PatientContextService $contextService;
@@ -105,7 +117,7 @@ class PatientController
 
     /**
      * Initializes and displays the high-performance Data Explorer and CSV viewer.
-     * 
+     *
      * Retrieves the current patient context and validates their existence before
      * rendering the specialized analytics view.
      *
@@ -127,8 +139,8 @@ class PatientController
 
     /**
      * Entry point for the patient dashboard, handling both read and update operations.
-     * 
-     * Routes POST requests to preference management and GET requests to the main 
+     *
+     * Routes POST requests to preference management and GET requests to the main
      * clinical overview display.
      *
      * @return void
@@ -203,8 +215,8 @@ class PatientController
 
     /**
      * Entry point for real-time patient monitoring and physiological waveforms.
-     * 
-     * Manages asynchronous preference updates via POST and coordinate-based 
+     *
+     * Manages asynchronous preference updates via POST and coordinate-based
      * clinical data rendering via GET.
      *
      * @return void
@@ -228,7 +240,7 @@ class PatientController
             $this->requireAuth();
 
             $userId = $_SESSION['user_id'] ?? null;
-            if (!$userId && empty($_GET["debug"])) {
+            if (!$userId) {
                 header('Location: /?page=login');
                 exit();
             }
@@ -675,7 +687,7 @@ class PatientController
             exit();
         }
         $userId = $_SESSION['user_id'] ?? null;
-        if (!$userId && empty($_GET["debug"])) {
+        if (!$userId) {
             header('Location: /?page=login');
             exit();
         }
@@ -843,7 +855,7 @@ class PatientController
 
         try {
             $userId = $_SESSION['user_id'] ?? null;
-            if (!$userId && !isset($_GET["debug"]) && !isset($_GET["debug_stream"])) {
+            if (!$userId) {
                 header('Content-Type: application/json');
                 echo json_encode(['error' => 'Non autorisé']);
                 return;
@@ -882,21 +894,30 @@ class PatientController
             $isRaw = isset($_GET['raw']) && $_GET['raw'] === '1';
             $isCsv = isset($_GET['format']) && $_GET['format'] === 'csv';
 
+
             if ($isRaw) {
                 if ($isCsv) {
                     $timestamp = date('Ymd_His');
                     header('Content-Type: text/csv');
                     header('Content-Disposition: attachment; filename="export_patient_' . $patientId . '_' . $parameterId . '_' . $timestamp . '.csv"');
+
                     $out = fopen('php://output', 'w');
+                    if ($out === false) {
+                        echo "timestamp,value,alert_flag\n";
+                        return;
+                    }
+
                     fputcsv($out, ['timestamp', 'value', 'alert_flag']);
 
                     $stream = $this->monitorModel->streamRawHistoryByParameter($patientId, $parameterId, $targetDate, 0);
                     foreach ($stream as $row) {
-                        $rawTs = (strpos($row['timestamp'], '+') === false && strpos($row['timestamp'], 'Z') === false)
-                            ? $row['timestamp'] . ' UTC' : $row['timestamp'];
+                        $ts = $row['timestamp'];
+                        $rawTs = (strpos($ts, '+') === false && strpos($ts, 'Z') === false) ? $ts . ' UTC' : $ts;
+
+                        $val = $row['value'];
                         fputcsv($out, [
                             date('c', (int) strtotime($rawTs)),
-                            $row['value'] !== null ? round((float) $row['value'], 2) : ''
+                            is_numeric($val) ? round((float) $val, 2) : ''
                         ]);
                     }
                     fclose($out);
@@ -906,12 +927,16 @@ class PatientController
                     $stream = $this->monitorModel->streamRawHistoryByParameter($patientId, $parameterId, $targetDate, 0);
                     $first = true;
                     foreach ($stream as $row) {
-                        if (!$first)
+                        if (!$first) {
                             echo ',';
+                        }
+                        $ts = $row['timestamp'];
+                        $rawTs = (strpos($ts, '+') === false && strpos($ts, 'Z') === false) ? $ts . ' UTC' : $ts;
+                        $val = $row['value'];
                         echo json_encode([
-                            'time_iso' => date('c', (int) strtotime($row['timestamp'] . ' UTC')),
-                            'value' => (string) round((float) $row['value'], 2),
-                            'flag' => (string) $row['alert_flag']
+                            'time_iso' => date('c', (int) strtotime($rawTs)),
+                            'value' => is_numeric($val) ? (string) round((float) $val, 2) : '0',
+                            'flag' => (string) $row['alert_flag'],
                         ]);
                         $first = false;
                     }
@@ -922,13 +947,17 @@ class PatientController
 
             header('Content-Type: application/json');
 
+            $appEnv = $_ENV['APP_ENV'] ?? getenv('APP_ENV') ?: '';
+            $enableCache = $appEnv !== 'testing';
+
             $cacheKey = md5("history_v2_{$patientId}_{$parameterId}_{$targetDate}");
             $cacheFile = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'dashmed_cache' . DIRECTORY_SEPARATOR . $cacheKey . '.json';
 
-            if (file_exists($cacheFile) && (time() - filemtime($cacheFile) < 30)) {
+            if ($enableCache && file_exists($cacheFile) && (time() - filemtime($cacheFile) < 30)) {
                 echo file_get_contents($cacheFile);
                 return;
             }
+
 
             $count = $this->monitorModel->countRawHistoryByParameter($patientId, $parameterId, $targetDate);
             $threshold = 5000;
@@ -940,12 +969,19 @@ class PatientController
 
                 $formattedStream = function () use ($stream) {
                     foreach ($stream as $row) {
-                        $rawTs = (strpos($row['timestamp'], '+') === false && strpos($row['timestamp'], 'Z') === false)
-                            ? $row['timestamp'] . ' UTC' : $row['timestamp'];
+                        $ts = $row['timestamp'];
+                        $rawTs = (strpos($ts, '+') === false && strpos($ts, 'Z') === false) ? $ts . ' UTC' : $ts;
+
+                        $rawVal = $row['value'];
+                        $valStr = is_numeric($rawVal) ? (string) round((float) $rawVal, 2) : '0';
+
+                        $rawFlag = $row['alert_flag'];
+                        $flagStr = is_numeric($rawFlag) ? (string) ((int) $rawFlag) : (string) $rawFlag;
+
                         yield [
-                            'time_iso' => date('c', (int) strtotime($rawTs)),
-                            'value' => $row['value'] !== null ? (string) round((float) $row['value'], 2) : null,
-                            'flag' => (string) $row['alert_flag']
+                            'time_iso' => $ts !== '' ? date('c', (int) strtotime($rawTs)) : '',
+                            'value' => $valStr,
+                            'flag' => $flagStr,
                         ];
                     }
                 };
@@ -958,23 +994,27 @@ class PatientController
                 foreach ($history as $hItem) {
                     $ts = $hItem['timestamp'];
                     $rawTs = (strpos($ts, '+') === false && strpos($ts, 'Z') === false) ? $ts . ' UTC' : $ts;
+
+                    $val = $hItem['value'];
                     $formatted[] = [
                         'time_iso' => date('c', (int) strtotime($rawTs)),
-                        'value' => $hItem['value'] !== null ? (string) round((float) $hItem['value'], 2) : null,
-                        'flag' => (string) $hItem['alert_flag']
+                        'value' => $val !== null ? (string) round((float) $val, 2) : null,
+                        'flag' => (string) $hItem['alert_flag'],
                     ];
                 }
             }
 
             $jsonResult = json_encode($formatted);
 
-            if (!is_dir(dirname($cacheFile))) {
-                mkdir(dirname($cacheFile), 0777, true);
+
+            if ($enableCache) {
+                if (!is_dir(dirname($cacheFile))) {
+                    mkdir(dirname($cacheFile), 0777, true);
+                }
+                file_put_contents($cacheFile, $jsonResult);
             }
-            file_put_contents($cacheFile, $jsonResult);
 
             echo $jsonResult;
-
         } catch (\Exception $e) {
             error_log('[PatientController] apiHistory error: ' . $e->getMessage());
             echo json_encode(['error' => 'Erreur interne']);
@@ -997,7 +1037,7 @@ class PatientController
 
         try {
             $userId = $_SESSION['user_id'] ?? null;
-            if (!$userId && empty($_GET["debug"])) {
+            if (!$userId) {
                 echo json_encode(['error' => 'Non autorisé']);
                 return;
             }
@@ -1031,49 +1071,47 @@ class PatientController
             $rawUserId = $_SESSION['user_id'] ?? 0;
             $prefs = $this->prefModel->getUserPreferences(is_numeric($rawUserId) ? (int) $rawUserId : 0);
 
+
             $rawHistory = $this->monitorModel->getRawHistory($patientId, 1);
 
             $processedMetrics = $this->monitoringService->processMetrics($metrics, $rawHistory, $prefs, true);
             $formatted = [];
 
             foreach ($processedMetrics as $metric) {
-                if ($metric instanceof \modules\models\entities\Indicator) {
-                    $viewData = $metric->getViewData();
-                    $historyHtmlData = is_array($viewData['history_html_data'] ?? null) ? $viewData['history_html_data'] : [];
-                    $latestTimeIso = '';
-                    if (!empty($historyHtmlData) && is_array($historyHtmlData[0] ?? null) && isset($historyHtmlData[0]['time_iso'])) {
-                        $latestTimeIso = is_scalar($historyHtmlData[0]['time_iso']) ? (string) $historyHtmlData[0]['time_iso'] : '';
-                    }
+                $viewData = $metric->getViewData();
 
-                    $timeRaw = $metric->getTimestamp();
-                    $rawTs = (is_string($timeRaw) && strpos($timeRaw, '+') === false && strpos($timeRaw, 'Z') === false) ? $timeRaw . ' UTC' : (string) $timeRaw;
-                    $formatted[] = [
-                        'parameter_id' => (string) $metric->getId(),
-                        'slug' => is_scalar($viewData['slug'] ?? null) ? (string) $viewData['slug'] : 'param',
-                        'value' => is_scalar($viewData['value'] ?? null) ? (string) $viewData['value'] : '',
-                        'unit' => is_scalar($viewData['unit'] ?? null) ? (string) $viewData['unit'] : '',
-                        'state_class' => is_scalar($viewData['card_class'] ?? null) ? (string) $viewData['card_class'] : '',
-                        'is_crit_flag' => !empty($viewData['is_crit_flag']),
-                        'time_iso' => ($timeRaw !== null && $timeRaw !== '') ? date('c', (int) strtotime($rawTs)) : $latestTimeIso,
-                        'chart_type' => is_scalar($viewData['chart_type'] ?? null) ? (string) $viewData['chart_type'] : 'line',
-                        'display_name' => is_scalar($viewData['display_name'] ?? null) ? (string) $viewData['display_name'] : ''
-                    ];
+                $historyHtmlData = $viewData['history_html_data'] ?? [];
+                $latestTimeIso = '';
+                if (is_array($historyHtmlData) && !empty($historyHtmlData)) {
+                    $last = end($historyHtmlData);
+                    if (is_array($last)) {
+                        $rawLatest = $last['time_iso'] ?? '';
+                        $latestTimeIso = is_string($rawLatest) ? $rawLatest : '';
+                    }
+                    reset($historyHtmlData);
                 }
 
                 $timeRaw = $metric->getTimestamp();
-                $rawTs = (is_string($timeRaw) && strpos($timeRaw, '+') === false && strpos($timeRaw, 'Z') === false) ? $timeRaw . ' UTC' : (string) $timeRaw;
+                $rawTs = (is_string($timeRaw) && strpos($timeRaw, '+') === false && strpos($timeRaw, 'Z') === false)
+                    ? $timeRaw . ' UTC'
+                    : $timeRaw;
+
+                $timeIso = $latestTimeIso;
+                if (is_string($rawTs) && is_string($timeRaw) && $timeRaw !== '') {
+                    $timeIso = date('c', (int) strtotime($rawTs));
+                }
 
                 $formatted[] = [
-                    'parameter_id' => (string) $metric->getId(),
-                    'slug' => is_scalar($viewData['slug'] ?? null) ? (string) $viewData['slug'] : 'param',
-                    'value' => is_scalar($viewData['value'] ?? null) ? (string) $viewData['value'] : '',
-                    'unit' => is_scalar($viewData['unit'] ?? null) ? (string) $viewData['unit'] : '',
-                    'state_class' => is_scalar($viewData['card_class'] ?? null) ? (string) $viewData['card_class'] : '',
-                    'is_crit_flag' => !empty($viewData['is_crit_flag']),
-                    'time_iso' => ($timeRaw !== null && $timeRaw !== '') ? date('c', (int) strtotime($rawTs)) : $latestTimeIso,
-                    'chart_type' => is_scalar($viewData['chart_type'] ?? null) ? (string) $viewData['chart_type'] : 'line',
-                    'display_name' => is_scalar($viewData['display_name'] ?? null) ? (string) $viewData['display_name'] : '',
-                    'thresholds' => $viewData['thresholds'] ?? null
+                    'parameter_id' => $metric->getId(),
+                    'slug' => is_string($viewData['slug'] ?? null) ? $viewData['slug'] : 'param',
+                    'value' => $viewData['value'] ?? '',
+                    'unit' => is_string($viewData['unit'] ?? null) ? $viewData['unit'] : '',
+                    'state_class' => is_string($viewData['card_class'] ?? null) ? $viewData['card_class'] : '',
+                    'is_crit_flag' => (bool) ($viewData['is_crit_flag'] ?? false),
+                    'time_iso' => $timeIso,
+                    'chart_type' => is_string($viewData['chart_type'] ?? null) ? $viewData['chart_type'] : 'line',
+                    'display_name' => is_string($viewData['display_name'] ?? null) ? $viewData['display_name'] : '',
+                    'thresholds' => $viewData['thresholds'] ?? null,
                 ];
             }
 
@@ -1145,29 +1183,35 @@ class PatientController
      * Loads and sorts consultations.
      *
      * @param int|null $patientId
-     * @return array{0: array<int, mixed>, 1: array<int, mixed>}
+     * @return array{0: array<int, Consultation>, 1: array<int, Consultation>}
      */
     private function loadConsultations(?int $patientId): array
     {
         if ($patientId === null) {
             return [[], []];
         }
+
+        /** @var array<int, Consultation> $allConsultations */
         $allConsultations = $this->consultationRepo->getConsultationsByPatientId($patientId);
+
         $today = new DateTime();
         $past = [];
         $future = [];
+
         foreach ($allConsultations as $consultation) {
             try {
                 $consultationDate = new DateTime($consultation->getDate());
-            } catch (\Exception $e) {
+            } catch (\Throwable) {
                 continue;
             }
+
             if ($consultationDate < $today) {
                 $past[] = $consultation;
             } else {
                 $future[] = $consultation;
             }
         }
+
         return [$past, $future];
     }
 
@@ -1196,7 +1240,7 @@ class PatientController
              * PERFORMANCE OPTIMIZATION:
              * Instead of loading the entire history table for all parameters (O(N)),
              * we fetch only the last 1000 points per parameter (O(Params * 1000)).
-             * This prevents memory exhaustion on the initial page load while 
+             * This prevents memory exhaustion on the initial page load while
              * keeping sparklines perfectly accurate.
              */
             // PERF: do not pre-load full sparkline history on initial Dashboard render.
@@ -1278,10 +1322,11 @@ class PatientController
 
         try {
             $userId = $_SESSION['user_id'] ?? null;
-            if (!$userId && empty($_GET["debug"])) {
+            if (!$userId) {
                 echo "data: " . json_encode(['error' => 'Non autorisé']) . "\n\n";
-                if (ob_get_level() > 0)
+                if (ob_get_level() > 0) {
                     ob_flush();
+                }
                 flush();
                 return;
             }
@@ -1301,8 +1346,9 @@ class PatientController
 
             if (!$patientId) {
                 echo "data: " . json_encode(['error' => 'Patient introuvable']) . "\n\n";
-                if (ob_get_level() > 0)
+                if (ob_get_level() > 0) {
                     ob_flush();
+                }
                 flush();
                 return;
             }
@@ -1316,11 +1362,10 @@ class PatientController
             $lastSentTimestamp = '1970-01-01 00:00:00';
 
             foreach ($indicators as $ind) {
-                if ($ind instanceof \modules\models\entities\Indicator) {
-                    $indicatorsById[$ind->getId()] = $ind;
-                    if ($ind->getTimestamp() > $lastSentTimestamp) {
-                        $lastSentTimestamp = $ind->getTimestamp();
-                    }
+                $indicatorsById[$ind->getId()] = $ind;
+                $ts = $ind->getTimestamp();
+                if (is_string($ts) && $ts > $lastSentTimestamp) {
+                    $lastSentTimestamp = $ts;
                 }
             }
 
@@ -1328,6 +1373,7 @@ class PatientController
                 if (connection_aborted()) {
                     break;
                 }
+
 
                 $allNewHistory = $this->monitorModel->getRawHistory($patientId, 0, $lastSentTimestamp);
 
@@ -1345,7 +1391,7 @@ class PatientController
 
                         $indicator = $indicatorsById[$pid] ?? null;
                         if ($indicator) {
-                            $indicator->setValue($val !== null && $val !== '' ? (float) $val : null);
+                            $indicator->setValue(is_numeric($val) ? (float) $val : null);
                             $indicator->setTimestamp($ts);
                             $indicator->setAlertFlag((int) $flag);
 
@@ -1367,8 +1413,9 @@ class PatientController
 
                     if (!empty($formatted)) {
                         echo "data: " . json_encode($formatted) . "\n\n";
-                        if (ob_get_level() > 0)
+                        if (ob_get_level() > 0) {
                             ob_flush();
+                        }
                         flush();
                     }
                 }
@@ -1410,7 +1457,7 @@ class PatientController
 
         try {
             $userId = $_SESSION['user_id'] ?? null;
-            if (!$userId && !isset($_GET['debug'])) {
+            if (!$userId) {
                 echo json_encode(['error' => 'Non autorisé']);
                 return;
             }
@@ -1466,12 +1513,14 @@ class PatientController
             $history = $this->monitorModel->getTailHistoryByParameter($patientId, $parameterId, $limit, $targetDate);
             $formatted = [];
             foreach ($history as $row) {
-                $ts = (string) ($row['timestamp'] ?? '');
+                $ts = $row['timestamp'];
                 $rawTs = (strpos($ts, '+') === false && strpos($ts, 'Z') === false) ? $ts . ' UTC' : $ts;
+
+                $val = $row['value'];
                 $formatted[] = [
-                    'time_iso' => $ts !== '' ? date('c', (int) strtotime($rawTs)) : '',
-                    'value' => $row['value'] !== null ? (string) round((float) $row['value'], 2) : null,
-                    'flag' => (string) ($row['alert_flag'] ?? '0'),
+                    'time_iso' => date('c', (int) strtotime($rawTs)),
+                    'value' => $val !== null ? (string) round((float) $val, 2) : null,
+                    'flag' => (string) $row['alert_flag'],
                 ];
             }
 
@@ -1479,7 +1528,7 @@ class PatientController
                 'patient_id' => $patientId,
                 'param' => $parameterId,
                 'points' => $formatted,
-                'last_time_iso' => !empty($formatted) ? ($formatted[count($formatted) - 1]['time_iso'] ?? null) : null,
+                'last_time_iso' => !empty($formatted) ? $formatted[count($formatted) - 1]['time_iso'] : null,
             ]);
 
             if (!is_dir(dirname($cacheFile))) {
@@ -1522,7 +1571,7 @@ class PatientController
 
         try {
             $userId = $_SESSION['user_id'] ?? null;
-            if (!$userId && !isset($_GET['debug'])) {
+            if (!$userId) {
                 echo json_encode(['error' => 'Non autorisé']);
                 return;
             }
@@ -1582,19 +1631,21 @@ class PatientController
             $lastIso = null;
             $lastSeq = null;
             foreach ($rows as $row) {
-                $ts = (string) ($row['timestamp'] ?? '');
+                $ts = $row['timestamp'];
                 $rawTs = (strpos($ts, '+') === false && strpos($ts, 'Z') === false) ? $ts . ' UTC' : $ts;
-                $iso = $ts !== '' ? date('c', (int) strtotime($rawTs)) : '';
+                $iso = date('c', (int) strtotime($rawTs));
                 $lastIso = $iso;
 
                 if (isset($row['seq'])) {
                     $lastSeq = (int) $row['seq'];
                 }
 
+                $val = $row['value'];
+
                 $formatted[] = [
                     'time_iso' => $iso,
-                    'value' => $row['value'] !== null ? (string) round((float) $row['value'], 2) : null,
-                    'flag' => (string) ($row['alert_flag'] ?? '0'),
+                    'value' => $val !== null ? (string) round((float) $val, 2) : null,
+                    'flag' => (string) $row['alert_flag'],
                     'seq' => isset($row['seq']) ? (int) $row['seq'] : null,
                 ];
             }
@@ -1631,7 +1682,7 @@ class PatientController
 
         try {
             $userId = $_SESSION['user_id'] ?? null;
-            if (!$userId && !isset($_GET['debug'])) {
+            if (!$userId) {
                 echo json_encode(['error' => 'Non autorisé']);
                 return;
             }
@@ -1691,7 +1742,7 @@ class PatientController
     {
         try {
             $userId = $_SESSION['user_id'] ?? null;
-            if (!$userId && !isset($_GET["debug"])) {
+            if (!$userId) {
                 header('Content-Type: application/json');
                 echo json_encode(['error' => 'Non autorisé']);
                 return;

@@ -19,14 +19,12 @@ Thumbs.db
 
 # Environment files
 .env
-.env.backup
+.env.*
+!.env.example
 env
 
 # PHP doc
 .phpdoc
-
-
-
 
 # Documentation
 /docs/
@@ -34,3 +32,7 @@ env
 
 # VENV
 /database/venv/
+
+# Local tooling (do not ship)
+/tools/
+/phpcs.xml

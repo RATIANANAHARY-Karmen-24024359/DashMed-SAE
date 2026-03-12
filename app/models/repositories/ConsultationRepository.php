@@ -1,5 +1,17 @@
 <?php
 
+/**
+ * app/models/repositories/ConsultationRepository.php
+ *
+ * Repository file for the DashMed-SAE project.
+ *
+ * Notes:
+ * - This docblock is intentionally file-scoped.
+ * - Detailed PHPDoc for classes/methods is maintained near declarations.
+ *
+ * @package DashMed\SAE
+ */
+
 declare(strict_types=1);
 
 namespace modules\models\repositories;
@@ -86,7 +98,7 @@ class ConsultationRepository extends BaseRepository
         string $title
     ): bool {
         try {
-            $sql = "INSERT INTO consultations (id_patient, id_user, date, type, note, title) 
+            $sql = "INSERT INTO consultations (id_patient, id_user, date, type, note, title)
                     VALUES (:id_patient, :id_user, :date, :type, :note, :title)";
 
             $stmt = $this->pdo->prepare($sql);
@@ -125,11 +137,11 @@ class ConsultationRepository extends BaseRepository
         string $title
     ): bool {
         try {
-            $sql = "UPDATE consultations 
-                    SET id_user = :id_user, 
-                        date = :date, 
-                        type = :type, 
-                        note = :note, 
+            $sql = "UPDATE consultations
+                    SET id_user = :id_user,
+                        date = :date,
+                        type = :type,
+                        note = :note,
                         title = :title,
                         updated_at = NOW()
                     WHERE id_consultations = :id_consultation";
@@ -176,10 +188,10 @@ class ConsultationRepository extends BaseRepository
      */
     public function getTodayConsultations(int $idPatient): array
     {
-        $sql = "SELECT id_consultations, title, type, last_name, date 
-                FROM view_consultations 
-                WHERE id_patient = :id 
-                AND DATE(date) = CURDATE() 
+        $sql = "SELECT id_consultations, title, type, last_name, date
+                FROM view_consultations
+                WHERE id_patient = :id
+                AND DATE(date) = CURDATE()
                 AND date >= NOW()
                 ORDER BY date ASC";
         $stmt = $this->pdo->prepare($sql);
