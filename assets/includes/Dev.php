@@ -46,8 +46,8 @@ final class Dev
             error_log('[Dev] .env introuvable ou illisible à ' . $envPath);
 
             http_response_code(500);
-            if (class_exists('\\modules\\views\\pages\\static\\ErrorView')) {
-                (new \modules\views\pages\static\ErrorView())->show(
+            if (class_exists('\\modules\\views\\site\\ErrorView')) {
+                (new \modules\views\site\ErrorView())->show(
                     500,
                     message: "Erreur serveur — fichier .env introuvable.",
                     details: Dev::isDebug() ? "Fichier manquant : {$envPath}" : null

@@ -1,7 +1,7 @@
 <?php
 
 /**
- * app/views/static/SitemapView.php
+ * app/views/site/SitemapView.php
  *
  * View file for the DashMed-SAE project.
  *
@@ -12,14 +12,14 @@
  * @package DashMed\SAE
  */
 
-namespace modules\views\static;
+namespace modules\views\site;
 
 /**
  * Class SitemapView
  *
  * Displays the sitemap for SEO and navigation.
  *
- * @package DashMed\Modules\Views\Pages\Static
+ * @package DashMed\Modules\Views\Pages\Site
  * @author DashMed Team
  * @license Proprietary
  */

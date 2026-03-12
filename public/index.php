@@ -274,7 +274,7 @@ $httpAction = $httpMethodToAction($rawMethod);
 try {
     if (!class_exists($ctrlClass)) {
         http_response_code(404);
-        (new \modules\views\static\ErrorView())->
+        (new \modules\views\site\ErrorView())->
             show(404, details: Dev::isDebug() ? "404 — Contrôleur introuvable: {$ctrlClass}" : null);
         exit;
     }
@@ -287,7 +287,7 @@ try {
             exit;
         }
         http_response_code(404);
-        (new \modules\views\static\ErrorView())->
+        (new \modules\views\site\ErrorView())->
             show(404, details: Dev::isDebug() ? "404 — Action '{$action}' introuvable sur {$ctrlClass}" : null);
         exit;
     }
@@ -304,12 +304,12 @@ try {
 
     http_response_code(405);
     header('Allow: GET, POST, PUT, PATCH, DELETE, HEAD');
-    (new \modules\views\static\ErrorView())->
+    (new \modules\views\site\ErrorView())->
         show(405, details: Dev::isDebug() ? "405 — Méthode non autorisée pour {$ctrlClass}" : null);
     exit;
 } catch (Throwable $e) {
     http_response_code(500);
-    (new \modules\views\static\ErrorView())->
+    (new \modules\views\site\ErrorView())->
         show(500, details: Dev::isDebug() ? $e->getMessage() : null);
     exit;
 }

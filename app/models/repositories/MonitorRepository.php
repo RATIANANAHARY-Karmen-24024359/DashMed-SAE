@@ -101,12 +101,12 @@ class MonitorRepository extends BaseRepository
                 WHEN pd.value IS NULL THEN 'unknown'
                 WHEN (
                     pd.alert_flag = 1
-                    OR (COALESCE(pat.critical_min, pr.critical_min) IS NOT NULL AND pd.value < COALESCE(pat.critical_min, pr.critical_min))
-                    OR (COALESCE(pat.critical_max, pr.critical_max) IS NOT NULL AND pd.value > COALESCE(pat.critical_max, pr.critical_max))
+                    OR (COALESCE(pat.critical_min, pr.critical_min) IS NOT NULL AND pd.value <= COALESCE(pat.critical_min, pr.critical_min))
+                    OR (COALESCE(pat.critical_max, pr.critical_max) IS NOT NULL AND pd.value >= COALESCE(pat.critical_max, pr.critical_max))
                 ) THEN '" . self::STATUS_CRITICAL . "'
                 WHEN (
-                    (COALESCE(pat.normal_min, pr.normal_min) IS NOT NULL AND pd.value < COALESCE(pat.normal_min, pr.normal_min))
-                    OR (COALESCE(pat.normal_max, pr.normal_max) IS NOT NULL AND pd.value > COALESCE(pat.normal_max, pr.normal_max))
+                    (COALESCE(pat.normal_min, pr.normal_min) IS NOT NULL AND pd.value <= COALESCE(pat.normal_min, pr.normal_min))
+                    OR (COALESCE(pat.normal_max, pr.normal_max) IS NOT NULL AND pd.value >= COALESCE(pat.normal_max, pr.normal_max))
                 ) THEN '" . self::STATUS_WARNING . "'
                 ELSE '" . self::STATUS_NORMAL . "'
                 END AS status

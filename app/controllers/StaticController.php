@@ -16,10 +16,10 @@ declare(strict_types=1);
 
 namespace modules\controllers;
 
-use modules\views\static\AboutView;
-use modules\views\static\HomepageView;
-use modules\views\static\LegalnoticeView;
-use modules\views\static\SitemapView;
+use modules\views\site\AboutView;
+use modules\views\site\HomepageView;
+use modules\views\site\LegalnoticeView;
+use modules\views\site\SitemapView;
 
 /**
  * Class StaticController

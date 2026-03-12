@@ -1,7 +1,7 @@
 <?php
 
 /**
- * app/views/static/ErrorView.php
+ * app/views/site/ErrorView.php
  *
  * View file for the DashMed-SAE project.
  *
@@ -12,7 +12,7 @@
  * @package DashMed\SAE
  */
 
-namespace modules\views\static;
+namespace modules\views\site;
 
 /**
  * Class ErrorView
@@ -21,7 +21,7 @@ namespace modules\views\static;
  *
  * Shows error details if in debug mode.
  *
- * @package DashMed\Modules\Views\Pages\Static
+ * @package DashMed\Modules\Views\Pages\Site
  * @author DashMed Team
  * @license Proprietary
  */

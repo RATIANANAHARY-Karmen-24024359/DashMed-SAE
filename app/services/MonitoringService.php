@@ -262,7 +262,7 @@ class MonitoringService
 
             $viewData['history_html_data'][] = [
                 'time_iso' => $tsStr !== '' ? date('c', (int) strtotime($rawTsStr)) : '',
-                'value' => is_numeric($rawHVal) ? (string)$rawHVal : null,
+                'value' => is_numeric($rawHVal) ? (string) $rawHVal : null,
                 'flag' => (is_numeric($rawHFlag) && (int) $rawHFlag === 1) ? '1' : '0'
             ];
         }

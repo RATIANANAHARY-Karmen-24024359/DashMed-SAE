@@ -1,7 +1,7 @@
 <?php
 
 /**
- * app/views/static/HomepageView.php
+ * app/views/site/HomepageView.php
  *
  * View file for the DashMed-SAE project.
  *
@@ -12,7 +12,7 @@
  * @package DashMed\SAE
  */
 
-namespace modules\views\static;
+namespace modules\views\site;
 
 /**
  * Class HomepageView
@@ -21,7 +21,7 @@ namespace modules\views\static;
  *
  * Presents DashMed goals and links to auth.
  *
- * @package DashMed\Modules\Views\Pages\Static
+ * @package DashMed\Modules\Views\Pages\Site
  * @author DashMed Team
  * @license Proprietary
  */
