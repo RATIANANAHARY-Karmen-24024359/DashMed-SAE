@@ -1111,12 +1111,15 @@ class PatientController
                 }
 
                 $timeRaw = $metric->getTimestamp();
-                $rawTs = (is_string($timeRaw) && strpos($timeRaw, '+') === false && strpos($timeRaw, 'Z') === false)
-                    ? $timeRaw . ' UTC'
-                    : $timeRaw;
+                $rawTs = '';
+                if (is_string($timeRaw) && $timeRaw !== '') {
+                    $rawTs = (strpos($timeRaw, '+') === false && strpos($timeRaw, 'Z') === false)
+                        ? $timeRaw . ' UTC'
+                        : $timeRaw;
+                }
 
                 $timeIso = $latestTimeIso;
-                if (is_string($rawTs) && is_string($timeRaw) && $timeRaw !== '') {
+                if ($rawTs !== '') {
                     $timeIso = date('c', (int) strtotime($rawTs));
                 }
 

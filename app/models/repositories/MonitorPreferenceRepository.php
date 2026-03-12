@@ -53,8 +53,8 @@ class MonitorPreferenceRepository extends BaseRepository
     public function __construct(?PDO $pdo = null)
     {
         parent::__construct($pdo);
-        $this->pdo->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
-        $this->pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+        $this->pdo->setAttribute(\PDO::ATTR_DEFAULT_FETCH_MODE, \PDO::FETCH_ASSOC);
+        $this->pdo->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
     }
 
     /**
@@ -147,7 +147,7 @@ class MonitorPreferenceRepository extends BaseRepository
 
             $chartPrefs = [];
             while (true) {
-                $row = $stChart->fetch(PDO::FETCH_ASSOC);
+                $row = $stChart->fetch(\PDO::FETCH_ASSOC);
                 if (!is_array($row)) {
                     break;
                 }
@@ -172,7 +172,7 @@ class MonitorPreferenceRepository extends BaseRepository
                          ORDER BY display_order';
             $stOrder = $this->pdo->prepare($sqlOrder);
             $stOrder->execute([':uid' => $userId]);
-            $rows = $stOrder->fetchAll(PDO::FETCH_ASSOC);
+            $rows = $stOrder->fetchAll(\PDO::FETCH_ASSOC);
             $orderPrefs = [];
             foreach ($rows as $row) {
                 if (!is_array($row)) {
@@ -205,7 +205,7 @@ class MonitorPreferenceRepository extends BaseRepository
             if ($stmt === false) {
                 return [];
             }
-            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+            return $stmt->fetchAll(\PDO::FETCH_ASSOC);
         } catch (PDOException $e) {
             error_log('[MonitorPreferenceRepository] getAllParameters error: ' . $e->getMessage());
             return [];
@@ -292,7 +292,7 @@ class MonitorPreferenceRepository extends BaseRepository
             );
             $st->execute([':uid' => $userId]);
 
-            return $st->fetchAll(PDO::FETCH_ASSOC);
+            return $st->fetchAll(\PDO::FETCH_ASSOC);
         } catch (PDOException $e) {
             error_log('[MonitorPreferenceRepository] getUserLayoutSimple error: ' . $e->getMessage());
             return [];
@@ -326,7 +326,7 @@ class MonitorPreferenceRepository extends BaseRepository
         }
 
         try {
-            if ($this->pdo->getAttribute(PDO::ATTR_DRIVER_NAME) === 'sqlite') {
+            if ($this->pdo->getAttribute(\PDO::ATTR_DRIVER_NAME) === 'sqlite') {
                 $this->layoutColumnsChecked = true;
                 return;
             }
@@ -361,7 +361,7 @@ class MonitorPreferenceRepository extends BaseRepository
         }
 
         try {
-            if ($this->pdo->getAttribute(PDO::ATTR_DRIVER_NAME) === 'sqlite') {
+            if ($this->pdo->getAttribute(\PDO::ATTR_DRIVER_NAME) === 'sqlite') {
                 $this->chartColumnsChecked = true;
                 return;
             }

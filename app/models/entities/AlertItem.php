@@ -23,18 +23,18 @@ namespace modules\models\entities;
 final class AlertItem
 {
     public function __construct(
-        public readonly string $parameterId,
-        public readonly string $displayName,
-        public readonly string $unit,
-        public readonly float $value,
-        public readonly ?float $minThreshold,
-        public readonly ?float $maxThreshold,
-        public readonly ?float $criticalMin,
-        public readonly ?float $criticalMax,
-        public readonly string $timestamp,
-        public readonly bool $isBelowMin,
-        public readonly bool $isAboveMax,
-        public readonly bool $isCritical
+        public string $parameterId,
+        public string $displayName,
+        public string $unit,
+        public float $value,
+        public ?float $minThreshold,
+        public ?float $maxThreshold,
+        public ?float $criticalMin,
+        public ?float $criticalMax,
+        public string $timestamp,
+        public bool $isBelowMin,
+        public bool $isAboveMax,
+        public bool $isCritical
     ) {
     }
 
