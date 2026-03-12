@@ -123,8 +123,10 @@ class MonitoringService
             // - 'all' = full history
             // - numeric string (e.g. '1' = last hour)
             // Legacy/default used to be '0.0333' (~2 minutes). We now default to '1' (last hour).
-            $userDuration = is_array($cp) ? (string) ($cp['display_duration'] ?? '1') : '1';
-            $userCardDuration = is_array($cp) ? (string) ($cp['card_display_duration'] ?? '1') : '1';
+            $rawDuration = is_array($cp) ? ($cp['display_duration'] ?? '1') : '1';
+            $rawCardDuration = is_array($cp) ? ($cp['card_display_duration'] ?? '1') : '1';
+            $userDuration = is_scalar($rawDuration) ? (string) $rawDuration : '1';
+            $userCardDuration = is_scalar($rawCardDuration) ? (string) $rawCardDuration : '1';
 
             if ($userDuration === '0.0333') {
                 $userDuration = '1';

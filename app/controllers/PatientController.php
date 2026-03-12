@@ -1263,7 +1263,8 @@ class PatientController
         try {
             // PERF: allow loading the dashboard without blocking on monitoring.
             // Use: /?page=dashboard&fast=1
-            if (isset($_GET['fast']) && (string) $_GET['fast'] === '1') {
+            $fastParam = $_GET['fast'] ?? null;
+            if (is_scalar($fastParam) && (string) $fastParam === '1') {
                 return [[], []];
             }
 
@@ -1293,8 +1294,8 @@ class PatientController
             if (empty($visibleIds)) {
                 $visibleIds = array_slice(
                     array_values(array_filter(array_map(
-                        fn($m) => method_exists($m, 'getId') ? (string) $m->getId() : null,
-                        is_array($metrics) ? $metrics : []
+                        fn(\modules\models\entities\Indicator $m) => (string) $m->getId(),
+                        $metrics
                     ))),
                     0,
                     6
