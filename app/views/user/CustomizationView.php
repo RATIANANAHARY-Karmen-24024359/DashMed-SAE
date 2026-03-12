@@ -217,7 +217,7 @@ final class CustomizationView
                                         <?php foreach ($widgets as $w): ?>
                                             <div class="grid-stack-item" gs-x="<?= (int) $w['x'] ?>" gs-y="<?= (int) $w['y'] ?>"
                                                 gs-w="<?= max(4, (int) $w['w']) ?>" gs-h="<?= max(3, (int) $w['h']) ?>" gs-min-w="4"
-                                                gs-min-h="3" data-widget-id="<?= $h($w['id']) ?>">
+                                                gs-min-h="3" gs-id="<?= $h($w['id']) ?>" data-widget-id="<?= $h($w['id']) ?>">
                                                 <div class="grid-stack-item-content">
                                                     <div class="dm-widget">
                                                         <div class="dm-widget-header">
@@ -350,7 +350,7 @@ final class CustomizationView
                                                 <div class="grid-stack-item group-grid-item" gs-x="<?= (int) $w['x'] ?>"
                                                     gs-y="<?= (int) $w['y'] ?>" gs-w="<?= max(4, (int) $w['w']) ?>"
                                                     gs-h="<?= max(3, (int) $w['h']) ?>" gs-min-w="4" gs-min-h="3"
-                                                    data-widget-id="<?= $h($w['id']) ?>">
+                                                    gs-id="<?= $h($w['id']) ?>" data-widget-id="<?= $h($w['id']) ?>">
                                                     <div class="grid-stack-item-content">
                                                         <div class="dm-widget">
                                                             <div class="dm-widget-header">

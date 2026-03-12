@@ -332,18 +332,23 @@ class UserController
             exit;
         }
 
+        if (isset($_POST['reset_layout']) && $_POST['reset_layout'] === '1') {
+            $this->layoutService->resetLayout($userId);
+            header('Location: /?page=customization&success=1');
+            exit;
+        }
+
         $rawLayoutData = $_POST['layout_data'] ?? '';
         $layoutJson = is_string($rawLayoutData) ? $rawLayoutData : '';
 
         try {
             $validatedItems = $this->layoutService->validateAndParseLayoutData($layoutJson);
-            file_put_contents('/tmp/debug_layout.txt', print_r(['json' => $layoutJson, 'parsed' => $validatedItems], true));
 
             if (!empty($validatedItems)) {
                 $this->layoutService->saveLayout($userId, $validatedItems);
             }
-        } catch (\InvalidArgumentException $e) {
-            error_log('[UserController::customization] Invalid layout data: ' . $e->getMessage());
+        } catch (\Throwable $e) {
+            error_log('[UserController::customization] Error: ' . $e->getMessage());
         }
 
         header('Location: /?page=customization&success=1');

@@ -89,12 +89,14 @@ document.addEventListener("DOMContentLoaded", () => {
     };
 
     const serializeLayout = () => {
-      const data = [];
+      const dataMap = new Map();
+
       grid.getGridItems().forEach((el) => {
         const node = el.gridstackNode;
-        if (node) {
-          data.push({
-            id: el.dataset.widgetId,
+        const id = el.dataset.widgetId || el.getAttribute('data-widget-id') || node?.id;
+        if (id && node) {
+          dataMap.set(id, {
+            id: id,
             x: node.x,
             y: node.y,
             w: node.w,
@@ -104,16 +106,21 @@ document.addEventListener("DOMContentLoaded", () => {
         }
       });
       hiddenList?.querySelectorAll(".dm-hidden-chip").forEach((chip) => {
-        data.push({
-          id: chip.dataset.widgetId,
-          x: 0,
-          y: 0,
-          w: 4,
-          h: 3,
-          visible: false,
-        });
+        const id = chip.dataset.widgetId || chip.getAttribute('data-widget-id');
+        if (id) {
+          dataMap.set(id, {
+            id: id,
+            x: 0,
+            y: 0,
+            w: 4,
+            h: 3,
+            visible: false,
+          });
+        }
       });
-      return JSON.stringify(data);
+
+      const result = JSON.stringify(Array.from(dataMap.values()));
+      return result;
     };
 
     const updateLayout = () => {
@@ -224,7 +231,9 @@ document.addEventListener("DOMContentLoaded", () => {
       });
     }
 
-    form?.addEventListener("submit", updateLayout);
+    form?.addEventListener("submit", (e) => {
+      updateLayout();
+    });
     updateLayout();
 
     return {
