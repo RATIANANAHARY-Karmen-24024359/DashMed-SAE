@@ -47,287 +47,273 @@ class ExplorerView
      */
     public function show(): void
     {
-        ?>
-        <!DOCTYPE html>
-        <html lang="fr" data-theme="dark">
-        <head>
-            <meta charset="UTF-8">
-            <title>DashMed - Explorateur de données</title>
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <link rel="stylesheet" href="assets/css/themes/light.css">
-            <link rel="stylesheet" href="assets/css/themes/dark.css">
-            <link rel="stylesheet" href="assets/css/base/style.css">
-            <link rel="stylesheet" href="assets/css/layout/sidebar.css">
-            <link rel="stylesheet" href="assets/css/components/searchbar/searchbar.css">
-            <link rel="stylesheet" href="assets/css/pages/dashboard.css">
-            <link rel="icon" type="image/svg+xml" href="assets/img/logo.svg">
-            <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-            <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
-            <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/theme/vintage.js"></script>
-            <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/theme/macarons.js"></script>
-            <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/theme/shine.js"></script>
-            <style>
-                :root {
-                    --explorer-glass: var(--explorer-glass);
-                    --explorer-glass-stroke: var(--explorer-glass-stroke);
-                    --explorer-accent: var(--explorer-accent);
-                    --explorer-accent-glow: var(--explorer-accent-glow);
-                    --explorer-card-bg: var(--explorer-card-bg);
-                }
+        $inlineStyles = '
+            .explorer-container {
+                padding: 5px 30px 30px 30px;
+                display: flex;
+                flex-direction: column;
+                height: calc(100vh - 20px);
+                overflow: hidden;
+                gap: 0 !important;
+                background: radial-gradient(circle at 50% -20%, rgba(39, 90, 254, 0.08) 0%, transparent 50%);
+                margin-left: calc(var(--sidebar-w) + 16px);
+            }
 
-                body { font-family: 'Outfit', sans-serif; }
+            .explorer-container .searchbar { margin-bottom: 20px; }
+            .explorer-main-content { margin-top: 0; flex: 1; overflow-y: auto; padding-right: 10px; }
 
-                .explorer-container {
-                    padding: 5px 30px 30px 30px;
-                    display: flex;
-                    flex-direction: column;
-                    height: 100vh;
-                    overflow: hidden;
-                    gap: 0 !important;
-                    background: radial-gradient(circle at 50% -20%, rgba(39, 90, 254, 0.08) 0%, transparent 50%);
-                }
+            .explorer-header {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                margin-bottom: 25px;
+                border-bottom: 1px solid var(--explorer-glass-stroke);
+                padding-bottom: 15px;
+            }
 
-                .explorer-container .searchbar { margin-bottom: 20px; }
-                .explorer-main-content { margin-top: 0; flex: 1; overflow-y: auto; padding-right: 10px; }
+            .explorer-title h1 {
+                font-size: 1.8rem;
+                font-weight: 700;
+                background: var(--explorer-header-gradient);
+                -webkit-background-clip: text;
+                -webkit-text-fill-color: transparent;
+                margin: 0;
+            }
 
-                .explorer-header {
-                    display: flex;
-                    justify-content: space-between;
-                    align-items: center;
-                    margin-bottom: 25px;
-                    border-bottom: 1px solid var(--explorer-glass-stroke);
-                    padding-bottom: 15px;
-                }
+            .explorer-grid { display: grid; grid-template-columns: 340px 1fr; gap: 25px; align-items: start; }
 
-                .explorer-title h1 {
-                    font-size: 1.8rem;
-                    font-weight: 700;
-                    background: var(--explorer-header-gradient);
-                    -webkit-background-clip: text;
-                    -webkit-text-fill-color: transparent;
-                    margin: 0;
-                }
+            .explorer-card {
+                background: var(--explorer-glass);
+                backdrop-filter: blur(12px);
+                -webkit-backdrop-filter: blur(12px);
+                border-radius: 16px;
+                border: 1px solid var(--explorer-glass-stroke);
+                padding: 24px;
+                box-shadow: var(--shadow-md);
+                transition: all 0.3s ease;
+            }
 
-                .explorer-grid { display: grid; grid-template-columns: 340px 1fr; gap: 25px; align-items: start; }
+            .explorer-card:hover {
+                border-color: var(--explorer-accent);
+                box-shadow: var(--shadow-lg);
+                transform: translateY(-2px);
+            }
 
-                .explorer-card {
-                    background: var(--explorer-glass);
-                    backdrop-filter: blur(12px);
-                    -webkit-backdrop-filter: blur(12px);
-                    border-radius: 16px;
-                    border: 1px solid var(--explorer-glass-stroke);
-                    padding: 24px;
-                    box-shadow: var(--shadow-md);
-                    transition: all 0.3s ease;
-                }
+            .drop-zone {
+                border: 1.5px dashed var(--explorer-glass-stroke);
+                border-radius: 12px;
+                padding: 30px 15px;
+                text-align: center;
+                cursor: pointer;
+                transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+                background: var(--explorer-input-bg);
+                width: 100%;
+                box-sizing: border-box;
+                overflow: hidden;
+            }
 
-                .explorer-card:hover {
-                    border-color: var(--explorer-accent);
-                    box-shadow: var(--shadow-lg);
-                    transform: translateY(-2px);
-                }
+            .drop-zone:hover {
+                background: rgba(39, 90, 254, 0.08);
+                border-color: var(--explorer-accent);
+                transform: scale(1.02);
+            }
 
-                .drop-zone {
-                    border: 1.5px dashed var(--explorer-glass-stroke);
-                    border-radius: 12px;
-                    padding: 30px 15px;
-                    text-align: center;
-                    cursor: pointer;
-                    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-                    background: var(--explorer-input-bg);
-                    width: 100%;
-                    box-sizing: border-box;
-                    overflow: hidden;
-                }
+            .drop-zone p {
+                font-size: 0.85rem;
+                color: var(--text-secondary);
+                margin-top: 15px;
+                overflow-wrap: anywhere;
+                word-break: break-all;
+                line-height: 1.4;
+                padding: 0 5px;
+            }
 
-                .drop-zone:hover {
-                    background: rgba(39, 90, 254, 0.08);
-                    border-color: var(--explorer-accent);
-                    transform: scale(1.02);
-                }
+            .chart-viewer {
+                height: calc(100vh - 200px);
+                width: 100%;
+                position: relative;
+                background: var(--explorer-card-bg);
+                backdrop-filter: blur(20px);
+                -webkit-backdrop-filter: blur(20px);
+                border-radius: 20px;
+                border: 1px solid var(--explorer-glass-stroke);
+                overflow: hidden;
+                box-shadow: var(--shadow-lg);
+                transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            }
 
-                .drop-zone p {
-                    font-size: 0.85rem;
-                    color: var(--text-secondary);
-                    margin-top: 15px;
-                    overflow-wrap: anywhere;
-                    word-break: break-all;
-                    line-height: 1.4;
-                    padding: 0 5px;
-                }
+            .chart-viewer.full-screen {
+                position: fixed;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                z-index: 99999;
+                height: 100vh;
+                width: 100vw;
+                border-radius: 0;
+                border: none;
+            }
 
-                .chart-viewer {
-                    height: calc(100vh - 200px);
-                    width: 100%;
-                    position: relative;
-                    background: var(--explorer-card-bg);
-                    backdrop-filter: blur(20px);
-                    -webkit-backdrop-filter: blur(20px);
-                    border-radius: 20px;
-                    border: 1px solid var(--explorer-glass-stroke);
-                    overflow: hidden;
-                    box-shadow: var(--shadow-lg);
-                    transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-                }
+            body.chart-full-screen {
+                overflow: hidden !important;
+            }
 
-                .chart-viewer.full-screen {
-                    position: fixed;
-                    top: 0;
-                    left: 0;
-                    right: 0;
-                    bottom: 0;
-                    z-index: 99999;
-                    height: 100vh;
-                    width: 100vw;
-                    border-radius: 0;
-                    border: none;
-                }
+            #explorer-chart { width: 100%; height: 100%; }
 
-                body.chart-full-screen {
-                    overflow: hidden !important;
-                }
+            .data-controls { display: flex; flex-direction: column; gap: 20px; }
+            .control-group { display: flex; flex-direction: column; gap: 10px; }
+            .control-group label {
+                font-size: 0.75rem;
+                text-transform: uppercase;
+                letter-spacing: 0.05em;
+                font-weight: 700;
+                color: var(--text-secondary);
+                opacity: 0.8;
+            }
+            .explorer-container select {
+                width: 100%;
+                padding: 12px 15px;
+                border-radius: 10px;
+                background: var(--bg-surface);
+                border: 1px solid var(--explorer-glass-stroke);
+                color: var(--text-main);
+                cursor: pointer;
+                font-size: 0.95rem;
+                transition: all 0.2s;
+                outline: none;
+                appearance: none;
+                -webkit-appearance: none;
+                background-image: url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'16\' height=\'16\' viewBox=\'0 0 24 24\' fill=\'none\' stroke=\'%2364748b\' stroke-width=\'2\' stroke-linecap=\'round\' stroke-linejoin=\'round\'%3E%3Cpolyline points=\'6 9 12 15 18 9\'%3E%3C/polyline%3E%3C/svg%3E");
+                background-repeat: no-repeat;
+                background-position: right 12px center;
+            }
 
-                #explorer-chart { width: 100%; height: 100%; }
+            .explorer-container select:hover, .explorer-container select:focus {
+                border-color: var(--explorer-accent);
+                background-color: var(--bg-surface-hover);
+            }
 
-                .data-controls { display: flex; flex-direction: column; gap: 20px; }
-                .control-group { display: flex; flex-direction: column; gap: 10px; }
-                .control-group label {
-                    font-size: 0.75rem;
-                    text-transform: uppercase;
-                    letter-spacing: 0.05em;
-                    font-weight: 700;
-                    color: var(--text-secondary);
-                    opacity: 0.8;
-                }
-                select { 
-                    width: 100%; 
-                    padding: 12px 15px; 
-                    border-radius: 10px; 
-                    background: var(--bg-surface); 
-                    border: 1px solid var(--explorer-glass-stroke); 
-                    color: var(--text-main); 
-                    cursor: pointer; 
-                    font-size: 0.95rem; 
-                    transition: all 0.2s;
-                    outline: none;
-                    appearance: none;
-                    -webkit-appearance: none;
-                    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
-                    background-repeat: no-repeat;
-                    background-position: right 12px center;
-                }
+            .explorer-container select option {
+                background-color: var(--bg-surface);
+                color: var(--text-main);
+                padding: 10px;
+            }
 
-                select:hover, select:focus {
-                    border-color: var(--explorer-accent);
-                    background-color: var(--bg-surface-hover);
-                }
+            .explorer-container .btn-primary {
+                background: linear-gradient(135deg, #275afe 0%, #1a3fb5 100%);
+                color: white;
+                border: none;
+                padding: 14px;
+                border-radius: 12px;
+                font-weight: 600;
+                cursor: pointer;
+                transition: all 0.3s;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: 12px;
+                font-size: 0.95rem;
+                box-shadow: 0 4px 15px var(--explorer-accent-glow);
+                border: 1px solid var(--explorer-accent);
+            }
 
-                select option {
-                    background-color: var(--bg-surface);
-                    color: var(--text-main);
-                    padding: 10px;
-                }
+            .explorer-container .btn-primary:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 6px 20px var(--explorer-accent-glow);
+                filter: brightness(1.1);
+            }
 
-                .btn-primary {
-                    background: linear-gradient(135deg, #275afe 0%, #1a3fb5 100%);
-                    color: white;
-                    border: none;
-                    padding: 14px;
-                    border-radius: 12px;
-                    font-weight: 600;
-                    cursor: pointer;
-                    transition: all 0.3s;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    gap: 12px;
-                    font-size: 0.95rem;
-                    box-shadow: 0 4px 15px var(--explorer-accent-glow);
-                    border: 1px solid var(--explorer-accent);
-                }
+            .explorer-container .btn-primary:active { transform: translateY(0); }
 
-                .btn-primary:hover {
-                    transform: translateY(-2px);
-                    box-shadow: 0 6px 20px var(--explorer-accent-glow);
-                    filter: brightness(1.1);
-                }
+            .stats-panel-inner {
+                background: var(--explorer-input-bg);
+                border-radius: 12px;
+                padding: 18px;
+                border: 1px solid var(--explorer-glass-stroke);
+            }
 
-                .btn-primary:active { transform: translateY(0); }
+            .chart-overlay-controls {
+                position: absolute;
+                top: 20px;
+                right: 20px;
+                display: flex;
+                gap: 10px;
+                z-index: 10;
+            }
 
-                .stats-panel-inner {
-                    background: var(--explorer-input-bg);
-                    border-radius: 12px;
-                    padding: 18px;
-                    border: 1px solid var(--explorer-glass-stroke);
-                }
+            .chart-btn {
+                background: var(--explorer-glass);
+                border: 1px solid var(--explorer-accent);
+                color: var(--text-main);
+                padding: 8px 12px;
+                border-radius: 8px;
+                cursor: pointer;
+                font-size: 0.8rem;
+                font-weight: 500;
+                display: flex;
+                align-items: center;
+                gap: 6px;
+                backdrop-filter: blur(8px);
+                transition: all 0.2s;
+            }
 
-                .chart-overlay-controls {
-                    position: absolute;
-                    top: 20px;
-                    right: 20px;
-                    display: flex;
-                    gap: 10px;
-                    z-index: 10;
-                }
+            .chart-btn:hover {
+                background: rgba(39, 90, 254, 0.2);
+                border-color: var(--explorer-accent);
+                transform: translateY(-1px);
+            }
 
-                .chart-btn {
-                    background: var(--explorer-glass);
-                    border: 1px solid var(--explorer-accent);
-                    color: var(--text-main);
-                    padding: 8px 12px;
-                    border-radius: 8px;
-                    cursor: pointer;
-                    font-size: 0.8rem;
-                    font-weight: 500;
-                    display: flex;
-                    align-items: center;
-                    gap: 6px;
-                    backdrop-filter: blur(8px);
-                    transition: all 0.2s;
-                }
+            .chart-btn svg {
+                opacity: 0.8;
+            }
 
-                .chart-btn:hover {
-                    background: rgba(39, 90, 254, 0.2);
-                    border-color: var(--explorer-accent);
-                    transform: translateY(-1px);
-                }
+            .stat-row {
+                display: flex;
+                justify-content: space-between;
+                padding: 10px 0;
+                border-bottom: 1px solid var(--explorer-stat-row-border);
+            }
 
-                .chart-btn svg {
-                    opacity: 0.8;
-                }
+            .stat-row:last-child { border-bottom: none; }
+            .stat-label { color: var(--text-secondary); font-size: 0.85rem; }
+            .stat-value { font-weight: 600; color: var(--text-primary); font-family: "Monaco", "Consolas", monospace; }
 
-                .stat-row {
-                    display: flex;
-                    justify-content: space-between;
-                    padding: 10px 0;
-                    border-bottom: 1px solid var(--explorer-stat-row-border);
-                }
+            .explorer-container ::-webkit-scrollbar { width: 6px; }
+            .explorer-container ::-webkit-scrollbar-track { background: transparent; }
+            .explorer-container ::-webkit-scrollbar-thumb { background: var(--explorer-glass-stroke); border-radius: 10px; }
+            .explorer-container ::-webkit-scrollbar-thumb:hover { background: var(--text-secondary); }
+        ';
 
-                .stat-row:last-child { border-bottom: none; }
-                .stat-label { color: var(--text-secondary); font-size: 0.85rem; }
-                .stat-value { font-weight: 600; color: var(--text-primary); font-family: 'Monaco', 'Consolas', monospace; }
+        $layout = new \modules\views\layout\Layout(
+            'Explorateur de données',
+            [
+                'assets/css/components/searchbar/searchbar.css',
+            ],
+            [
+                'https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js',
+                'https://cdn.jsdelivr.net/npm/echarts@5.5.0/theme/vintage.js',
+                'https://cdn.jsdelivr.net/npm/echarts@5.5.0/theme/macarons.js',
+                'https://cdn.jsdelivr.net/npm/echarts@5.5.0/theme/shine.js',
+                'assets/js/pages/explorer.js?v=' . time(),
+            ],
+            $inlineStyles,
+            true,
+            true
+        );
 
-                .container { max-width: 1920px; margin: 0 auto; }
+        $patientData = $this->patientData;
 
-                ::-webkit-scrollbar { width: 6px; }
-                ::-webkit-scrollbar-track { background: transparent; }
-                ::-webkit-scrollbar-thumb { background: var(--explorer-glass-stroke); border-radius: 10px; }
-                ::-webkit-scrollbar-thumb:hover { background: var(--text-secondary); }
-            </style>
-        </head>
-        <body class="nav-space">
+        $layout->render(function () use ($patientData) {
+            ?>
+            <main class="explorer-container">
 
-            <?php include dirname(__DIR__, 2) . '/views/partials/_sidebar.php'; ?>
+                <?php include dirname(__DIR__) . '/partials/_searchbar.php'; ?>
 
-            <main class="explorer-container container">
-
-                <?php include dirname(__DIR__, 2) . '/views/partials/_searchbar.php'; ?>
-
-                <!-- Hidden context -->
                 <?php
-                $ctxPid = $this->patientData['id_patient'] ?? '';
-                $ctxFirst = $this->patientData['first_name'] ?? '';
-                $ctxLast = $this->patientData['last_name'] ?? '';
+                $ctxPid = $patientData['id_patient'] ?? '';
+                $ctxFirst = $patientData['first_name'] ?? '';
+                $ctxLast = $patientData['last_name'] ?? '';
                 $ctxName = (is_scalar($ctxFirst) ? (string) $ctxFirst : '') . ' ' . (is_scalar($ctxLast) ? (string) $ctxLast : '');
                 ?>
                 <input type="hidden" id="context-patient-id" value="<?= htmlspecialchars(is_scalar($ctxPid) ? (string) $ctxPid : '') ?>">
@@ -479,11 +465,7 @@ class ExplorerView
                     </div>
                 </div>
             </main>
-
-            <script src="assets/js/pages/explorer.js?v=<?= time() ?>"></script>
-        </body>
-        </html>
-        <?php
+            <?php
+        });
     }
 }
-?>
