@@ -161,8 +161,8 @@ if (!empty($patientMetrics)) : ?>
                         <?php
                         $cardDuration = (string) ($viewData['card_display_duration'] ?? '1');
                         $cardOptions = [
-                            '1' => '1H',
                             '0.0333' => '2m',
+                            '1' => '1H',
                             'all' => 'Tout',
                             '24' => '24H'
                         ];
@@ -301,8 +301,8 @@ if (!empty($patientMetrics)) : ?>
                                     <?php
                                     $currentDuration = (string) ($viewData['display_duration'] ?? '1');
                                     $options = [
-                                        '1' => '1H',
                                         '0.0333' => '2m',
+                                        '1' => '1H',
                                         'all' => 'Tout',
                                         '0.0833' => '5m',
                                         '0.25' => '15m',
