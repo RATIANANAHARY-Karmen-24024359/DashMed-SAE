@@ -22,32 +22,34 @@ namespace modules\views\patient;
  * Handles display of patient info, history, medical team, and consultations.
  *
  * @package DashMed\Modules\Views\Pages
- * @author DashMed Team
+ * @author  DashMed Team
  * @license Proprietary
  */
 class PatientrecordView
 {
-    /** @var array<string, mixed> Patient medical/admin data */
+    /**
+     * @var array<string, mixed> Patient medical/admin data
+     */
     private array $patientData;
 
-    /** @var array<int, \modules\models\entities\Consultation> Past consultations */
-    private array $pastConsultations;
-
-    /** @var array<int, \modules\models\entities\Consultation> Future consultations */
-    private array $futureConsultations;
-
-    /** @var array<int, array{
+    /**
+     * @var array<int, array{
      *   id_user: int,
      *   last_name: string,
      *   first_name: string,
      *   profession_name: string
-     * }> Doctors assigned to patient */
+     * }> Doctors assigned to patient
+     */
     private array $doctors;
 
-    /** @var array{type: string, text: string}|null Flash message */
+    /**
+     * @var array{type: string, text: string}|null Flash message
+     */
     private ?array $msg;
 
-    /** @var array<int, array<string, mixed>> Alert thresholds per parameter */
+    /**
+     * @var array<int, array<string, mixed>> Alert thresholds per parameter
+     */
     private array $thresholds;
 
     /**
@@ -57,15 +59,15 @@ class PatientrecordView
      *
      * @param array<int, \modules\models\entities\Consultation> $consultationsPassees History
      * @param array<int, \modules\models\entities\Consultation> $consultationsFutures Appointments
-     * @param array<string, mixed> $patientData Patient Data
+     * @param array<string, mixed>                              $patientData          Patient Data
      * @param array<int, array{
      *   id_user: int,
      *   last_name: string,
      *   first_name: string,
      *   profession_name: string
      * }> $doctors Medical Team
-     * @param array{type: string, text: string}|null $msg Flash Message
-     * @param array<int, array<string, mixed>> $thresholds Alert thresholds
+     * @param array{type: string, text: string}|null            $msg                  Flash Message
+     * @param array<int, array<string, mixed>>                  $thresholds           Alert thresholds
      */
     public function __construct(
         array $consultationsPassees = [],
@@ -75,8 +77,6 @@ class PatientrecordView
         ?array $msg = null,
         array $thresholds = []
     ) {
-        $this->pastConsultations = $consultationsPassees;
-        $this->futureConsultations = $consultationsFutures;
         $this->patientData = $patientData;
         $this->doctors = $doctors;
         $this->msg = $msg;
@@ -116,21 +116,23 @@ class PatientrecordView
             true
         );
 
-        $layout->render(function () use ($h, $csrfToken) {
-            ?>
+        $layout->render(
+            function () use ($h, $csrfToken) {
+                ?>
 
             <main class="container nav-space">
                 <div class="dashboard-content-container">
 
                     <div class="searchbar-with-patient">
                         <span class="patient-name-label">
-                             <?= htmlspecialchars(
-                                     trim(
-                                             (is_scalar($v = $this->patientData['first_name'] ?? '') ? (string)$v : '') . ' ' .
+                            <?php echo htmlspecialchars(
+                                trim(
+                                    (is_scalar($v = $this->patientData['first_name'] ?? '') ? (string)$v : '') . ' ' .
                                              (is_scalar($v = $this->patientData['last_name'] ?? '') ? (string)$v : '')
-                                     ),
-                                     ENT_QUOTES, 'UTF-8'
-                             ) ?>
+                                ),
+                                ENT_QUOTES,
+                                'UTF-8'
+                            ) ?>
 
     </span>
                         <?php include dirname(__DIR__) . '/partials/_searchbar.php'; ?>
@@ -160,7 +162,7 @@ class PatientrecordView
                         })();
                     </script>
 
-                    <input type="hidden" id="context-patient-id" value="<?= $h($this->patientData['id_patient'] ?? '') ?>">
+                    <input type="hidden" id="context-patient-id" value="<?php echo $h($this->patientData['id_patient'] ?? '') ?>">
 
                     <?php
                     $msg = $this->msg;
@@ -168,10 +170,10 @@ class PatientrecordView
                     $type = $msg['type'] ?? 'info';
                     ?>
 
-                    <?php if (is_string($text) && $text !== ''): ?>
-                        <div class="message-box <?= $h($type) ?>">
+                    <?php if (is_string($text) && $text !== '') : ?>
+                        <div class="message-box <?php echo $h($type) ?>">
                             <div class="message-content">
-                                <?= $h($text) ?>
+                                <?php echo $h($text) ?>
                             </div>
                         </div>
                     <?php endif; ?>
@@ -197,20 +199,22 @@ class PatientrecordView
 
 
                                     <h1>
-                                        <?= $h($firstName) ?>
-                                        <strong><?= $h($lastName) ?></strong>
+                                        <?php echo $h($firstName) ?>
+                                        <strong><?php echo $h($lastName) ?></strong>
                                     </h1>
 
                                     <div class="patient-meta">
-                                        <span class="badge-age"><?= $h($this->patientData['age'] ?? 0) ?> ans</span>
+                                        <span class="badge-age"><?php echo $h($this->patientData['age'] ?? 0) ?> ans</span>
                                         <span class="meta-divider">•</span>
                                         <span>Né(e) le
-                                            <?= $h(date(
-                                                'd/m/Y',
-                                                is_string($this->patientData['birth_date'] ?? null)
-                                                ? (strtotime((string) $this->patientData['birth_date']) ?: time())
-                                                : time()
-                                            )) ?>
+                                            <?php echo $h(
+                                                date(
+                                                    'd/m/Y',
+                                                    is_string($this->patientData['birth_date'] ?? null)
+                                                    ? (strtotime((string) $this->patientData['birth_date']) ?: time())
+                                                    : time()
+                                                )
+                                            ) ?>
                                         </span>
                                     </div>
                                 </div>
@@ -240,7 +244,7 @@ class PatientrecordView
                                         <div class="info-block">
                                             <h3>Motif d'admission</h3>
                                             <p class="text-content">
-                                                <?= $h(
+                                                <?php echo $h(
                                                     $this->patientData['admission_cause'] ?? 'Aucun motif renseigné.'
                                                 ) ?>
                                             </p>
@@ -248,8 +252,12 @@ class PatientrecordView
                                         <div class="info-block">
                                             <h3>Antécédents & Allergies</h3>
                                             <div class="text-content history-content">
-                                                <?= nl2br($h($this->patientData['medical_history'] ??
-                                                    'Aucun antécédent renseigné.')) ?>
+                                                <?php echo nl2br(
+                                                    $h(
+                                                        $this->patientData['medical_history'] ??
+                                                        'Aucun antécédent renseigné.'
+                                                    )
+                                                ) ?>
                                             </div>
                                         </div>
                                     </div>
@@ -260,21 +268,21 @@ class PatientrecordView
                                         <h2>Équipe Médicale</h2>
                                     </div>
                                     <div class="doctors-list">
-                                        <?php if (!empty($this->doctors)): ?>
-                                            <?php foreach ($this->doctors as $doctor): ?>
-                                                <div class="doctor-item" id="doctor-<?= $h($doctor['id_user']) ?>">
-                                                    <img src="assets/img/icons/profile.svg" alt="Dr. <?= $h($doctor['last_name']) ?>"
+                                        <?php if (!empty($this->doctors)) : ?>
+                                            <?php foreach ($this->doctors as $doctor) : ?>
+                                                <div class="doctor-item" id="doctor-<?php echo $h($doctor['id_user']) ?>">
+                                                    <img src="assets/img/icons/profile.svg" alt="Dr. <?php echo $h($doctor['last_name']) ?>"
                                                         class="doctor-avatar">
                                                     <div class="doctor-details">
-                                                        <span class="doctor-name">Dr. <?= $h($doctor['first_name']) ?>
-                                                            <?= $h($doctor['last_name']) ?></span>
+                                                        <span class="doctor-name">Dr. <?php echo $h($doctor['first_name']) ?>
+                                                            <?php echo $h($doctor['last_name']) ?></span>
                                                         <span class="doctor-specialty">
-                                                            <?= $h($doctor['profession_name']) ?>
+                                                            <?php echo $h($doctor['profession_name']) ?>
                                                         </span>
                                                     </div>
                                                 </div>
                                             <?php endforeach; ?>
-                                        <?php else: ?>
+                                        <?php else : ?>
                                             <div class="empty-state">
                                                 <p>Aucun médecin assigné à ce patient.</p>
                                             </div>
@@ -298,40 +306,46 @@ class PatientrecordView
                         <button class="btn-close" onclick="closeEditModal()">×</button>
                     </div>
                     <form method="POST" action="/?page=dossierpatient">
-                        <input type="hidden" name="csrf" value="<?= $h($csrfToken) ?>">
-                        <input type="hidden" name="id_patient" value="<?= $h($this->patientData['id_patient'] ?? '') ?>">
+                        <input type="hidden" name="csrf" value="<?php echo $h($csrfToken) ?>">
+                        <input type="hidden" name="id_patient" value="<?php echo $h($this->patientData['id_patient'] ?? '') ?>">
 
                         <div class="modal-body">
                             <div class="form-row">
                                 <div class="form-group half">
                                     <label for="first_name">Prénom</label>
-                                    <input type="text" id="first_name" name="first_name" required value="<?= $h($this->patientData['first_name'] ??
-                                        '') ?>" placeholder="Jean">
+                                    <input type="text" id="first_name" name="first_name" required
+                                        value="<?php
+                                        echo $h($this->patientData['first_name'] ?? '');
+                                        ?>"
+                                        placeholder="Jean">
                                 </div>
                                 <div class="form-group half">
                                     <label for="last_name">Nom</label>
-                                    <input type="text" id="last_name" name="last_name" required value="<?= $h($this->patientData['last_name'] ??
-                                        '') ?>" placeholder="Dupont">
+                                    <input type="text" id="last_name" name="last_name" required
+                                        value="<?php
+                                        echo $h($this->patientData['last_name'] ?? '');
+                                        ?>"
+                                        placeholder="Dupont">
                                 </div>
                             </div>
 
                             <div class="form-group">
                                 <label for="birth_date">Date de naissance</label>
                                 <input type="date" id="birth_date" name="birth_date"
-                                    value="<?= $h($this->patientData['birth_date'] ?? '') ?>" max="<?= date('Y-m-d') ?>">
+                                    value="<?php echo $h($this->patientData['birth_date'] ?? '') ?>" max="<?php echo date('Y-m-d') ?>">
                                 <span class="form-hint">L'âge sera recalculé automatiquement.</span>
                             </div>
 
                             <div class="form-group">
                                 <label for="admission_cause">Motif d'admission</label>
                                 <textarea id="admission_cause" name="admission_cause" rows="2" required
-                                    placeholder="Motif de l'hospitalisation..."><?= $h($this->patientData['admission_cause'] ?? '') ?></textarea>
+                                    placeholder="Motif de l'hospitalisation..."><?php echo $h($this->patientData['admission_cause'] ?? '') ?></textarea>
                             </div>
 
                             <div class="form-group">
                                 <label for="medical_history">Antécédents médicaux</label>
                                 <textarea id="medical_history" name="medical_history" rows="3" required
-                                    placeholder="Antécédents, allergies, traitements chroniques..."><?= $h($this->patientData['medical_history'] ?? '') ?></textarea>
+                                    placeholder="Antécédents, allergies, traitements chroniques..."><?php echo $h($this->patientData['medical_history'] ?? '') ?></textarea>
                             </div>
                         </div>
 
@@ -355,7 +369,7 @@ class PatientrecordView
                         <p class="form-hint" style="margin-bottom: 20px;">Ajustez les seuils spécifiques pour ce patient. Les
                             valeurs par défaut seront appliquées pour les champs laissés vides.</p>
 
-                        <?php if (!empty($this->thresholds)): ?>
+                        <?php if (!empty($this->thresholds)) : ?>
                             <?php
                             $groupedModal = [];
                             foreach ($this->thresholds as $t) {
@@ -365,34 +379,34 @@ class PatientrecordView
                             }
                             ?>
                             <div class="thresholds-container">
-                                <?php foreach ($groupedModal as $category => $params): ?>
+                                <?php foreach ($groupedModal as $category => $params) : ?>
                                     <div class="threshold-category" style="margin-bottom: 12px;">
                                         <button class="category-toggle" type="button" onclick="toggleCategory(this)" aria-expanded="false">
-                                            <span class="category-name"><?= $h($category) ?></span>
-                                            <span class="category-count"><?= count($params) ?> paramètre(s)</span>
+                                            <span class="category-name"><?php echo $h($category) ?></span>
+                                            <span class="category-count"><?php echo count($params) ?> paramètre(s)</span>
                                             <svg class="toggle-icon" width="16" height="16" viewBox="0 0 24 24" fill="none"
                                                 stroke="currentColor" stroke-width="2">
                                                 <polyline points="6 9 12 15 18 9"></polyline>
                                             </svg>
                                         </button>
                                         <div class="category-params" style="display: none;">
-                                            <?php foreach ($params as $param):
+                                            <?php foreach ($params as $param) :
                                                 $pid = $h($param['parameter_id']);
                                                 $isCustom = $param['custom_normal_min'] !== null
                                                     || $param['custom_normal_max'] !== null
                                                     || $param['custom_critical_min'] !== null
                                                     || $param['custom_critical_max'] !== null;
                                                 ?>
-                                                <div class="threshold-param <?= $isCustom ? 'has-custom' : '' ?>">
-                                                    <div class="param-header" onclick="toggleParamEdit('modal-<?= $pid ?>')">
+                                                <div class="threshold-param <?php echo $isCustom ? 'has-custom' : '' ?>">
+                                                    <div class="param-header" onclick="toggleParamEdit('modal-<?php echo $pid ?>')">
                                                         <div class="param-info">
                                                             <span class="param-name">
-                                                                <?= $h($param['display_name']) ?>
+                                                                <?php echo $h($param['display_name']) ?>
                                                             </span>
                                                             <span class="param-unit">
-                                                                (<?= $h($param['unit']) ?>)
+                                                                (<?php echo $h($param['unit']) ?>)
                                                             </span>
-                                                            <?php if ($isCustom): ?>
+                                                            <?php if ($isCustom) : ?>
                                                                 <span class="badge-custom">Personnalisé</span>
                                                             <?php endif; ?>
                                                         </div>
@@ -405,13 +419,13 @@ class PatientrecordView
                                                         </div>
                                                     </div>
 
-                                                    <div class="param-edit-form" id="edit-modal-<?= $pid ?>" style="display: none;">
+                                                    <div class="param-edit-form" id="edit-modal-<?php echo $pid ?>" style="display: none;">
                                                         <form method="POST" action="/?page=dossierpatient" class="threshold-form">
                                                             <input type="hidden" name="action" value="update_thresholds">
-                                                            <input type="hidden" name="csrf" value="<?= $h($csrfToken) ?>">
-                                                            <input type="hidden" name="parameter_id" value="<?= $pid ?>">
+                                                            <input type="hidden" name="csrf" value="<?php echo $h($csrfToken) ?>">
+                                                            <input type="hidden" name="parameter_id" value="<?php echo $pid ?>">
                                                             <input type="hidden" name="id_patient"
-                                                                value="<?= $h($this->patientData['id_patient'] ?? '') ?>">
+                                                                value="<?php echo $h($this->patientData['id_patient'] ?? '') ?>">
 
                                                             <div class="threshold-grid">
                                                                 <div class="threshold-group normal-group">
@@ -420,21 +434,21 @@ class PatientrecordView
                                                                         <div class="input-pair">
                                                                             <label>Min</label>
                                                                             <input type="number" step="0.01" name="normal_min"
-                                                                                value="<?= $h($param['effective_normal_min'] ?? '') ?>"
-                                                                                placeholder="<?= $h($param['default_normal_min'] ?? '—') ?>">
+                                                                                value="<?php echo $h($param['effective_normal_min'] ?? '') ?>"
+                                                                                placeholder="<?php echo $h($param['default_normal_min'] ?? '—') ?>">
                                                                         </div>
                                                                         <div class="input-pair">
                                                                             <label>Max</label>
                                                                             <input type="number" step="0.01" name="normal_max"
-                                                                                value="<?= $h($param['effective_normal_max'] ?? '') ?>"
-                                                                                placeholder="<?= $h($param['default_normal_max'] ?? '—') ?>">
+                                                                                value="<?php echo $h($param['effective_normal_max'] ?? '') ?>"
+                                                                                placeholder="<?php echo $h($param['default_normal_max'] ?? '—') ?>">
                                                                         </div>
                                                                     </div>
                                                                     <span class="defaults-hint">
                                                                         Défaut :
-                                                                        <?= (isset($param['default_normal_min']) && is_numeric($param['default_normal_min'])) ? $h(number_format((float) $param['default_normal_min'], 1)) : '—' ?>
+                                                                        <?php echo (isset($param['default_normal_min']) && is_numeric($param['default_normal_min'])) ? $h(number_format((float) $param['default_normal_min'], 1)) : '—' ?>
                                                                         →
-                                                                        <?= (isset($param['default_normal_max']) && is_numeric($param['default_normal_max'])) ? $h(number_format((float) $param['default_normal_max'], 1)) : '—' ?>
+                                                                        <?php echo (isset($param['default_normal_max']) && is_numeric($param['default_normal_max'])) ? $h(number_format((float) $param['default_normal_max'], 1)) : '—' ?>
                                                                     </span>
                                                                 </div>
                                                                 <div class="threshold-group critical-group">
@@ -443,27 +457,27 @@ class PatientrecordView
                                                                         <div class="input-pair">
                                                                             <label>Min</label>
                                                                             <input type="number" step="0.01" name="critical_min"
-                                                                                value="<?= $h($param['effective_critical_min'] ?? '') ?>"
-                                                                                placeholder="<?= $h($param['default_critical_min'] ?? '—') ?>">
+                                                                                value="<?php echo $h($param['effective_critical_min'] ?? '') ?>"
+                                                                                placeholder="<?php echo $h($param['default_critical_min'] ?? '—') ?>">
                                                                         </div>
                                                                         <div class="input-pair">
                                                                             <label>Max</label>
                                                                             <input type="number" step="0.01" name="critical_max"
-                                                                                value="<?= $h($param['effective_critical_max'] ?? '') ?>"
-                                                                                placeholder="<?= $h($param['default_critical_max'] ?? '—') ?>">
+                                                                                value="<?php echo $h($param['effective_critical_max'] ?? '') ?>"
+                                                                                placeholder="<?php echo $h($param['default_critical_max'] ?? '—') ?>">
                                                                         </div>
                                                                     </div>
                                                                     <span class="defaults-hint">
                                                                         Défaut :
-                                                                        <?= (isset($param['default_critical_min']) && is_numeric($param['default_critical_min'])) ? $h(number_format((float) $param['default_critical_min'], 1)) : '—' ?>
+                                                                        <?php echo (isset($param['default_critical_min']) && is_numeric($param['default_critical_min'])) ? $h(number_format((float) $param['default_critical_min'], 1)) : '—' ?>
                                                                         →
-                                                                        <?= (isset($param['default_critical_max']) && is_numeric($param['default_critical_max'])) ? $h(number_format((float) $param['default_critical_max'], 1)) : '—' ?>
+                                                                        <?php echo (isset($param['default_critical_max']) && is_numeric($param['default_critical_max'])) ? $h(number_format((float) $param['default_critical_max'], 1)) : '—' ?>
                                                                     </span>
                                                                 </div>
                                                             </div>
 
                                                             <div class="threshold-actions">
-                                                                <?php if ($isCustom): ?>
+                                                                <?php if ($isCustom) : ?>
                                                                     <button type="submit" name="threshold_action" value="reset"
                                                                         class="btn-reset-threshold"
                                                                         onclick="return confirm('Réinitialiser aux valeurs par défaut ?')">
@@ -520,7 +534,8 @@ class PatientrecordView
                     }
                 }
             </script>
-            <?php
-        });
+                <?php
+            }
+        );
     }
 }

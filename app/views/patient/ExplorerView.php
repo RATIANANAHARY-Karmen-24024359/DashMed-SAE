@@ -23,11 +23,13 @@ namespace modules\views\patient;
  * Part of the DashMed Visualization Layer.
  *
  * @package DashMed\Modules\Views\Patient
- * @author DashMed Team
+ * @author  DashMed Team
  */
 class ExplorerView
 {
-    /** @var array<string, mixed> Patient info */
+    /**
+     * @var array<string, mixed> Patient info
+     */
     private array $patientData;
 
     /**
@@ -304,8 +306,9 @@ class ExplorerView
 
         $patientData = $this->patientData;
 
-        $layout->render(function () use ($patientData) {
-            ?>
+        $layout->render(
+            function () use ($patientData) {
+                ?>
             <main class="explorer-container">
 
                 <?php include dirname(__DIR__) . '/partials/_searchbar.php'; ?>
@@ -316,8 +319,8 @@ class ExplorerView
                 $ctxLast = $patientData['last_name'] ?? '';
                 $ctxName = (is_scalar($ctxFirst) ? (string) $ctxFirst : '') . ' ' . (is_scalar($ctxLast) ? (string) $ctxLast : '');
                 ?>
-                <input type="hidden" id="context-patient-id" value="<?= htmlspecialchars(is_scalar($ctxPid) ? (string) $ctxPid : '') ?>">
-                <input type="hidden" id="context-patient-name" value="<?= htmlspecialchars(trim($ctxName)) ?>">
+                <input type="hidden" id="context-patient-id" value="<?php echo htmlspecialchars(is_scalar($ctxPid) ? (string) $ctxPid : '') ?>">
+                <input type="hidden" id="context-patient-name" value="<?php echo htmlspecialchars(trim($ctxName)) ?>">
 
                 <div class="explorer-main-content">
                     <div class="explorer-header">
@@ -465,7 +468,8 @@ class ExplorerView
                     </div>
                 </div>
             </main>
-            <?php
-        });
+                <?php
+            }
+        );
     }
 }

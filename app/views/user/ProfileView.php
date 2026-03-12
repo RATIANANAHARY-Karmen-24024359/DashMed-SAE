@@ -22,7 +22,7 @@ namespace modules\views\user;
  * Displays personal info, allows updates and account deletion.
  *
  * @package DashMed\Modules\Views\Pages
- * @author DashMed Team
+ * @author  DashMed Team
  * @license Proprietary
  */
 class ProfileView
@@ -30,18 +30,20 @@ class ProfileView
     /**
      * Renders the profile page HTML.
      *
-     * @param array{
+     * @param  array{
      *   first_name?: string,
      *   last_name?: string,
      *   email?: string,
      *   id_profession?: int|string|null,
-     *   profession_name?: string|null
+     *   profession_name?: string|null,
+     *   alert_dnd?: bool|int,
+     *   chart_animation?: bool|int
      * }|null $user User data
-     * @param array<int, array{
+     * @param  array<int, array{
      *   id: int|string,
      *   name: string
      * }> $professions List of specialties (id, name)
-     * @param array{type: string, text: string}|null $msg Flash message
+     * @param  array{type: string, text: string}|null $msg Flash message
      * @return void
      */
     public function show(?array $user, array $professions = [], ?array $msg = null): void
@@ -69,24 +71,33 @@ class ProfileView
             true
         );
 
-        $layout->render(function () use ($user, $professions, $msg, $h) {
-            ?>
+        $layout->render(
+            function () use ($user, $professions, $msg, $h) {
+                $alertDnd = false;
+                if (is_array($user) && array_key_exists('alert_dnd', $user)) {
+                    $alertDnd = (bool) $user['alert_dnd'];
+                }
+                $chartAnimation = true;
+                if (is_array($user) && array_key_exists('chart_animation', $user)) {
+                    $chartAnimation = (bool) $user['chart_animation'];
+                }
+                ?>
 
             <main class="container nav-space">
                 <section class="dashboard-content-container">
                     <?php include dirname(__DIR__) . '/partials/_searchbar.php'; ?>
                     <h1>Mon profil</h1>
 
-                    <?php if ($msg !== null): ?>
-                        <div class="alert <?= $h($msg['type']) ?>">
-                            <?= $h($msg['text']) ?>
+                    <?php if ($msg !== null) : ?>
+                        <div class="alert <?php echo $h($msg['type']) ?>">
+                            <?php echo $h($msg['text']) ?>
                         </div>
                     <?php endif; ?>
 
                     <div class="skeleton-wrapper" id="skeleton-profile" data-skeleton-for="real-profile" data-skeleton-auto
                         data-skeleton-delay="300">
                         <div class="skeleton-form" style="margin-bottom: 1.5rem;">
-                            <?php for ($pf = 0; $pf < 4; $pf++): ?>
+                            <?php for ($pf = 0; $pf < 4; $pf++) : ?>
                                 <div class="skeleton-form-group">
                                     <div class="skeleton skeleton-text skeleton-text--sm" style="width: 80px;"></div>
                                     <div class="skeleton skeleton-input"></div>
@@ -110,7 +121,7 @@ class ProfileView
 
                         <div class="profile-card">
                             <form action="/?page=profile" method="post" class="profile-form">
-                                <input type="hidden" name="csrf" value="<?= $h($_SESSION['csrf_profile']) ?>">
+                                <input type="hidden" name="csrf" value="<?php echo $h($_SESSION['csrf_profile']) ?>">
 
                                 <div class="form-group">
                                     <label for="first_name">Prénom</label>
@@ -120,7 +131,7 @@ class ProfileView
                                             0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
                                         </svg>
                                         <input type="text" id="first_name" name="first_name" required
-                                            value="<?= $h($user['first_name'] ?? '') ?>" placeholder="Votre prénom">
+                                            value="<?php echo $h($user['first_name'] ?? '') ?>" placeholder="Votre prénom">
                                     </div>
                                 </div>
 
@@ -132,7 +143,7 @@ class ProfileView
                                             0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
                                         </svg>
                                         <input type="text" id="last_name" name="last_name" required
-                                            value="<?= $h($user['last_name'] ?? '') ?>" placeholder="Votre nom">
+                                            value="<?php echo $h($user['last_name'] ?? '') ?>" placeholder="Votre nom">
                                     </div>
                                 </div>
 
@@ -144,7 +155,7 @@ class ProfileView
                                             2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z" />
                                         </svg>
                                         <input type="email" id="email" name="email" disabled
-                                            value="<?= $h($user['email'] ?? '') ?>">
+                                            value="<?php echo $h($user['email'] ?? '') ?>">
                                     </div>
                                 </div>
 
@@ -169,8 +180,8 @@ class ProfileView
                                             ?>
                                         </select>
                                     </div>
-                                    <?php if (!empty($user['profession_name'])): ?>
-                                        <small class="current-info">Actuelle : <?= $h($user['profession_name']) ?></small>
+                                    <?php if (!empty($user['profession_name'])) : ?>
+                                        <small class="current-info">Actuelle : <?php echo $h($user['profession_name']) ?></small>
                                     <?php endif; ?>
                                 </div>
 
@@ -190,7 +201,7 @@ class ProfileView
                                 <label class="toggle-switch"
                                     style="display: flex; align-items: center; cursor: pointer; gap: 0.5rem; font-size: 0.95rem; color: var(--text-main);">
                                     <input type="checkbox" id="dnd-toggle" style="width: 1.2rem; height: 1.2rem; cursor: pointer;"
-                                        <?= ($user['alert_dnd'] ?? 0) ? 'checked' : '' ?>>
+                                        <?php echo $alertDnd ? 'checked' : '' ?>>
                                     <span>Activer le mode "Ne pas déranger"</span>
                                 </label>
                             </div>
@@ -253,7 +264,7 @@ class ProfileView
                                 <label class="toggle-switch"
                                     style="display: flex; align-items: center; cursor: pointer; gap: 0.5rem; font-size: 0.95rem; color: var(--text-main);">
                                     <input type="checkbox" id="chart-animation-toggle"
-                                        style="width: 1.2rem; height: 1.2rem; cursor: pointer;" <?= ($user['chart_animation'] ?? 1) ? 'checked' : '' ?>>
+                                        style="width: 1.2rem; height: 1.2rem; cursor: pointer;" <?php echo $chartAnimation ? 'checked' : '' ?>>
                                     <span>Activer les animations fluides</span>
                                 </label>
                             </div>
@@ -311,7 +322,7 @@ class ProfileView
                             <form action="/?page=profile" method="post" onsubmit="return confirm(
                                 'Cette action est irréversible. Confirmer la suppression de votre compte ?'
                                 );">
-                                <input type="hidden" name="csrf" value="<?= $h($_SESSION['csrf_profile']) ?>">
+                                <input type="hidden" name="csrf" value="<?php echo $h($_SESSION['csrf_profile']) ?>">
                                 <input type="hidden" name="action" value="delete_account">
                                 <button type="submit" class="btn-danger-action">Supprimer mon compte</button>
                             </form>
@@ -322,7 +333,8 @@ class ProfileView
 
             </main>
 
-            <?php
-        });
+                <?php
+            }
+        );
     }
 }

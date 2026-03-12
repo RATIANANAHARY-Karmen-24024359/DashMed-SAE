@@ -40,8 +40,8 @@ $escape = static fn(mixed $value): string => htmlspecialchars(
     'UTF-8'
 );
 
-if (!empty($patientMetrics)): ?>
-    <?php if ($showNoLayoutMessage && empty($layoutMap)): ?>
+if (!empty($patientMetrics)) : ?>
+    <?php if ($showNoLayoutMessage && empty($layoutMap)) : ?>
         <article class="card" data-no-data="1"
             style="grid-column: 1 / -1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 2rem; text-align: center; gap: 1rem;">
             <h3 style="font-size: 1.1rem; font-weight: 600; color: var(--text-color);">Aucune donnée</h3>
@@ -52,7 +52,7 @@ if (!empty($patientMetrics)): ?>
             </p>
         </article>
     <?php endif; ?>
-    <?php foreach ($patientMetrics as $row): ?>
+    <?php foreach ($patientMetrics as $row) : ?>
         <?php
         if ($row instanceof \modules\models\entities\Indicator) {
             $viewData = $row->getViewData();
@@ -128,20 +128,20 @@ if (!empty($patientMetrics)): ?>
         $inLayout = $isVisibleInLayout ? '1' : '0';
         ?>
 
-        <article id="indicateurs-<?= $escape($parameterId) ?>" class="card <?= $stateClass ?>" style="<?= $gridStyle ?>"
-            data-in-layout="<?= $inLayout ?>" data-category="<?= $escape($category) ?>" data-display="<?= $escape($display) ?>"
-            data-parameter-id="<?= $escape($parameterId) ?>" data-value="<?= $escape($value) ?>"
-            data-crit="<?= $critFlag ? '1' : '0' ?>" data-detail-id="<?= $escape($idPrefix . 'detail-' . $slug) ?>"
-            data-slug="<?= $escape($slug) ?>" data-chart='<?= $escape($chartConfig) ?>'
-            data-chart-type="<?= $escape($chartType) ?>" data-max="<?= $escape($gaugeMax) ?>"
-            data-dmin="<?= $escape($viewData['view_limits']['min'] ?? '') ?>"
-            data-dmax="<?= $escape($viewData['view_limits']['max'] ?? '') ?>"
-            data-nmin="<?= $escape($viewData['thresholds']['nmin'] ?? '') ?>"
-            data-nmax="<?= $escape($viewData['thresholds']['nmax'] ?? '') ?>"
-            data-cmin="<?= $escape($viewData['thresholds']['cmin'] ?? '') ?>"
-            data-cmax="<?= $escape($viewData['thresholds']['cmax'] ?? '') ?>"
-            data-display-duration="<?= $escape($viewData['display_duration'] ?? '1') ?>"
-            data-card-display-duration="<?= $escape($viewData['card_display_duration'] ?? '1') ?>">
+        <article id="indicateurs-<?php echo $escape($parameterId) ?>" class="card <?php echo $stateClass ?>" style="<?php echo $gridStyle ?>"
+            data-in-layout="<?php echo $inLayout ?>" data-category="<?php echo $escape($category) ?>" data-display="<?php echo $escape($display) ?>"
+            data-parameter-id="<?php echo $escape($parameterId) ?>" data-value="<?php echo $escape($value) ?>"
+            data-crit="<?php echo $critFlag ? '1' : '0' ?>" data-detail-id="<?php echo $escape($idPrefix . 'detail-' . $slug) ?>"
+            data-slug="<?php echo $escape($slug) ?>" data-chart='<?php echo $escape($chartConfig) ?>'
+            data-chart-type="<?php echo $escape($chartType) ?>" data-max="<?php echo $escape($gaugeMax) ?>"
+            data-dmin="<?php echo $escape($viewData['view_limits']['min'] ?? '') ?>"
+            data-dmax="<?php echo $escape($viewData['view_limits']['max'] ?? '') ?>"
+            data-nmin="<?php echo $escape($viewData['thresholds']['nmin'] ?? '') ?>"
+            data-nmax="<?php echo $escape($viewData['thresholds']['nmax'] ?? '') ?>"
+            data-cmin="<?php echo $escape($viewData['thresholds']['cmin'] ?? '') ?>"
+            data-cmax="<?php echo $escape($viewData['thresholds']['cmax'] ?? '') ?>"
+            data-display-duration="<?php echo $escape($viewData['display_duration'] ?? '1') ?>"
+            data-card-display-duration="<?php echo $escape($viewData['card_display_duration'] ?? '1') ?>">
 
             <div class="card-dismiss-btn" title="Masquer l'indicateur"
                 style="position: absolute; left: -10px; top: -10px; width: 22px; height: 22px; background: var(--primary-color, #275afe); display: flex; align-items: center; justify-content: center; cursor: pointer; opacity: 0; pointer-events: none; transition: opacity 0.2s, transform 0.15s; transform: scale(0); border-radius: 50%; z-index: 15; box-shadow: 0 2px 6px rgba(0,0,0,0.25);">
@@ -154,7 +154,7 @@ if (!empty($patientMetrics)): ?>
 
             <div class="card-header">
                 <h3>
-                    <?= $escape($display) ?>
+                    <?php echo $escape($display) ?>
                 </h3>
                 <div class="card-interval-wrapper">
                     <select class="card-interval-select" title="Durée d'affichage">
@@ -166,24 +166,24 @@ if (!empty($patientMetrics)): ?>
                             'all' => 'Tout',
                             '24' => '24H'
                         ];
-                        foreach ($cardOptions as $val => $lab): ?>
-                            <option value="<?= $val ?>" <?= $cardDuration === $val ? 'selected' : '' ?>>
-                                <?= $lab ?>
+                        foreach ($cardOptions as $val => $lab) : ?>
+                            <option value="<?php echo $val ?>" <?php echo $cardDuration === $val ? 'selected' : '' ?>>
+                                <?php echo $lab ?>
                             </option>
                         <?php endforeach; ?>
                     </select>
                 </div>
 
                 <div class="card-header-actions">
-                    <p class="value" style="display: <?= $isValueOnly ? 'none' : 'flex' ?>;">
+                    <p class="value" style="display: <?php echo $isValueOnly ? 'none' : 'flex' ?>;">
                         <span class="value-text">
-                            <?= $escape($value) ?>
+                            <?php echo $escape($value) ?>
                         </span>
                         <span class="unit">
-                            <?= $unit !== '' ? ' ' . $escape($unit) : '' ?>
+                            <?php echo $unit !== '' ? ' ' . $escape($unit) : '' ?>
                         </span>
                         <span class="value-status-icon status-critical" title="Critique"
-                            style="display: <?= str_contains($stateClass, 'card--alert') ? 'flex' : 'none' ?>;">
+                            style="display: <?php echo str_contains($stateClass, 'card--alert') ? 'flex' : 'none' ?>;">
                             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                                 stroke-linecap="round" stroke-linejoin="round">
                                 <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2
@@ -193,7 +193,7 @@ if (!empty($patientMetrics)): ?>
                             </svg>
                         </span>
                         <span class="value-status-icon status-warning" title="Attention"
-                            style="display: <?= str_contains($stateClass, 'card--warn') ? 'flex' : 'none' ?>;">
+                            style="display: <?php echo str_contains($stateClass, 'card--warn') ? 'flex' : 'none' ?>;">
                             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                                 stroke-linecap="round" stroke-linejoin="round">
                                 <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71
@@ -206,17 +206,17 @@ if (!empty($patientMetrics)): ?>
                 </div>
             </div>
 
-            <div class="card-value-only-container" style="display: <?= $isValueOnly ? 'flex' : 'none' ?>;">
+            <div class="card-value-only-container" style="display: <?php echo $isValueOnly ? 'flex' : 'none' ?>;">
                 <p class="big-value">
-                    <?= $escape($value) ?>
+                    <?php echo $escape($value) ?>
                 </p>
                 <p class="unit">
-                    <?= $escape($unit) ?>
+                    <?php echo $escape($unit) ?>
                 </p>
             </div>
 
-            <div class="card-spark" style="display: <?= $isValueOnly ? 'none' : 'block' ?>;">
-                <div class="card-spark-canvas" id="<?= $escape($idPrefix) ?>spark-<?= $escape($slug) ?>">
+            <div class="card-spark" style="display: <?php echo $isValueOnly ? 'none' : 'block' ?>;">
+                <div class="card-spark-canvas" id="<?php echo $escape($idPrefix) ?>spark-<?php echo $escape($slug) ?>">
                 </div>
                 <div class="no-data-placeholder" style="display:none;">
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 60" class="no-data-svg">
@@ -235,38 +235,38 @@ if (!empty($patientMetrics)): ?>
                 $history = $viewData['history_html_data'] ?? [];
                 foreach ($history as $historyItem) :
                     ?>
-                    <li data-time="<?= $escape($historyItem['time_iso'] ?? '') ?>"
-                        data-value="<?= $escape($historyItem['value'] ?? '') ?>"
-                        data-flag="<?= $escape($historyItem['flag'] ?? '') ?>"></li>
+                    <li data-time="<?php echo $escape($historyItem['time_iso'] ?? '') ?>"
+                        data-value="<?php echo $escape($historyItem['value'] ?? '') ?>"
+                        data-flag="<?php echo $escape($historyItem['flag'] ?? '') ?>"></li>
                 <?php endforeach; ?>
             </ul>
         </article>
 
-        <div id="<?= $escape($idPrefix) ?>detail-<?= $escape($slug) ?>" style="display:none">
-            <div id="<?= $escape($idPrefix) ?>panel-<?= $escape($slug) ?>" class="modal-grid" data-idx="0"
-                data-unit="<?= $escape($unit) ?>" data-chart="<?= $escape($viewData['modal_chart_type'] ?? $chartType) ?>"
-                data-param-id="<?= $escape($parameterId) ?>" data-chart-allowed="<?= $escape(json_encode($chartAllowed)) ?>"
-                data-nmin="<?= $escape($viewData['thresholds']['nmin'] ?? '') ?>"
-                data-nmax="<?= $escape($viewData['thresholds']['nmax'] ?? '') ?>"
-                data-cmin="<?= $escape($viewData['thresholds']['cmin'] ?? '') ?>"
-                data-cmax="<?= $escape($viewData['thresholds']['cmax'] ?? '') ?>"
-                data-dmin="<?= $escape($viewData['view_limits']['min'] ?? '') ?>"
-                data-dmax="<?= $escape($viewData['view_limits']['max'] ?? '') ?>" data-display="<?= $escape($display) ?>"
-                data-value="<?= $escape($value) ?>" data-unit-raw="<?= $escape($unit) ?>">
+        <div id="<?php echo $escape($idPrefix) ?>detail-<?php echo $escape($slug) ?>" style="display:none">
+            <div id="<?php echo $escape($idPrefix) ?>panel-<?php echo $escape($slug) ?>" class="modal-grid" data-idx="0"
+                data-unit="<?php echo $escape($unit) ?>" data-chart="<?php echo $escape($viewData['modal_chart_type'] ?? $chartType) ?>"
+                data-param-id="<?php echo $escape($parameterId) ?>" data-chart-allowed="<?php echo $escape(json_encode($chartAllowed)) ?>"
+                data-nmin="<?php echo $escape($viewData['thresholds']['nmin'] ?? '') ?>"
+                data-nmax="<?php echo $escape($viewData['thresholds']['nmax'] ?? '') ?>"
+                data-cmin="<?php echo $escape($viewData['thresholds']['cmin'] ?? '') ?>"
+                data-cmax="<?php echo $escape($viewData['thresholds']['cmax'] ?? '') ?>"
+                data-dmin="<?php echo $escape($viewData['view_limits']['min'] ?? '') ?>"
+                data-dmax="<?php echo $escape($viewData['view_limits']['max'] ?? '') ?>" data-display="<?php echo $escape($display) ?>"
+                data-value="<?php echo $escape($value) ?>" data-unit-raw="<?php echo $escape($unit) ?>">
 
                 <div class="modal-header-row">
                     <div class="column modal-header-left">
                         <h2 class="modal-title">
-                            <?= $escape($display) ?>
+                            <?php echo $escape($display) ?>
                         </h2>
                         <p class="modal-description">
-                            <?= $escape($description) ?>
+                            <?php echo $escape($description) ?>
                         </p>
                     </div>
 
                     <div class="modal-header-center">
                         <input type="datetime-local" class="modal-input modal-date-picker"
-                            title="Sélectionner une date et heure (fast travel)" max="<?= date('Y-m-d\TH:i') ?>">
+                            title="Sélectionner une date et heure (fast travel)" max="<?php echo date('Y-m-d\TH:i') ?>">
 
                         <a href="#" class="btn-csv-download" title="Télécharger toutes les données (CSV)">
                             <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
@@ -312,9 +312,9 @@ if (!empty($patientMetrics)): ?>
                                         '168' => '7J',
                                         '720' => '30J'
                                     ];
-                                    foreach ($options as $val => $lab): ?>
-                                        <option value="<?= $val ?>" <?= $currentDuration === $val ? 'selected' : '' ?>>
-                                            <?= $lab ?>
+                                    foreach ($options as $val => $lab) : ?>
+                                        <option value="<?php echo $val ?>" <?php echo $currentDuration === $val ? 'selected' : '' ?>>
+                                            <?php echo $lab ?>
                                         </option>
                                     <?php endforeach; ?>
                                 </select>
@@ -363,10 +363,10 @@ viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-li
 <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect></svg>';
                                         }
                                         ?>
-                                        <button type="button" data-modal-chart-type="<?= $escape($allowedType) ?>"
-                                            class="chart-type-btn modal-chart-btn <?= $allowedType === ($viewData['modal_chart_type'] ?? $chartType) ? 'active' : '' ?>"
-                                            title="Modale : <?= $escape($chartTypes[$allowedType] ?? ucfirst($allowedType)) ?>">
-                                            <?= $icon ?>
+                                        <button type="button" data-modal-chart-type="<?php echo $escape($allowedType) ?>"
+                                            class="chart-type-btn modal-chart-btn <?php echo $allowedType === ($viewData['modal_chart_type'] ?? $chartType) ? 'active' : '' ?>"
+                                            title="Modale : <?php echo $escape($chartTypes[$allowedType] ?? ucfirst($allowedType)) ?>">
+                                            <?php echo $icon ?>
                                         </button>
                                     <?php endforeach; ?>
                                 </div>
@@ -376,7 +376,7 @@ viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-li
                                 <span class="chart-type-label">Carte</span>
                                 <div class="chart-type-group p-2">
 
-                                    <?php foreach ($chartAllowed as $allowedType):
+                                    <?php foreach ($chartAllowed as $allowedType) :
                                         $icon = '';
                                         switch ($allowedType) {
                                             case 'line':
@@ -419,10 +419,10 @@ viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-li
 <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect></svg>';
                                         }
                                         ?>
-                                        <button type="button" data-card-chart-type="<?= $escape($allowedType) ?>"
-                                            class="chart-type-btn card-chart-btn <?= $allowedType === $chartType ? 'active' : '' ?>"
-                                            title="Carte : <?= $escape($chartTypes[$allowedType] ?? ucfirst($allowedType)) ?>">
-                                            <?= $icon ?>
+                                        <button type="button" data-card-chart-type="<?php echo $escape($allowedType) ?>"
+                                            class="chart-type-btn card-chart-btn <?php echo $allowedType === $chartType ? 'active' : '' ?>"
+                                            title="Carte : <?php echo $escape($chartTypes[$allowedType] ?? ucfirst($allowedType)) ?>">
+                                            <?php echo $icon ?>
                                         </button>
                                     <?php endforeach; ?>
                                 </div>
@@ -454,8 +454,8 @@ viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-li
                         </div>
                         <span class="loader-progress-text">0%</span>
                     </div>
-                    <div class="modal-chart chart-<?= $escape($chartType) ?>" tabindex="-1"
-                        data-id="<?= $escape($idPrefix) ?>modal-chart-<?= $escape($slug) ?>">
+                    <div class="modal-chart chart-<?php echo $escape($chartType) ?>" tabindex="-1"
+                        data-id="<?php echo $escape($idPrefix) ?>modal-chart-<?php echo $escape($slug) ?>">
                     </div>
                 </div>
 
@@ -473,17 +473,17 @@ viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-li
             </div>
 
             <ul data-hist style="display:none">
-                <?php foreach ($viewData['history_html_data'] ?? [] as $historyItem): ?>
-                    <li data-time="<?= $escape($historyItem['time_iso'] ?? '') ?>"
-                        data-value="<?= $escape($historyItem['value'] ?? '') ?>"
-                        data-flag="<?= $escape($historyItem['flag'] ?? '') ?>"></li>
+                <?php foreach ($viewData['history_html_data'] ?? [] as $historyItem) : ?>
+                    <li data-time="<?php echo $escape($historyItem['time_iso'] ?? '') ?>"
+                        data-value="<?php echo $escape($historyItem['value'] ?? '') ?>"
+                        data-flag="<?php echo $escape($historyItem['flag'] ?? '') ?>"></li>
                 <?php endforeach; ?>
             </ul>
         </div>
         </div>
     <?php endforeach; ?>
 
-<?php else: ?>
+<?php else : ?>
     <article class="card" data-no-data="1"
         style="grid-column: 1 / -1; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 2rem; text-align: center; gap: 1rem;">
         <h3 style="font-size: 1.1rem; font-weight: 600; color: var(--text-color);">Aucune donnée</h3>

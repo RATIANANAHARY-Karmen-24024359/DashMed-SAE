@@ -24,7 +24,7 @@ namespace modules\views\patient;
  * Displays vital sign monitoring cards in large format.
  *
  * @package DashMed\Modules\Views\Pages\Monitoring
- * @author DashMed Team
+ * @author  DashMed Team
  * @license Proprietary
  */
 class MonitoringView
@@ -34,13 +34,19 @@ class MonitoringView
      */
     private array $patientMetrics;
 
-    /** @var array<string, string> Available chart types [code => label] */
+    /**
+     * @var array<string, string> Available chart types [code => label]
+     */
     private array $chartTypes;
 
-    /** @var int|null Context patient ID */
+    /**
+     * @var int|null Context patient ID
+     */
     private ?int $patientId;
 
-    /** @var array<string, mixed> Selected patient data */
+    /**
+     * @var array<string, mixed> Selected patient data
+     */
     private array $patientData;
 
 
@@ -48,15 +54,15 @@ class MonitoringView
      * Constructor.
      *
      * @param array<int, \modules\models\entities\Indicator> $patientMetrics Processed metrics
-     * @param array<string, string> $chartTypes Available charts
-     * @param int|null $patientId Patient ID for search context
-     * @param array<string, mixed> $patientData Patient info
+     * @param array<string, string>                          $chartTypes     Available charts
+     * @param int|null                                       $patientId      Patient ID for search context
+     * @param array<string, mixed>                           $patientData    Patient info
      */
     public function __construct(
-            array $patientMetrics = [],
-            array $chartTypes = [],
-            ?int $patientId = null,
-            array $patientData = []
+        array $patientMetrics = [],
+        array $chartTypes = [],
+        ?int $patientId = null,
+        array $patientData = []
     ) {
         $this->patientMetrics = $patientMetrics;
         $this->chartTypes = $chartTypes;
@@ -105,20 +111,22 @@ class MonitoringView
             true
         );
 
-        $layout->render(function () {
-            ?>
+        $layout->render(
+            function () {
+                ?>
             <main class="container">
                 <section class="dashboard-content-container">
 
                     <div class="searchbar-with-patient">
                         <span class="patient-name-label">
-                             <?= htmlspecialchars(
-                                     trim(
-                                             (is_scalar($v = $this->patientData['first_name'] ?? '') ? (string)$v : '') . ' ' .
+                            <?php echo htmlspecialchars(
+                                trim(
+                                    (is_scalar($v = $this->patientData['first_name'] ?? '') ? (string)$v : '') . ' ' .
                                              (is_scalar($v = $this->patientData['last_name'] ?? '') ? (string)$v : '')
-                                     ),
-                                     ENT_QUOTES, 'UTF-8'
-                             ) ?>
+                                ),
+                                ENT_QUOTES,
+                                'UTF-8'
+                            ) ?>
 
     </span>
                         <?php include dirname(__DIR__) . '/partials/_searchbar.php'; ?>
@@ -149,11 +157,11 @@ class MonitoringView
                     </script>
 
 
-                    <input type="hidden" id="context-patient-id" value="<?= htmlspecialchars((string) $this->patientId) ?>">
+                    <input type="hidden" id="context-patient-id" value="<?php echo htmlspecialchars((string) $this->patientId) ?>">
 
                     <section class="skeleton-wrapper skeleton-monitoring-grid" id="skeleton-monitoring"
                              data-skeleton-for="real-monitoring" data-skeleton-auto data-skeleton-delay="400">
-                        <?php for ($i = 0; $i < 6; $i++): ?>
+                        <?php for ($i = 0; $i < 6; $i++) : ?>
                             <div class="skeleton-card">
                                 <div class="skeleton-card-header">
                                     <div class="skeleton skeleton-text" style="width: 55%; height: 16px;"></div>
@@ -193,7 +201,8 @@ class MonitoringView
                 });
             </script>
 
-            <?php
-        });
+                <?php
+            }
+        );
     }
 }

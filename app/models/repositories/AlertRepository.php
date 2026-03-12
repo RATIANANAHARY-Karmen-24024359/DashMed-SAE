@@ -37,7 +37,9 @@ class AlertRepository extends BaseRepository
 
             $alerts = [];
             while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
-                /** @var array<string, mixed> $row */
+                /**
+ * @var array<string, mixed> $row
+*/
                 $alerts[] = AlertItem::fromRow($row);
             }
             return $alerts;

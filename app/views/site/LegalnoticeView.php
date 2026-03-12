@@ -22,7 +22,7 @@ namespace modules\views\site;
  * Includes information about editor, host, and licenses.
  *
  * @package DashMed\Modules\Views\Pages\Site
- * @author DashMed Team
+ * @author  DashMed Team
  * @license Proprietary
  */
 class LegalnoticeView

@@ -27,7 +27,7 @@ use modules\views\site\SitemapView;
  * Handles static pages (Homepage, About, Legal Notice, Sitemap).
  *
  * @package DashMed\Modules\Controllers
- * @author DashMed Team
+ * @author  DashMed Team
  * @license Proprietary
  */
 class StaticController

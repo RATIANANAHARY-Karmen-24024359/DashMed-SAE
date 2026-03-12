@@ -25,7 +25,7 @@ use modules\models\repositories\MonitorPreferenceRepository;
  * Handles widget arrangement, visibility, and persistence.
  *
  * @package DashMed\Modules\Services
- * @author DashMed Team
+ * @author  DashMed Team
  * @license Proprietary
  */
 final class UserLayoutService
@@ -38,7 +38,9 @@ final class UserLayoutService
     private const MAX_HEIGHT = 10;
     private const WIDGETS_PER_ROW = 3;
 
-    /** @var MonitorPreferenceRepository Preference model */
+    /**
+     * @var MonitorPreferenceRepository Preference model
+     */
     private MonitorPreferenceRepository $prefModel;
 
     /**
@@ -54,7 +56,7 @@ final class UserLayoutService
     /**
      * Builds the list of visible and hidden widgets for customization.
      *
-     * @param int $userId User ID.
+     * @param  int $userId User ID.
      * @return array{widgets: list<array>, hidden: list<array>} Arrays of widgets
      */
     public function buildWidgetsForCustomization(int $userId): array
@@ -114,7 +116,7 @@ final class UserLayoutService
     /**
      * Validates and parses layout data received from the form.
      *
-     * @param string $jsonData Raw JSON data
+     * @param  string $jsonData Raw JSON data
      * @return list<array{id: string, x: int, y: int, w: int, h: int, visible: bool}> Parsed items
      * @throws \InvalidArgumentException If JSON is invalid
      */
@@ -138,13 +140,15 @@ final class UserLayoutService
                 continue;
             }
 
-            $id = (string) $item['id'];
+            /**
+ * @var array{id: string, x: numeric, y: numeric, w: numeric, h: numeric, visible?: bool} $item
+*/
+            $id = $item['id'];
             if (isset($seen[$id])) {
                 continue;
             }
             $seen[$id] = true;
 
-            /** @var array{id: string, x: numeric, y: numeric, w: numeric, h: numeric, visible?: bool} $item */
             $validatedItems[] = [
                 'id' => $id,
                 'x' => max(0, min(self::GRID_COLUMNS - 1, (int) $item['x'])),
@@ -161,7 +165,7 @@ final class UserLayoutService
     /**
      * Verifies if a layout item has a valid structure.
      *
-     * @param mixed $item Item to check
+     * @param  mixed $item Item to check
      * @return bool Validity
      */
     private function isValidLayoutItem(mixed $item): bool
@@ -187,8 +191,8 @@ final class UserLayoutService
     /**
      * Saves the user layout.
      *
-     * @param int $userId User ID.
-     * @param array<int, array{
+     * @param  int               $userId User ID.
+     * @param  array<int, array{
      *   id: string,
      *   x: int,
      *   y: int,
@@ -206,7 +210,7 @@ final class UserLayoutService
     /**
      * Resets the user layout.
      *
-     * @param int $userId User ID
+     * @param  int $userId User ID
      * @return void
      */
     public function resetLayout(int $userId): void
@@ -217,7 +221,7 @@ final class UserLayoutService
     /**
      * Retrieves the layout for dashboard display.
      *
-     * @param int $userId User ID.
+     * @param  int $userId User ID.
      * @return array<string, array{
      *   parameter_id: string,
      *   display_order: int,

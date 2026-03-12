@@ -26,7 +26,7 @@ use PDO;
  * Manages access to medical consultation data.
  *
  * @package DashMed\Modules\Models\Repositories
- * @author DashMed Team
+ * @author  DashMed Team
  * @license Proprietary
  */
 class ConsultationRepository extends BaseRepository
@@ -34,7 +34,7 @@ class ConsultationRepository extends BaseRepository
     /**
      * Retrieves the list of consultations for a specific patient.
      *
-     * @param int $idPatient Patient ID
+     * @param  int $idPatient Patient ID
      * @return Consultation[] Array of Consultation objects
      */
     public function getConsultationsByPatientId(int $idPatient): array
@@ -81,12 +81,12 @@ class ConsultationRepository extends BaseRepository
     /**
      * Creates a new consultation.
      *
-     * @param int $idPatient Patient ID
-     * @param int $idDoctor Doctor ID (User)
-     * @param string $date Date (YYYY-MM-DD or YYYY-MM-DD HH:MM:SS)
-     * @param string $type Consultation Type
-     * @param string $note Notes or report
-     * @param string $title Consultation Title
+     * @param  int    $idPatient Patient ID
+     * @param  int    $idDoctor  Doctor ID (User)
+     * @param  string $date      Date (YYYY-MM-DD or YYYY-MM-DD HH:MM:SS)
+     * @param  string $type      Consultation Type
+     * @param  string $note      Notes or report
+     * @param  string $title     Consultation Title
      * @return bool True on success, False otherwise
      */
     public function createConsultation(
@@ -103,14 +103,16 @@ class ConsultationRepository extends BaseRepository
 
             $stmt = $this->pdo->prepare($sql);
 
-            return $stmt->execute([
+            return $stmt->execute(
+                [
                 ':id_patient' => $idPatient,
                 ':id_user' => $idDoctor,
                 ':date' => $date,
                 ':type' => $type,
                 ':note' => $note,
                 ':title' => $title
-            ]);
+                ]
+            );
         } catch (\PDOException $e) {
             error_log("Error ConsultationRepository::createConsultation : " . $e->getMessage());
             return false;
@@ -120,12 +122,12 @@ class ConsultationRepository extends BaseRepository
     /**
      * Updates an existing consultation.
      *
-     * @param int $idConsultation Consultation ID
-     * @param int $idUser Doctor ID
-     * @param string $date Date
-     * @param string $type Type
-     * @param string $note Notes
-     * @param string $title Title
+     * @param  int    $idConsultation Consultation ID
+     * @param  int    $idUser         Doctor ID
+     * @param  string $date           Date
+     * @param  string $type           Type
+     * @param  string $note           Notes
+     * @param  string $title          Title
      * @return bool True on success, False otherwise
      */
     public function updateConsultation(
@@ -148,14 +150,16 @@ class ConsultationRepository extends BaseRepository
 
             $stmt = $this->pdo->prepare($sql);
 
-            return $stmt->execute([
+            return $stmt->execute(
+                [
                 ':id_consultation' => $idConsultation,
                 ':id_user' => $idUser,
                 ':date' => $date,
                 ':type' => $type,
                 ':note' => $note,
                 ':title' => $title
-            ]);
+                ]
+            );
         } catch (\PDOException $e) {
             error_log("Error ConsultationRepository::updateConsultation : " . $e->getMessage());
             return false;
@@ -165,7 +169,7 @@ class ConsultationRepository extends BaseRepository
     /**
      * Deletes a consultation.
      *
-     * @param int $idConsultation Consultation ID
+     * @param  int $idConsultation Consultation ID
      * @return bool True on success, False otherwise
      */
     public function deleteConsultation(int $idConsultation): bool
@@ -183,7 +187,7 @@ class ConsultationRepository extends BaseRepository
     /**
      * Retrieves today's consultations for a patient.
      *
-     * @param int $idPatient Patient ID
+     * @param  int $idPatient Patient ID
      * @return array<int, array{id: int, title: string, type: string, doctor: string, time: string}>
      */
     public function getTodayConsultations(int $idPatient): array
@@ -214,7 +218,7 @@ class ConsultationRepository extends BaseRepository
     /**
      * Retrieves a consultation by its ID.
      *
-     * @param int $idConsultation Consultation ID
+     * @param  int $idConsultation Consultation ID
      * @return Consultation|null Consultation object or null
      */
     public function getConsultationById(int $idConsultation): ?Consultation

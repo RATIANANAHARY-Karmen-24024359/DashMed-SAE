@@ -24,7 +24,7 @@ namespace modules\views\auth;
  * Allows new users (doctors) to create an account.
  *
  * @package DashMed\Modules\Views\Auth
- * @author DashMed Team
+ * @author  DashMed Team
  * @license Proprietary
  */
 class SignupView
@@ -32,7 +32,7 @@ class SignupView
     /**
      * Renders the signup form.
      *
-     * @param array<int, array{
+     * @param  array<int, array{
      *   id_profession: int|string,
      *   label_profession: string
      * }> $professions List of medical professions
@@ -95,7 +95,7 @@ class SignupView
                                 <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1
                                     15h-2v-2h2v2zm0-4h-2V7h2v6z" />
                             </svg>
-                            <span><?= $h($error) ?></span>
+                            <span><?php echo $h($error) ?></span>
                         </div>
                     <?php endif; ?>
 
@@ -109,7 +109,7 @@ class SignupView
                                         0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
                                 </svg>
                                 <input type="text" id="last_name" name="last_name" required
-                                    value="<?= $h($old['last_name'] ?? '') ?>" placeholder="Votre nom">
+                                    value="<?php echo $h($old['last_name'] ?? '') ?>" placeholder="Votre nom">
                             </div>
                         </div>
 
@@ -121,7 +121,7 @@ class SignupView
                                         0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
                                 </svg>
                                 <input type="text" id="first_name" name="first_name" required
-                                    value="<?= $h($old['first_name'] ?? '') ?>" placeholder="Votre prénom">
+                                    value="<?php echo $h($old['first_name'] ?? '') ?>" placeholder="Votre prénom">
                             </div>
                         </div>
 
@@ -133,7 +133,7 @@ class SignupView
                                         2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z" />
                                 </svg>
                                 <input type="email" id="email" name="email" required autocomplete="email"
-                                    value="<?= $h($old['email'] ?? '') ?>" placeholder="exemple@medecin.fr">
+                                    value="<?php echo $h($old['email'] ?? '') ?>" placeholder="exemple@medecin.fr">
                             </div>
                         </div>
 
@@ -202,7 +202,7 @@ class SignupView
                         </div>
 
                         <?php if (!empty($csrf)) : ?>
-                            <input type="hidden" name="_csrf" value="<?= $h($csrf) ?>">
+                            <input type="hidden" name="_csrf" value="<?php echo $h($csrf) ?>">
                         <?php endif; ?>
 
                         <div class="form-actions">

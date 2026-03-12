@@ -24,7 +24,7 @@ use modules\models\interfaces\EntityInterface;
  * Represents a health indicator (metric) for a patient.
  *
  * @package DashMed\Modules\Models\Entities
- * @author DashMed Team
+ * @author  DashMed Team
  * @license Proprietary
  */
 class Indicator implements EntityInterface
@@ -47,30 +47,46 @@ class Indicator implements EntityInterface
     private ?float $displayMax;
 
     private string $defaultChart;
-    /** @var array<int, string> */
+    /**
+     * @var array<int, string>
+     */
     private array $allowedCharts;
 
     private string $status;
 
-    /** @var array<string, mixed> Data for view matching (preferences, order, etc.) */
+    /**
+     * @var array<string, mixed> Data for view matching (preferences, order, etc.)
+     */
     private array $viewData = [];
 
-    /** @var array<int, array<string, mixed>> History of values */
+    /**
+     * @var array<int, array<string, mixed>> History of values
+     */
     private array $history = [];
 
-    /** @var int Priority level for display */
+    /**
+     * @var int Priority level for display
+     */
     private int $priority = 0;
 
-    /** @var int Display order */
+    /**
+     * @var int Display order
+     */
     private int $displayOrder = 9999;
 
-    /** @var bool Force show flag */
+    /**
+     * @var bool Force show flag
+     */
     private bool $forceShown = false;
 
-    /** @var string Selected chart type */
+    /**
+     * @var string Selected chart type
+     */
     private string $chartType = 'line';
 
-    /** @var string Selected modal chart type */
+    /**
+     * @var string Selected modal chart type
+     */
     private string $modalChartType = 'line';
 
     /**

@@ -24,46 +24,62 @@ use modules\models\interfaces\EntityInterface;
  * Represents a medical consultation entity.
  *
  * @package DashMed\Modules\Models\Entities
- * @author DashMed Team
+ * @author  DashMed Team
  * @license Proprietary
  */
 class Consultation implements EntityInterface
 {
-    /** @var int Consultation ID */
+    /**
+     * @var int Consultation ID
+     */
     private int $id;
 
-    /** @var int|string Doctor's user ID */
+    /**
+     * @var int|string Doctor's user ID
+     */
     private int|string $idDoctor;
 
-    /** @var string Doctor's name */
+    /**
+     * @var string Doctor's name
+     */
     private string $doctor;
 
-    /** @var string Date of consultation */
+    /**
+     * @var string Date of consultation
+     */
     private string $date;
 
-    /** @var string Title of the consultation */
+    /**
+     * @var string Title of the consultation
+     */
     private string $title;
 
-    /** @var string Type of event/consultation */
+    /**
+     * @var string Type of event/consultation
+     */
     private string $evenementType;
 
-    /** @var string Note or report content */
+    /**
+     * @var string Note or report content
+     */
     private string $note;
 
-    /** @var string|null Associated document path or name */
+    /**
+     * @var string|null Associated document path or name
+     */
     private ?string $document;
 
     /**
      * Constructor
      *
-     * @param int $id Consultation ID
-     * @param int|string $idDoctor Doctor ID or Name
-     * @param string $doctor Doctor Name
-     * @param string $date Date
-     * @param string $title Title
-     * @param string $evenementType Type
-     * @param string $note Note
-     * @param string|null $document Document
+     * @param int         $id            Consultation ID
+     * @param int|string  $idDoctor      Doctor ID or Name
+     * @param string      $doctor        Doctor Name
+     * @param string      $date          Date
+     * @param string      $title         Title
+     * @param string      $evenementType Type
+     * @param string      $note          Note
+     * @param string|null $document      Document
      */
     public function __construct(
         int $id,

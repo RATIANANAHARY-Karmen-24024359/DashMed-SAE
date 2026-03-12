@@ -25,12 +25,14 @@ use PDO;
  * Parent class for all repositories. Centralizes PDO connection management.
  *
  * @package DashMed\Modules\Models\Base
- * @author DashMed Team
+ * @author  DashMed Team
  * @license Proprietary
  */
 abstract class BaseRepository
 {
-    /** @var PDO Database connection */
+    /**
+     * @var PDO Database connection
+     */
     protected PDO $pdo;
 
     /**

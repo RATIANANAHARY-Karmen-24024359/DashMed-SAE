@@ -26,31 +26,41 @@ use PDO;
  * Part of the DashMed Core Infrastructure.
  *
  * @package DashMed\Modules\Models\Repositories
- * @author DashMed Team
+ * @author  DashMed Team
  * @version 3.4.2
  */
 class MonitorRepository extends BaseRepository
 {
-    /** @var string The main table containing measurement samples (e.g., 'patient_data'). */
+    /**
+     * @var string The main table containing measurement samples (e.g., 'patient_data').
+     */
     private string $table;
 
-    /** @var string Status: Normal */
+    /**
+     * @var string Status: Normal
+     */
     public const STATUS_NORMAL = 'normal';
 
-    /** @var string Status: Warning */
+    /**
+     * @var string Status: Warning
+     */
     public const STATUS_WARNING = 'warning';
 
-    /** @var string Status: Critical */
+    /**
+     * @var string Status: Critical
+     */
     public const STATUS_CRITICAL = 'critical';
 
-    /** @var string Status: Unknown */
+    /**
+     * @var string Status: Unknown
+     */
     public const STATUS_UNKNOWN = 'unknown';
 
     /**
      * Constructor
      *
-     * @param PDO|null $pdo Database connection (optional)
-     * @param string $table Table name
+     * @param PDO|null $pdo   Database connection (optional)
+     * @param string   $table Table name
      */
     public function __construct(?PDO $pdo = null, string $table = 'patient_data')
     {
@@ -64,7 +74,7 @@ class MonitorRepository extends BaseRepository
      *
      * Returns an empty array on SQL error to prevent blocking display.
      *
-     * @param int $patientId Patient ID
+     * @param  int $patientId Patient ID
      * @return array<int, \modules\models\entities\Indicator> List of metrics or empty array
      */
     public function getLatestMetrics(int $patientId): array
@@ -138,11 +148,13 @@ class MonitorRepository extends BaseRepository
         ";
 
             $st = $this->pdo->prepare($sql);
-            $st->execute([
+            $st->execute(
+                [
                 ':id_pat_threshold' => $patientId,
                 ':id_pat_inner' => $patientId,
                 ':id_pat_outer' => $patientId,
-            ]);
+                ]
+            );
 
             $rows = $st->fetchAll();
             $indicators = [];
@@ -335,9 +347,9 @@ class MonitorRepository extends BaseRepository
      * Standard implementation for small to medium ranges. For large scale analysis,
      * use streamRawHistoryByParameter() instead to maintain flat memory usage.
      *
-     * @param int $patientId The unique patient identifier.
-     * @param int $limit Maximum number of records to return (0 for unlimited).
-     * @param string|null $sinceTimestamp Optional starting point (YYYY-MM-DD HH:MM:SS).
+     * @param  int         $patientId      The unique patient identifier.
+     * @param  int         $limit          Maximum number of records to return (0 for unlimited).
+     * @param  string|null $sinceTimestamp Optional starting point (YYYY-MM-DD HH:MM:SS).
      * @return array<int, array{parameter_id: string, value: float|null, timestamp: string, alert_flag: int}>
      * @throws \PDOException If retrieval fails.
      */
@@ -391,9 +403,9 @@ class MonitorRepository extends BaseRepository
     /**
      * Efficiently retrieves the latest history points for SPECIFIC parameters of a patient.
      *
-     * @param int $patientId Patient ID
-     * @param array<int, string> $parameterIds List of parameter IDs
-     * @param int $limitPerParam Max points per parameter (default 1000)
+     * @param  int                $patientId     Patient ID
+     * @param  array<int, string> $parameterIds  List of parameter IDs
+     * @param  int                $limitPerParam Max points per parameter (default 1000)
      * @return array<int, array{parameter_id: string, value: float|null, timestamp: string, alert_flag: int}>
      */
     public function getLatestHistoryForSpecificParameters(int $patientId, array $parameterIds, int $limitPerParam = 1000): array
@@ -429,6 +441,9 @@ class MonitorRepository extends BaseRepository
         }
     }
 
+    /**
+     * @return array<int, array<string, mixed>>
+     */
     public function getLatestHistoryForAllParameters(int $patientId, int $limitPerParam = 1000): array
     {
         try {
@@ -473,10 +488,10 @@ class MonitorRepository extends BaseRepository
      * This method fetches historical data into memory. It is suitable for small
      * datasets but may cause memory exhaustion on massive time ranges.
      *
-     * @param int $patientId The unique ID of the patient.
-     * @param string $parameterId The target medical parameter (e.g., 'FC', 'SpO2').
-     * @param string|null $targetDate Optional target date (YYYY-MM-DD or ISO 8601), limits data up to this exact date/time.
-     * @param int $limit Maximum number of records to return. 0 disables the limit but is risky for large sets.
+     * @param int         $patientId   The unique ID of the patient.
+     * @param string      $parameterId The target medical parameter (e.g., 'FC', 'SpO2').
+     * @param string|null $targetDate  Optional target date (YYYY-MM-DD or ISO 8601), limits data up to this exact date/time.
+     * @param int         $limit       Maximum number of records to return. 0 disables the limit but is risky for large sets.
      *
      * @return array<int, array{parameter_id: string, value: float|string|null, timestamp: string, alert_flag: string|int}> Ordered chronologically ASC.
      */
@@ -564,8 +579,8 @@ class MonitorRepository extends BaseRepository
             $isDateTime = false;
             if ($targetDate !== null) {
                 if (
-                    preg_match('/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/', $targetDate) ||
-                    preg_match('/^\d{4}-\d{2}-\d{2}$/', $targetDate)
+                    preg_match('/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/', $targetDate)
+                    || preg_match('/^\d{4}-\d{2}-\d{2}$/', $targetDate)
                 ) {
                     $dateCondition = 'AND `timestamp` <= :targetDateEnd';
                     $isDateTime = true;
@@ -605,7 +620,9 @@ class MonitorRepository extends BaseRepository
                 if (!is_array($row)) {
                     break;
                 }
-                /** @var array{parameter_id: string, value: string|null, timestamp: string, alert_flag: int|string} $row */
+                /**
+ * @var array{parameter_id: string, value: string|null, timestamp: string, alert_flag: int|string} $row
+*/
                 yield $row;
             }
         } catch (\PDOException $e) {
@@ -622,10 +639,10 @@ class MonitorRepository extends BaseRepository
      * It performs a FIRST pass of reduction in SQL using AVG() and GROUP BY,
      * so PHP only receives a manageable amount of points (e.g. 5,000-10,000).
      *
-     * @param int $patientId Patient ID.
-     * @param string $parameterId Parameter identifier.
-     * @param int $intervalSeconds Time bucket size in seconds.
-     * @param string|null $targetDate Optional date filter.
+     * @param  int         $patientId       Patient ID.
+     * @param  string      $parameterId     Parameter identifier.
+     * @param  int         $intervalSeconds Time bucket size in seconds.
+     * @param  string|null $targetDate      Optional date filter.
      * @return \Generator
      */
     public function streamPreAggregatedHistoryByParameter(
@@ -693,9 +710,9 @@ class MonitorRepository extends BaseRepository
      * This count is crucial for feeding the mathematically accurate LTTB downsampling
      * algorithm before an unbuffered stream begins, as streams cannot be counted mid-flight.
      *
-     * @param int $patientId The unique ID of the patient.
-     * @param string $parameterId The target medical parameter.
-     * @param string|null $targetDate Optional target date (YYYY-MM-DD or ISO 8601), limits up to this date/time.
+     * @param int         $patientId   The unique ID of the patient.
+     * @param string      $parameterId The target medical parameter.
+     * @param string|null $targetDate  Optional target date (YYYY-MM-DD or ISO 8601), limits up to this date/time.
      *
      * @return int The total chronological row count.
      */
@@ -709,8 +726,8 @@ class MonitorRepository extends BaseRepository
             $isDateTime = false;
             if ($targetDate !== null) {
                 if (
-                    preg_match('/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/', $targetDate) ||
-                    preg_match('/^\d{4}-\d{2}-\d{2}$/', $targetDate)
+                    preg_match('/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/', $targetDate)
+                    || preg_match('/^\d{4}-\d{2}-\d{2}$/', $targetDate)
                 ) {
                     $dateCondition = 'AND `timestamp` <= :targetDateEnd';
                     $isDateTime = true;
@@ -768,10 +785,10 @@ class MonitorRepository extends BaseRepository
      * - Uses an index-friendly `ORDER BY timestamp DESC LIMIT N` subquery.
      * - Wraps the result to return points in chronological order (ASC) for charting.
      *
-     * @param int $patientId The patient identifier.
-     * @param string $parameterId The parameter identifier (e.g. "FC_m", "HCO3").
-     * @param int $limit Max number of points to return (hard-capped to 5000).
-     * @param string|null $targetDate Optional upper bound (YYYY-MM-DD or YYYY-MM-DDTHH:MM).
+     * @param int         $patientId   The patient identifier.
+     * @param string      $parameterId The parameter identifier (e.g. "FC_m", "HCO3").
+     * @param int         $limit       Max number of points to return (hard-capped to 5000).
+     * @param string|null $targetDate  Optional upper bound (YYYY-MM-DD or YYYY-MM-DDTHH:MM).
      *
      * @return array<int, array{
      *   parameter_id: string,
@@ -793,8 +810,8 @@ class MonitorRepository extends BaseRepository
             $isDateTime = false;
             if ($targetDate !== null) {
                 if (
-                    preg_match('/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/', $targetDate) ||
-                    preg_match('/^\d{4}-\d{2}-\d{2}$/', $targetDate)
+                    preg_match('/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/', $targetDate)
+                    || preg_match('/^\d{4}-\d{2}-\d{2}$/', $targetDate)
                 ) {
                     $dateCondition = 'AND `timestamp` <= :targetDateEnd';
                     $isDateTime = true;
@@ -845,10 +862,10 @@ class MonitorRepository extends BaseRepository
      * - This cursor is weaker than the monotonic `seq` cursor. Prefer {@see getHistoryChunkAfterSeq()}.
      * - Kept for backwards-compatibility and tooling that only knows timestamps.
      *
-     * @param int $patientId The patient identifier.
-     * @param string $parameterId The parameter identifier.
+     * @param int         $patientId      The patient identifier.
+     * @param string      $parameterId    The parameter identifier.
      * @param string|null $afterTimestamp Exclusive cursor in SQL DATETIME (YYYY-MM-DD HH:MM:SS) or null to start.
-     * @param int $limit Max number of points to return (hard-capped to 20000).
+     * @param int         $limit          Max number of points to return (hard-capped to 20000).
      *
      * @return array<int, array{
      *   parameter_id: string,
@@ -909,10 +926,10 @@ class MonitorRepository extends BaseRepository
      * - Guarantees strict ordering and safe pagination even when multiple rows share the same timestamp.
      * - Allows resumable background sync without missing or duplicating points.
      *
-     * @param int $patientId The patient identifier.
-     * @param string $parameterId The parameter identifier.
-     * @param int|null $afterSeq Exclusive cursor (seq). Use null to start from the beginning.
-     * @param int $limit Max number of points to return (hard-capped to 20000).
+     * @param int      $patientId   The patient identifier.
+     * @param string   $parameterId The parameter identifier.
+     * @param int|null $afterSeq    Exclusive cursor (seq). Use null to start from the beginning.
+     * @param int      $limit       Max number of points to return (hard-capped to 20000).
      *
      * @return array<int, array{
      *   seq: int|string,
@@ -968,7 +985,7 @@ class MonitorRepository extends BaseRepository
      * This is intentionally cheap to compute compared to serving large histories.
      * The `max_seq` watermark enables a client to determine when it is fully synced.
      *
-     * @param int $patientId The patient identifier.
+     * @param int    $patientId   The patient identifier.
      * @param string $parameterId The parameter identifier.
      *
      * @return array{max_ts: string|null, max_seq: int|null, count: int|null}

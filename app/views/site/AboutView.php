@@ -22,7 +22,7 @@ namespace modules\views\site;
  * Presents the platform, objectives, and team.
  *
  * @package DashMed\Modules\Views\Pages\Site
- * @author DashMed Team
+ * @author  DashMed Team
  * @license Proprietary
  */
 class AboutView

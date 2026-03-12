@@ -25,16 +25,22 @@ use modules\models\entities\AlertItem;
  * Handles severity determination and message formatting.
  *
  * @package DashMed\Modules\Services
- * @author DashMed Team
+ * @author  DashMed Team
  * @license Proprietary
  */
 class AlertService
 {
-    /** @var string Error severity */
+    /**
+     * @var string Error severity
+     */
     public const SEVERITY_ERROR = 'error';
-    /** @var string Warning severity */
+    /**
+     * @var string Warning severity
+     */
     public const SEVERITY_WARNING = 'warning';
-    /** @var string Info severity */
+    /**
+     * @var string Info severity
+     */
     public const SEVERITY_INFO = 'info';
 
     /**
@@ -49,7 +55,7 @@ class AlertService
     /**
      * Builds UI messages from a list of alert items.
      *
-     * @param AlertItem[] $alerts List of AlertItem objects
+     * @param  AlertItem[] $alerts List of AlertItem objects
      * @return array<int, array<string, mixed>> List of formatted messages
      */
     public function buildAlertMessages(array $alerts): array
@@ -60,7 +66,7 @@ class AlertService
     /**
      * Builds a single UI message from an alert item.
      *
-     * @param AlertItem $alert The alert item
+     * @param  AlertItem $alert The alert item
      * @return array<string, mixed> The formatted message data
      */
     private function buildSingleMessage(AlertItem $alert): array
@@ -85,7 +91,7 @@ class AlertService
     /**
      * Determines the severity of an alert.
      *
-     * @param AlertItem $alert The alert item
+     * @param  AlertItem $alert The alert item
      * @return string The severity constant
      */
     private function determineSeverity(AlertItem $alert): string
@@ -99,7 +105,7 @@ class AlertService
     /**
      * Builds the text message for an alert.
      *
-     * @param AlertItem $alert The alert item
+     * @param  AlertItem $alert The alert item
      * @return string The formatted message string
      */
     private function buildMessage(AlertItem $alert): string
@@ -119,7 +125,7 @@ class AlertService
     /**
      * Formats a float value.
      *
-     * @param float $v Value to format
+     * @param  float $v Value to format
      * @return string Formatted string
      */
     private function fmt(float $v): string
@@ -130,7 +136,7 @@ class AlertService
     /**
      * Escapes a string for HTML output.
      *
-     * @param string|null $t Text to escape
+     * @param  string|null $t Text to escape
      * @return string Escaped text
      */
     private function esc(?string $t): string

@@ -27,15 +27,19 @@ use PDO;
  * Requires authentication.
  *
  * @package DashMed\Modules\Controllers\Api
- * @author DashMed Team
+ * @author  DashMed Team
  * @license Proprietary
  */
 class SearchController
 {
-    /** @var PDO Database connection */
+    /**
+     * @var PDO Database connection
+     */
     private PDO $pdo;
 
-    /** @var SearchRepository Search model instance */
+    /**
+     * @var SearchRepository Search model instance
+     */
     private SearchRepository $searchModel;
 
     /**
@@ -93,8 +97,8 @@ class SearchController
     /**
      * Sends a standardized JSON response.
      *
-     * @param array<string, mixed> $data Data to serialize
-     * @param int $status HTTP Status Code (default 200)
+     * @param array<string, mixed> $data   Data to serialize
+     * @param int                  $status HTTP Status Code (default 200)
      */
     private function jsonResponse(array $data, int $status = 200): void
     {

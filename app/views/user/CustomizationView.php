@@ -22,7 +22,7 @@ namespace modules\views\user;
  * View for dashboard customization page.
  *
  * @package DashMed\Modules\Views\Pages
- * @author DashMed Team
+ * @author  DashMed Team
  * @license Proprietary
  */
 final class CustomizationView
@@ -30,7 +30,7 @@ final class CustomizationView
     /**
      * Displays the customization page.
      *
-     * @param array<int, array{
+     * @param  array<int, array{
      *   id: string,
      *   name: string,
      *   category: string,
@@ -39,10 +39,10 @@ final class CustomizationView
      *   w: int,
      *   h: int
      * }> $widgets Active widgets
-     * @param array<int, array{id: string, name: string}> $hidden Hidden widgets
-     * @param array<int, array{parameter_id: string, display_name: string, category: string}> $allParameters
-     * @param array<int, array{id: int, name: string, color: string, indicator_ids: array<int, string>}> $existingGroups
-     * @param array{group: array{id: int, name: string, color: string}, indicators: array<int, array{id: string, name: string, category: string, x: int|null, y: int|null, w: int, h: int}>}|null $editGroupData Edit group data
+     * @param  array<int, array{id: string, name: string}>                                                                                                                                         $hidden         Hidden widgets
+     * @param  array<int, array{parameter_id: string, display_name: string, category: string}>                                                                                                     $allParameters
+     * @param  array<int, array{id: int, name: string, color: string, indicator_ids: array<int, string>}>                                                                                          $existingGroups
+     * @param  array{group: array{id: int, name: string, color: string}, indicators: array<int, array{id: string, name: string, category: string, x: int|null, y: int|null, w: int, h: int}>}|null $editGroupData  Edit group data
      * @return void
      */
     public function show(
@@ -51,15 +51,14 @@ final class CustomizationView
         array $allParameters = [],
         array $existingGroups = [],
         ?array $editGroupData = null
-        ): void
-    {
+    ): void {
         $h = static function ($v) {
             return htmlspecialchars(is_scalar($v) ? (string)$v : '', ENT_QUOTES, 'UTF-8');
         };
 
         $layout = new \modules\views\layout\Layout(
             'Personnalisation',
-        [
+            [
             'assets/css/pages/dashboard.css',
             'assets/css/components/searchbar/searchbar.css',
             'assets/css/pages/dashboard-customize.css',
@@ -67,44 +66,49 @@ final class CustomizationView
             'https://cdn.jsdelivr.net/npm/gridstack@10/dist/gridstack.min.css',
             'assets/css/pages/medical-procedure.css',
             'assets/css/layout/aside/aside.css'
-        ],
-        [
+            ],
+            [
             'https://cdn.jsdelivr.net/npm/gridstack@10/dist/gridstack-all.js',
             'assets/js/pages/customization-grid.js',
             'assets/js/pages/dash.js'
-        ],
+            ],
             '',
             true,
             true
-            );
+        );
 
-        $layout->render(function () use ($widgets, $hidden, $h, $allParameters, $existingGroups, $editGroupData) {
-?>
-            <?php
-            $activeTab = 'layout';
-            $rawTab = $_GET['tab'] ?? '';
-            if (is_string($rawTab) && in_array($rawTab, ['layout', 'add_group', 'my_groups', 'edit_group'], true)) {
-                $activeTab = $rawTab;
-            }
+        $layout->render(
+            function () use ($widgets, $hidden, $h, $allParameters, $existingGroups, $editGroupData) {
+                ?>
+                <?php
+                $activeTab = 'layout';
+                $rawTab = $_GET['tab'] ?? '';
+                if (is_string($rawTab) && in_array($rawTab, ['layout', 'add_group', 'my_groups', 'edit_group'], true)) {
+                    $activeTab = $rawTab;
+                }
 
-            /** @var array{type: string, text: string}|null $groupMsg */
-            $groupMsg = isset($_SESSION['group_msg']) && is_array($_SESSION['group_msg'])
+                /**
+            * @var array{type: string, text: string}|null $groupMsg
+            */
+                $groupMsg = isset($_SESSION['group_msg']) && is_array($_SESSION['group_msg'])
                 ? $_SESSION['group_msg']
                 : null;
-            unset($_SESSION['group_msg']);
+                unset($_SESSION['group_msg']);
 
-            $groupsByCategory = [];
-            foreach ($allParameters as $param) {
-                $cat = $param['category'];
-                $groupsByCategory[$cat][] = $param;
-            }
-            ksort($groupsByCategory);
-
-            $existingGroupNames = array_map(function ($g) {
-                    return $g['name'];
+                $groupsByCategory = [];
+                foreach ($allParameters as $param) {
+                    $cat = $param['category'];
+                    $groupsByCategory[$cat][] = $param;
                 }
-                    , $existingGroups);
-    ?>
+                ksort($groupsByCategory);
+
+                $existingGroupNames = array_map(
+                    function ($g) {
+                        return $g['name'];
+                    },
+                    $existingGroups
+                );
+                ?>
 
             <main class="container nav-space" id="customization-main">
                 <section class="dashboard-content-container">
@@ -122,7 +126,7 @@ final class CustomizationView
                             </div>
                         </div>
                         <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1rem;">
-                            <?php for ($cw = 0; $cw < 6; $cw++): ?>
+                            <?php for ($cw = 0; $cw < 6; $cw++) : ?>
                                 <div class="skeleton-widget">
                                     <div class="skeleton-widget-header">
                                         <div style="display: flex; flex-direction: column; gap: 4px;">
@@ -136,8 +140,8 @@ final class CustomizationView
                                     </div>
                                     <div class="skeleton skeleton-widget-body"></div>
                                 </div>
-                            <?php
-                endfor; ?>
+                                <?php
+                            endfor; ?>
                         </div>
                     </div>
 
@@ -149,7 +153,7 @@ final class CustomizationView
                                     <h1>Personnaliser le tableau de bord</h1>
                                     <p>Déplacez, redimensionnez , masquez les widgets ou créez vos groupes.</p>
                                 </div>
-                                <div class="dm-customize-actions" id="dm-layout-actions" <?= $activeTab !== 'layout' ? 'style="display:none"' : ''?>>
+                                <div class="dm-customize-actions" id="dm-layout-actions" <?php echo $activeTab !== 'layout' ? 'style="display:none"' : ''?>>
                                     <button type="button" id="reset-layout-btn"
                                         class="dm-btn dm-btn--secondary">Réinitialiser</button>
                                     <button type="submit" form="customize-form" class="dm-btn dm-btn--primary">Enregistrer</button>
@@ -157,18 +161,18 @@ final class CustomizationView
                             </div>
 
                             <div class="dm-tabs">
-                                <button type="button" class="dm-tab-label <?= $activeTab === 'layout' ? 'active' : ''?>"
+                                <button type="button" class="dm-tab-label <?php echo $activeTab === 'layout' ? 'active' : ''?>"
                                     data-target="tab-layout">Disposition principale</button>
                                 <div class="category-vert-separator"></div>
-                                <button type="button" class="dm-tab-label <?= $activeTab === 'my_groups' ? 'active' : ''?>"
+                                <button type="button" class="dm-tab-label <?php echo $activeTab === 'my_groups' ? 'active' : ''?>"
                                     data-target="tab-my_groups">
                                     Mes
                                     groupes
-                                    <?=!empty($existingGroups) ? ' <span class="dm-tab-count">' . count($existingGroups) . '</span>' : ''?>
+                                    <?php echo !empty($existingGroups) ? ' <span class="dm-tab-count">' . count($existingGroups) . '</span>' : ''?>
                                 </button>
                                 <div class="category-vert-separator"></div>
                                 <button type="button"
-                                    class="dm-tab-label dm-tab-add <?= $activeTab === 'add_group' ? 'active' : ''?>"
+                                    class="dm-tab-label dm-tab-add <?php echo $activeTab === 'add_group' ? 'active' : ''?>"
                                     data-target="tab-add_group" style="color: var(--text-brand, #3b82f6);">
                                     <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none"
                                         stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"
@@ -178,64 +182,64 @@ final class CustomizationView
                                     </svg>
                                     Ajouter un groupe
                                 </button>
-                                <?php if ($editGroupData !== null): ?>
-                                    <button type="button" class="dm-tab-label <?= $activeTab === 'edit_group' ? 'active' : ''?>"
+                                <?php if ($editGroupData !== null) : ?>
+                                    <button type="button" class="dm-tab-label <?php echo $activeTab === 'edit_group' ? 'active' : ''?>"
                                         data-target="tab-edit_group" style="display:none;">
                                         Modifier le groupe
                                     </button>
-                                <?php
-                endif; ?>
+                                    <?php
+                                endif; ?>
                             </div>
-                            <?php if ($groupMsg !== null): ?>
-                                <div class="dm-alert dm-alert--<?= $groupMsg['type'] === 'success' ? 'success' : 'error'?>">
-                                    <?= $h($groupMsg['text'])?>
+                            <?php if ($groupMsg !== null) : ?>
+                                <div class="dm-alert dm-alert--<?php echo $groupMsg['type'] === 'success' ? 'success' : 'error'?>">
+                                    <?php echo $h($groupMsg['text'])?>
                                 </div>
-                            <?php
-                endif; ?>
+                                <?php
+                            endif; ?>
 
-                            <?php if (isset($_GET['success'])): ?>
+                            <?php if (isset($_GET['success'])) : ?>
                                 <div class="dm-alert dm-alert--success">Préférences enregistrées.</div>
-                            <?php
-                endif; ?>
-                            <div id="tab-layout" class="dm-tab-content" <?= $activeTab !== 'layout' ? 'style="display:none;"' : ''?>>
-                                <?php if (!empty($hidden)): ?>
+                                <?php
+                            endif; ?>
+                            <div id="tab-layout" class="dm-tab-content" <?php echo $activeTab !== 'layout' ? 'style="display:none;"' : ''?>>
+                                <?php if (!empty($hidden)) : ?>
                                     <details class="dm-hidden-list" open>
                                         <summary>Widgets masqués</summary>
                                         <div class="dm-hidden-list-items" id="hidden-widgets-list">
-                                            <?php foreach ($hidden as $hw): ?>
-                                                <span class="dm-hidden-chip" data-widget-id="<?= $h($hw['id'])?>">
-                                                    <?= $h($hw['name'])?>
+                                            <?php foreach ($hidden as $hw) : ?>
+                                                <span class="dm-hidden-chip" data-widget-id="<?php echo $h($hw['id'])?>">
+                                                    <?php echo $h($hw['name'])?>
                                                     <button type="button">+</button>
                                                 </span>
-                                            <?php
-                    endforeach; ?>
+                                                <?php
+                                            endforeach; ?>
                                         </div>
                                     </details>
-                                <?php
-                else: ?>
+                                    <?php
+                                else : ?>
                                     <details class="dm-hidden-list" style="display:none">
                                         <summary>Widgets masqués</summary>
                                         <div class="dm-hidden-list-items" id="hidden-widgets-list"></div>
                                     </details>
-                                <?php
-                endif; ?>
+                                    <?php
+                                endif; ?>
                                 <form method="POST" action="/?page=customization" id="customize-form">
                                     <input type="hidden" name="layout_data" id="layout-data">
                                     <input type="hidden" name="reset_layout" id="reset-layout">
                                     <div class="grid-stack dm-grid">
-                                        <?php foreach ($widgets as $w): ?>
-                                            <div class="grid-stack-item" gs-x="<?=(int)$w['x']?>" gs-y="<?=(int)$w['y']?>"
-                                                gs-w="<?= max(4, (int)$w['w'])?>" gs-h="<?= max(3, (int)$w['h'])?>" gs-min-w="4"
-                                                gs-min-h="3" gs-id="<?= $h($w['id'])?>" data-widget-id="<?= $h($w['id'])?>">
+                                        <?php foreach ($widgets as $w) : ?>
+                                            <div class="grid-stack-item" gs-x="<?php echo (int)$w['x']?>" gs-y="<?php echo (int)$w['y']?>"
+                                                gs-w="<?php echo max(4, (int)$w['w'])?>" gs-h="<?php echo max(3, (int)$w['h'])?>" gs-min-w="4"
+                                                gs-min-h="3" gs-id="<?php echo $h($w['id'])?>" data-widget-id="<?php echo $h($w['id'])?>">
                                                 <div class="grid-stack-item-content">
                                                     <div class="dm-widget">
                                                         <div class="dm-widget-header">
                                                             <div>
                                                                 <div class="dm-widget-title">
-                                                                    <?= $h($w['name'])?>
+                                                                    <?php echo $h($w['name'])?>
                                                                 </div>
                                                                 <div class="dm-widget-category">
-                                                                    <?= $h($w['category'])?>
+                                                                    <?php echo $h($w['category'])?>
                                                                 </div>
                                                             </div>
                                                             <div class="dm-widget-controls">
@@ -267,13 +271,13 @@ final class CustomizationView
                                                     </div>
                                                 </div>
                                             </div>
-                                        <?php
-                endforeach; ?>
+                                            <?php
+                                        endforeach; ?>
                                     </div>
                                 </form>
                             </div>
 
-                            <div id="tab-add_group" class="dm-tab-content" <?= $activeTab !== 'add_group' ? 'style="display:none;"' : ''?>>
+                            <div id="tab-add_group" class="dm-tab-content" <?php echo $activeTab !== 'add_group' ? 'style="display:none;"' : ''?>>
                                 <div class="dm-layout-section">
                                     <label>Disposition au sein du nouveau groupe</label>
                                     <p>Réorganisez l'affichage des widgets pour ce groupe en les déplaçant ci-dessous.</p>
@@ -281,12 +285,12 @@ final class CustomizationView
                                 </div>
                             </div>
 
-                            <div id="tab-my_groups" class="dm-tab-content" <?= $activeTab !== 'my_groups' ? 'style="display:none;"' : ''?>>
+                            <div id="tab-my_groups" class="dm-tab-content" <?php echo $activeTab !== 'my_groups' ? 'style="display:none;"' : ''?>>
                                 <div class="dm-groups-list-wrap">
-                                    <?php if (empty($existingGroups)): ?>
+                                    <?php if (empty($existingGroups)) : ?>
                                         <p class="dm-no-groups">Aucun groupe personnalisé créé.</p>
-                                    <?php
-                else: ?>
+                                        <?php
+                                    else : ?>
                                         <table class="dm-groups-table">
                                             <thead>
                                                 <tr>
@@ -296,18 +300,18 @@ final class CustomizationView
                                                 </tr>
                                             </thead>
                                             <tbody>
-                                                <?php foreach ($existingGroups as $group): ?>
+                                                <?php foreach ($existingGroups as $group) : ?>
                                                     <tr>
                                                         <td>
-                                                            <?= $h($group['name'])?>
+                                                            <?php echo $h($group['name'])?>
                                                         </td>
                                                         <td>
                                                             <?php $count = count($group['indicator_ids']); ?>
-                                                            <?= $count?> indicateur<?= $count > 1 ? 's' : ''?>
+                                                            <?php echo $count?> indicateur<?php echo $count > 1 ? 's' : ''?>
                                                         </td>
                                                         <td>
                                                             <div style="display:flex; gap:10px; justify-content: flex-end;">
-                                                                <a href="/?page=customization&tab=edit_group&id=<?=(int)$group['id']?>"
+                                                                <a href="/?page=customization&tab=edit_group&id=<?php echo (int)$group['id']?>"
                                                                     class="btn-icon edit-btn">
                                                                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
                                                                         stroke="currentColor" stroke-width="2" stroke-linecap="round"
@@ -319,9 +323,9 @@ final class CustomizationView
                                                                     </svg>
                                                                 </a>
                                                                 <form method="POST" action="/?page=custom_group"
-                                                                    onsubmit="return confirm('Supprimer le groupe « <?= $h($group['name'])?> » ?')">
+                                                                    onsubmit="return confirm('Supprimer le groupe « <?php echo $h($group['name'])?> » ?')">
                                                                     <input type="hidden" name="action" value="delete_group">
-                                                                    <input type="hidden" name="group_id" value="<?=(int)$group['id']?>">
+                                                                    <input type="hidden" name="group_id" value="<?php echo (int)$group['id']?>">
                                                                     <button type="submit" class="btn-icon delete-btn">
                                                                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
                                                                             stroke="#ef4444" stroke-width="2" stroke-linecap="round"
@@ -336,19 +340,19 @@ final class CustomizationView
                                                             </div>
                                                         </td>
                                                     </tr>
-                                                <?php
-                    endforeach; ?>
+                                                    <?php
+                                                endforeach; ?>
                                             </tbody>
                                         </table>
-                                    <?php
-                endif; ?>
+                                        <?php
+                                    endif; ?>
                                 </div>
                             </div>
-                            <?php if ($editGroupData !== null):
-                    $eg = $editGroupData['group'];
-                    $egInds = $editGroupData['indicators'];
-    ?>
-                                <div id="tab-edit_group" class="dm-tab-content" <?= $activeTab !== 'edit_group' ? 'style="display:none;"' : ''?>>
+                            <?php if ($editGroupData !== null) :
+                                $eg = $editGroupData['group'];
+                                $egInds = $editGroupData['indicators'];
+                                ?>
+                                <div id="tab-edit_group" class="dm-tab-content" <?php echo $activeTab !== 'edit_group' ? 'style="display:none;"' : ''?>>
 
 
 
@@ -359,20 +363,20 @@ final class CustomizationView
 
 
                                         <div class="grid-stack dm-grid" id="edit-group-grid">
-                                            <?php foreach ($egInds as $w): ?>
-                                                <div class="grid-stack-item group-grid-item" gs-x="<?=(int)$w['x']?>"
-                                                    gs-y="<?=(int)$w['y']?>" gs-w="<?= max(4, (int)$w['w'])?>"
-                                                    gs-h="<?= max(3, (int)$w['h'])?>" gs-min-w="4" gs-min-h="3"
-                                                    gs-id="<?= $h($w['id'])?>" data-widget-id="<?= $h($w['id'])?>">
+                                            <?php foreach ($egInds as $w) : ?>
+                                                <div class="grid-stack-item group-grid-item" gs-x="<?php echo (int)$w['x']?>"
+                                                    gs-y="<?php echo (int)$w['y']?>" gs-w="<?php echo max(4, (int)$w['w'])?>"
+                                                    gs-h="<?php echo max(3, (int)$w['h'])?>" gs-min-w="4" gs-min-h="3"
+                                                    gs-id="<?php echo $h($w['id'])?>" data-widget-id="<?php echo $h($w['id'])?>">
                                                     <div class="grid-stack-item-content">
                                                         <div class="dm-widget">
                                                             <div class="dm-widget-header">
                                                                 <div>
                                                                     <div class="dm-widget-title">
-                                                                        <?= $h($w['name'])?>
+                                                                        <?php echo $h($w['name'])?>
                                                                     </div>
                                                                     <div class="dm-widget-category">
-                                                                        <?= $h($w['category'])?>
+                                                                        <?php echo $h($w['category'])?>
                                                                     </div>
                                                                 </div>
                                                                 <div class="dm-widget-controls">
@@ -403,16 +407,16 @@ final class CustomizationView
                                                         </div>
                                                     </div>
                                                 </div>
-                                            <?php
-                    endforeach; ?>
+                                                <?php
+                                            endforeach; ?>
                                         </div>
                                     </div>
                                 </div>
                                 <script>
-                                    window.preloadedEditIndicators = <?= json_encode($egInds)?>;
+                                    window.preloadedEditIndicators = <?php echo json_encode($egInds)?>;
                                 </script>
-                            <?php
-                endif; ?>
+                                <?php
+                            endif; ?>
                         </section>
 
                     </div>
@@ -468,25 +472,25 @@ final class CustomizationView
                                     </div>
                                     <label>Indicateurs disponibles</label>
                                     <div class="dm-indicators-library">
-                                        <?php foreach ($groupsByCategory as $cat => $params): ?>
+                                        <?php foreach ($groupsByCategory as $cat => $params) : ?>
                                             <div class="dm-indicator-category">
                                                 <span class="dm-indicator-cat-label">
-                                                    <?= $h($cat)?>
+                                                    <?php echo $h($cat)?>
                                                 </span>
                                                 <div class="dm-hidden-list-items" style="margin-top: 8px;">
-                                                    <?php foreach ($params as $param): ?>
-                                                        <span class="dm-hidden-chip indicator-available-chip" data-cat="<?= $h($cat)?>"
-                                                            data-id="<?= $h($param['parameter_id'])?>"
-                                                            data-name="<?= $h($param['display_name'])?>">
-                                                            <?= $h($param['display_name'])?>
+                                                    <?php foreach ($params as $param) : ?>
+                                                        <span class="dm-hidden-chip indicator-available-chip" data-cat="<?php echo $h($cat)?>"
+                                                            data-id="<?php echo $h($param['parameter_id'])?>"
+                                                            data-name="<?php echo $h($param['display_name'])?>">
+                                                            <?php echo $h($param['display_name'])?>
                                                             <button type="button" class="add-indicator-btn">+</button>
                                                         </span>
-                                                    <?php
-                    endforeach; ?>
+                                                        <?php
+                                                    endforeach; ?>
                                                 </div>
                                             </div>
-                                        <?php
-                endforeach; ?>
+                                            <?php
+                                        endforeach; ?>
                                     </div>
                                     <span class="dm-field-error" id="indicators-error"></span>
                                     <div id="hidden-inputs-container"></div>
@@ -496,15 +500,15 @@ final class CustomizationView
                             </form>
                         </div>
                     </div>
-                    <?php if ($editGroupData !== null): ?>
+                    <?php if ($editGroupData !== null) : ?>
                         <div id="aside-edit-group" style="display:none;">
                             <div class="dm-group-form-wrap" style="padding:15px; margin:0; width:100%;">
                                 <form method="POST" action="/?page=custom_group" id="edit-group-form" class="dm-form-card" novalidate>
                                     <input type="hidden" name="action" value="edit_group">
-                                    <input type="hidden" name="group_id" value="<?= $h($eg['id'])?>">
+                                    <input type="hidden" name="group_id" value="<?php echo $h($eg['id'])?>">
                                     <input type="hidden" name="layout_data" id="edit-layout-data">
                                     <h2>Modifier
-                                        <?= $h($eg['name'])?>
+                                        <?php echo $h($eg['name'])?>
                                     </h2>
 
                                     <div class="dm-form-group">
@@ -516,7 +520,7 @@ final class CustomizationView
                                                     d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
                                             </svg>
                                             <input type="text" id="edit_group_name" name="group_name" maxlength="100" autocomplete="off"
-                                                value="<?= $h($eg['name'])?>" required>
+                                                value="<?php echo $h($eg['name'])?>" required>
                                         </div>
                                         <span class="dm-field-error" id="edit-name-error"></span>
                                     </div>
@@ -525,11 +529,11 @@ final class CustomizationView
                                         <label for="edit_group_color">Couleur de l'onglet</label>
                                         <div class="dm-color-picker-wrap">
                                             <span class="dm-color-swatch" id="color-swatch-edit"
-                                                style="background:<?= $h($eg['color'])?>;"></span>
-                                            <input type="color" id="edit_group_color" name="group_color" value="<?= $h($eg['color'])?>"
+                                                style="background:<?php echo $h($eg['color'])?>;"></span>
+                                            <input type="color" id="edit_group_color" name="group_color" value="<?php echo $h($eg['color'])?>"
                                                 class="dm-color-input-hidden">
                                             <span class="dm-color-label" id="color-label-edit">
-                                                <?= $h($eg['color'])?>
+                                                <?php echo $h($eg['color'])?>
                                             </span>
                                         </div>
                                     </div>
@@ -546,25 +550,25 @@ final class CustomizationView
                                         </div>
                                         <label>Indicateurs disponibles</label>
                                         <div class="dm-indicators-library">
-                                            <?php foreach ($groupsByCategory as $cat => $params): ?>
+                                            <?php foreach ($groupsByCategory as $cat => $params) : ?>
                                                 <div class="dm-indicator-category">
                                                     <span class="dm-indicator-cat-label">
-                                                        <?= $h($cat)?>
+                                                        <?php echo $h($cat)?>
                                                     </span>
                                                     <div class="dm-hidden-list-items" style="margin-top: 8px;">
-                                                        <?php foreach ($params as $param): ?>
+                                                        <?php foreach ($params as $param) : ?>
                                                             <span class="dm-hidden-chip edit-indicator-available-chip"
-                                                                data-id="<?= $h($param['parameter_id'])?>"
-                                                                data-name="<?= $h($param['display_name'])?>" data-cat="<?= $h($cat)?>">
-                                                                <?= $h($param['display_name'])?>
+                                                                data-id="<?php echo $h($param['parameter_id'])?>"
+                                                                data-name="<?php echo $h($param['display_name'])?>" data-cat="<?php echo $h($cat)?>">
+                                                                <?php echo $h($param['display_name'])?>
                                                                 <button type="button" class="edit-add-indicator-btn">+</button>
                                                             </span>
-                                                        <?php
-                        endforeach; ?>
+                                                            <?php
+                                                        endforeach; ?>
                                                     </div>
                                                 </div>
-                                            <?php
-                    endforeach; ?>
+                                                <?php
+                                            endforeach; ?>
                                         </div>
                                         <span class="dm-field-error" id="edit-indicators-error"></span>
                                         <div id="edit-hidden-inputs-container"></div>
@@ -572,8 +576,8 @@ final class CustomizationView
                                 </form>
                             </div>
                         </div>
-                    <?php
-                endif; ?>
+                        <?php
+                    endif; ?>
                 </aside>
 
             </main>
@@ -673,7 +677,7 @@ final class CustomizationView
                         }
                     });
 
-                    const existingNames = <?= json_encode(array_values($existingGroupNames))?>;
+                    const existingNames = <?php echo json_encode(array_values($existingGroupNames))?>;
                     const form = document.getElementById('create-group-form');
                     const nameInput = document.getElementById('group_name');
                     const nameError = document.getElementById('name-error');
@@ -963,7 +967,8 @@ final class CustomizationView
                 })();
             </script>
 
-            <?php
-            });
+                <?php
+            }
+        );
     }
 }

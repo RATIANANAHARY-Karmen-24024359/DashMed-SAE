@@ -17,15 +17,19 @@ namespace modules\services;
  * - Breached password check against common passwords (A04:2025 - Cryptographic Failures)
  *
  * @package DashMed\Modules\Services
- * @author DashMed Team
+ * @author  DashMed Team
  * @license Proprietary
  */
 class PasswordValidator
 {
-    /** @var int Minimum password length */
+    /**
+     * @var int Minimum password length
+     */
     private const MIN_LENGTH = 12;
 
-    /** @var array<int, string> List of commonly breached passwords to reject */
+    /**
+     * @var array<int, string> List of commonly breached passwords to reject
+     */
     private const BREACHED_PASSWORDS = [
         'password1234',
         'motdepasse12',
@@ -54,7 +58,7 @@ class PasswordValidator
      *
      * Returns an array of error messages. Empty array means the password is valid.
      *
-     * @param string $password The password to validate
+     * @param  string $password The password to validate
      * @return array<int, string> List of validation error messages (empty if valid)
      */
     public static function validate(string $password): array
@@ -91,7 +95,7 @@ class PasswordValidator
     /**
      * Checks whether a password is valid (no errors).
      *
-     * @param string $password The password to check
+     * @param  string $password The password to check
      * @return bool True if valid, false otherwise
      */
     public static function isValid(string $password): bool
@@ -102,7 +106,7 @@ class PasswordValidator
     /**
      * Returns a formatted error message string from validation errors.
      *
-     * @param array<int, string> $errors Validation errors
+     * @param  array<int, string> $errors Validation errors
      * @return string Formatted error message
      */
     public static function formatErrors(array $errors): string
@@ -123,7 +127,7 @@ class PasswordValidator
      *
      * Uses case-insensitive comparison to catch variations.
      *
-     * @param string $password The password to check
+     * @param  string $password The password to check
      * @return bool True if the password is breached
      */
     private static function isBreached(string $password): bool

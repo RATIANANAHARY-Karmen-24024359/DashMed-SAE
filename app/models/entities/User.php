@@ -24,7 +24,7 @@ use modules\models\interfaces\EntityInterface;
  * Represents a user (Doctor, Staff, Admin).
  *
  * @package DashMed\Modules\Models\Entities
- * @author DashMed Team
+ * @author  DashMed Team
  * @license Proprietary
  */
 class User implements EntityInterface

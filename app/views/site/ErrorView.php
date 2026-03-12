@@ -22,7 +22,7 @@ namespace modules\views\site;
  * Shows error details if in debug mode.
  *
  * @package DashMed\Modules\Views\Pages\Site
- * @author DashMed Team
+ * @author  DashMed Team
  * @license Proprietary
  */
 class ErrorView
@@ -30,10 +30,10 @@ class ErrorView
     /**
      * Renders the error page HTML.
      *
-     * @param int         $code    HTTP Status Code
-     * @param string|null $title   Error title
-     * @param string|null $message User message
-     * @param string|null $details Technical details
+     * @param  int         $code    HTTP Status Code
+     * @param  string|null $title   Error title
+     * @param  string|null $message User message
+     * @param  string|null $details Technical details
      * @return void
      */
     public function show(
@@ -82,7 +82,7 @@ class ErrorView
         <head>
             <meta charset="utf-8" />
             <meta name="viewport" content="width=device-width, initial-scale=1" />
-            <title><?= htmlspecialchars((string) $code) ?> — <?= htmlspecialchars($title) ?></title>
+            <title><?php echo htmlspecialchars((string) $code) ?> — <?php echo htmlspecialchars($title) ?></title>
             <link rel="icon" type="image/svg+xml" href="assets/img/logo.svg">
             <link rel="stylesheet" href="assets/css/base/style.css">
             <link rel="stylesheet" href="assets/css/themes/light.css">
@@ -105,8 +105,8 @@ class ErrorView
             </svg>
 
             <main>
-                <h1><?= htmlspecialchars((string) $code) ?> — <?= htmlspecialchars($title) ?></h1>
-                <p><?= htmlspecialchars($message) ?></p>
+                <h1><?php echo htmlspecialchars((string) $code) ?> — <?php echo htmlspecialchars($title) ?></h1>
+                <p><?php echo htmlspecialchars($message) ?></p>
 
                 <div class="buttons">
                     <a class="pos" href="/?page=homepage">Retour</a>
@@ -119,7 +119,7 @@ class ErrorView
 
                 <?php if ($hasDetails) : ?>
                     <section id="error-details" class="details" aria-hidden="true">
-                        <?= nl2br(htmlspecialchars($details, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8')) ?>
+                        <?php echo nl2br(htmlspecialchars($details, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8')) ?>
                     </section>
                     <script src="assets/js/pages/static/error.js">
                     </script>

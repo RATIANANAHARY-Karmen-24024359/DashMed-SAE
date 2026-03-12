@@ -22,7 +22,7 @@ namespace modules\views\admin;
  * Displays forms to create doctors and patients.
  *
  * @package DashMed\Modules\Views\Pages
- * @author DashMed Team
+ * @author  DashMed Team
  * @license Proprietary
  */
 class SysadminView
@@ -32,11 +32,11 @@ class SysadminView
      *
      * Includes sidebar, error/success messages, and creation forms.
      *
-     * @param array<int, array{
+     * @param  array<int, array{
      *   id_profession: int|string,
      *   label_profession: string
      * }> $professions List of available professions for doctors | Liste des professions disponibles pour les médecins.
-     * @param array<int, array{
+     * @param  array<int, array{
      *   id_user: int,
      *   first_name: string,
      *   last_name: string,
@@ -45,7 +45,7 @@ class SysadminView
      *   id_profession: int|null,
      *   profession_label: string|null
      * }> $users List of all users.
-     * @param array<int, array{id_room: int, number: string, type: string}> $rooms List of available rooms
+     * @param  array<int, array{id_room: int, number: string, type: string}> $rooms List of available rooms
      * @return void
      */
     public function show(array $professions = [], array $users = [], array $rooms = []): void
@@ -58,7 +58,9 @@ class SysadminView
         $success = is_scalar($_SESSION['success'] ?? '') ? (string) ($_SESSION['success'] ?? '') : '';
         unset($_SESSION['success']);
 
-        /** @var array<string, string> */
+        /**
+ * @var array<string, string>
+*/
         $old = isset($_SESSION['old_sysadmin']) && is_array($_SESSION['old_sysadmin']) ? $_SESSION['old_sysadmin'] : [];
         unset($_SESSION['old_sysadmin']);
 
@@ -87,8 +89,9 @@ class SysadminView
             true
         );
 
-        $layout->render(function () use ($professions, $users, $rooms, $csrf, $error, $success, $old, $h, $adminNoChecked, $genderHommeChecked, $genderFemmeChecked) {
-            ?>
+        $layout->render(
+            function () use ($professions, $users, $rooms, $csrf, $error, $success, $old, $h, $adminNoChecked, $genderHommeChecked, $genderFemmeChecked) {
+                ?>
 
             <main class="container nav-space">
                 <section class="dashboard-content-container">
@@ -97,13 +100,13 @@ class SysadminView
 
                     <?php if (!empty($error)) : ?>
                         <div class="alert error" role="alert">
-                            <?= $h($error) ?>
+                            <?php echo $h($error) ?>
                         </div>
                     <?php endif; ?>
 
                     <?php if (!empty($success)) : ?>
                         <div class="alert success" role="alert">
-                            <?= $h($success) ?>
+                            <?php echo $h($success) ?>
                         </div>
                     <?php endif; ?>
 
@@ -115,7 +118,7 @@ class SysadminView
                         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;">
                             <div class="skeleton-form">
                                 <div class="skeleton skeleton-text skeleton-text--lg" style="width: 160px;"></div>
-                                <?php for ($sf = 0; $sf < 5; $sf++): ?>
+                                <?php for ($sf = 0; $sf < 5; $sf++) : ?>
                                     <div class="skeleton-form-group">
                                         <div class="skeleton skeleton-text skeleton-text--sm" style="width: 80px;"></div>
                                         <div class="skeleton skeleton-input"></div>
@@ -126,7 +129,7 @@ class SysadminView
                             <div class="skeleton-form">
                                 <div class="skeleton skeleton-text skeleton-text--lg" style="width: 180px;"></div>
                                 <div class="skeleton skeleton-input"></div>
-                                <?php for ($sp = 0; $sp < 4; $sp++): ?>
+                                <?php for ($sp = 0; $sp < 4; $sp++) : ?>
                                     <div class="skeleton-profile-card">
                                         <div class="skeleton skeleton-circle" style="width: 40px; height: 40px;"></div>
                                         <div class="skeleton-profile-text">
@@ -171,7 +174,7 @@ class SysadminView
                                                     1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
                                             </svg>
                                             <input type="text" id="last_name" name="last_name" required
-                                                placeholder="Nom de famille" value="<?= $h($old['last_name'] ?? '') ?>">
+                                                placeholder="Nom de famille" value="<?php echo $h($old['last_name'] ?? '') ?>">
                                         </div>
                                     </div>
 
@@ -183,7 +186,7 @@ class SysadminView
                                                     4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
                                             </svg>
                                             <input type="text" id="first_name" name="first_name" required placeholder="Prénom"
-                                                value="<?= $h($old['first_name'] ?? '') ?>">
+                                                value="<?php echo $h($old['first_name'] ?? '') ?>">
                                         </div>
                                     </div>
 
@@ -195,7 +198,7 @@ class SysadminView
                                                     0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z" />
                                             </svg>
                                             <input type="email" id="email" name="email" required autocomplete="email"
-                                                placeholder="exemple@dashmed.fr" value="<?= $h($old['email'] ?? '') ?>">
+                                                placeholder="exemple@dashmed.fr" value="<?php echo $h($old['email'] ?? '') ?>">
                                         </div>
                                     </div>
 
@@ -269,14 +272,14 @@ class SysadminView
                                                 Oui
                                             </label>
                                             <label>
-                                                <input type="radio" name="admin_status" value="0" <?= $adminNoChecked ?>>
+                                                <input type="radio" name="admin_status" value="0" <?php echo $adminNoChecked ?>>
                                                 Non
                                             </label>
                                         </div>
                                     </div>
 
-                                    <?php if (!empty($csrf)): ?>
-                                        <input type="hidden" name="_csrf" value="<?= $h($csrf) ?>">
+                                    <?php if (!empty($csrf)) : ?>
+                                        <input type="hidden" name="_csrf" value="<?php echo $h($csrf) ?>">
                                     <?php endif; ?>
 
                                     <button class="submit-btn" type="submit">Créer le compte</button>
@@ -299,19 +302,19 @@ class SysadminView
                                 </div>
 
                                 <div class="profiles-grid" id="profiles-list">
-                                    <?php if (empty($users)): ?>
+                                    <?php if (empty($users)) : ?>
                                         <p class="no-profiles">Aucun profil trouvé.</p>
-                                    <?php else: ?>
-                                        <?php foreach ($users as $u): ?>
-                                            <div class="profile-card-item" data-user-id="<?= (int) $u['id_user'] ?>"
-                                                data-name="<?= $h($u['last_name'] . ' ' . $u['first_name']) ?>"
-                                                data-first-name="<?= $h($u['first_name']) ?>"
-                                                data-last-name="<?= $h($u['last_name']) ?>" data-email="<?= $h($u['email']) ?>"
-                                                data-admin-status="<?= (int) $u['admin_status'] ?>"
-                                                data-profession-id="<?= (int) ($u['id_profession'] ?? 0) ?>">
+                                    <?php else : ?>
+                                        <?php foreach ($users as $u) : ?>
+                                            <div class="profile-card-item" data-user-id="<?php echo (int) $u['id_user'] ?>"
+                                                data-name="<?php echo $h($u['last_name'] . ' ' . $u['first_name']) ?>"
+                                                data-first-name="<?php echo $h($u['first_name']) ?>"
+                                                data-last-name="<?php echo $h($u['last_name']) ?>" data-email="<?php echo $h($u['email']) ?>"
+                                                data-admin-status="<?php echo (int) $u['admin_status'] ?>"
+                                                data-profession-id="<?php echo (int) ($u['id_profession'] ?? 0) ?>">
                                                 <div class="profile-card-info">
                                                     <div class="profile-avatar">
-                                                        <?= strtoupper(
+                                                        <?php echo strtoupper(
                                                             mb_substr($u['first_name'], 0, 1)
                                                         ) . strtoupper(
                                                             mb_substr($u['last_name'], 0, 1)
@@ -319,24 +322,24 @@ class SysadminView
                                                     </div>
                                                     <div class="profile-details">
                                                         <div class="profile-name">
-                                                            <?= $h($u['last_name'] . ' ' . $u['first_name']) ?>
-                                                            <?php if ((int) $u['admin_status'] === 1): ?>
+                                                            <?php echo $h($u['last_name'] . ' ' . $u['first_name']) ?>
+                                                            <?php if ((int) $u['admin_status'] === 1) : ?>
                                                                 <span class="badge-admin">Admin</span>
                                                             <?php endif; ?>
                                                         </div>
-                                                        <div class="profile-email"><?= $h($u['email']) ?></div>
-                                                        <?php if (!empty($u['profession_label'])): ?>
+                                                        <div class="profile-email"><?php echo $h($u['email']) ?></div>
+                                                        <?php if (!empty($u['profession_label'])) : ?>
                                                             <div class="profile-profession">
-                                                                <?= $h($u['profession_label']) ?>
+                                                                <?php echo $h($u['profession_label']) ?>
                                                             </div>
                                                         <?php endif; ?>
                                                     </div>
                                                 </div>
                                                 <div class="profile-card-actions">
-                                                    <?php if ((int) $u['admin_status'] !== 1): ?>
+                                                    <?php if ((int) $u['admin_status'] !== 1) : ?>
                                                         <button type="button" class="delete-profile-btn"
-                                                            data-user-id="<?= (int) $u['id_user'] ?>"
-                                                            data-user-name="<?= $h($u['last_name'] . ' ' . $u['first_name']) ?>"
+                                                            data-user-id="<?php echo (int) $u['id_user'] ?>"
+                                                            data-user-name="<?php echo $h($u['last_name'] . ' ' . $u['first_name']) ?>"
                                                             title="Supprimer ce profil">
                                                             <svg viewBox="0 0 24 24" width="18" height="18">
                                                                 <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0
@@ -359,8 +362,8 @@ class SysadminView
                                     <form action="?page=sysadmin" method="POST" id="edit-form" novalidate>
                                         <input type="hidden" name="action" value="edit_user">
                                         <input type="hidden" name="edit_user_id" id="edit-user-id" value="">
-                                        <?php if (!empty($csrf)): ?>
-                                            <input type="hidden" name="_csrf" value="<?= $h($csrf) ?>">
+                                        <?php if (!empty($csrf)) : ?>
+                                            <input type="hidden" name="_csrf" value="<?php echo $h($csrf) ?>">
                                         <?php endif; ?>
 
                                         <div class="form-group">
@@ -413,11 +416,11 @@ class SysadminView
                                                 </svg>
                                                 <select id="edit_profession_id" name="edit_profession_id">
                                                     <option value="">-- Sélectionnez la profession --</option>
-                                                    <?php foreach ($professions as $s):
+                                                    <?php foreach ($professions as $s) :
                                                         $profId = (int) $s['id_profession'];
                                                         $profName = $s['label_profession'];
                                                         ?>
-                                                        <option value="<?= $profId ?>"><?= $h($profName) ?></option>
+                                                        <option value="<?php echo $profId ?>"><?php echo $h($profName) ?></option>
                                                     <?php endforeach; ?>
                                                 </select>
                                             </div>
@@ -470,9 +473,9 @@ class SysadminView
                                                 <option value="">-- Sélectionnez une chambre --</option>
 
                                                 <?php foreach ($rooms as $room) : ?>
-                                                    <option value="<?= $room['id_room'] ?>"
-                                                            <?= $selectedRoom == $room['id_room'] ? 'selected' : '' ?>>
-                                                        Chambre <?= $h($room['number']) ?>
+                                                    <option value="<?php echo $room['id_room'] ?>"
+                                                            <?php echo $selectedRoom == $room['id_room'] ? 'selected' : '' ?>>
+                                                        Chambre <?php echo $h($room['number']) ?>
                                                     </option>
                                                 <?php endforeach; ?>
                                             </select>
@@ -488,7 +491,7 @@ class SysadminView
                                                 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
                                             </svg>
                                             <input type="text" id="last_name_p" name="last_name" required
-                                                   placeholder="Nom du patient" value="<?= $h($old['last_name'] ?? '') ?>">
+                                                   placeholder="Nom du patient" value="<?php echo $h($old['last_name'] ?? '') ?>">
                                         </div>
                                     </div>
 
@@ -500,7 +503,7 @@ class SysadminView
                                                 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
                                             </svg>
                                             <input type="text" id="first_name_p" name="first_name" required
-                                                   placeholder="Prénom du patient" value="<?= $h($old['first_name'] ?? '') ?>">
+                                                   placeholder="Prénom du patient" value="<?php echo $h($old['first_name'] ?? '') ?>">
                                         </div>
                                     </div>
 
@@ -512,7 +515,7 @@ class SysadminView
                                                 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z" />
                                             </svg>
                                             <input type="email" id="email_p" name="email" required autocomplete="email"
-                                                   placeholder="email@patient.com" value="<?= $h($old['email'] ?? '') ?>">
+                                                   placeholder="email@patient.com" value="<?php echo $h($old['email'] ?? '') ?>">
                                         </div>
                                     </div>
 
@@ -520,11 +523,11 @@ class SysadminView
                                         <label for="gender">Sexe de naissance</label>
                                         <div class="radio-group">
                                             <label>
-                                                <input type="radio" name="gender" value="Homme" <?= $genderHommeChecked ?>>
+                                                <input type="radio" name="gender" value="Homme" <?php echo $genderHommeChecked ?>>
                                                 Homme
                                             </label>
                                             <label>
-                                                <input type="radio" name="gender" value="Femme" <?= $genderFemmeChecked ?>>
+                                                <input type="radio" name="gender" value="Femme" <?php echo $genderFemmeChecked ?>>
                                                 Femme
                                             </label>
                                         </div>
@@ -538,7 +541,7 @@ class SysadminView
                                                 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11zM7 10h5v5H7z" />
                                             </svg>
                                             <input type="date" id="birth_date" name="birth_date" required
-                                                   value="<?= $h($old['birth_date'] ?? '') ?>">
+                                                   value="<?php echo $h($old['birth_date'] ?? '') ?>">
                                         </div>
                                     </div>
 
@@ -546,7 +549,7 @@ class SysadminView
                                         <label for="admission_reason">Raison d'admission</label>
                                         <div class="input-wrapper">
                                         <textarea id="admission_reason" name="admission_reason" rows="4" required
-                                                  placeholder="Décrivez brièvement la raison de l'admission..."><?= $h($old['admission_reason'] ?? '') ?></textarea>
+                                                  placeholder="Décrivez brièvement la raison de l'admission..."><?php echo $h($old['admission_reason'] ?? '') ?></textarea>
                                         </div>
                                     </div>
 
@@ -558,7 +561,7 @@ class SysadminView
                                                 2-2V5c0-1.1-.9-2-2-2zm0 16H3V5h18v14zM9 7h6v2H9zm0 8h6v2H9z" />
                                             </svg>
                                             <input type="text" id="height" name="height" required placeholder="Ex: 175"
-                                                   value="<?= $h($old['height'] ?? '') ?>">
+                                                   value="<?php echo $h($old['height'] ?? '') ?>">
                                         </div>
                                     </div>
 
@@ -570,12 +573,12 @@ class SysadminView
                                                 2zm1 14h-2v-2h2v2zm0-4h-2V7h2v5z" />
                                             </svg>
                                             <input type="text" id="weight" name="weight" required placeholder="Ex: 70.5"
-                                                   value="<?= $h($old['weight'] ?? '') ?>">
+                                                   value="<?php echo $h($old['weight'] ?? '') ?>">
                                         </div>
                                     </div>
 
-                                    <?php if (!empty($csrf)): ?>
-                                        <input type="hidden" name="_csrf" value="<?= $h($csrf) ?>">
+                                    <?php if (!empty($csrf)) : ?>
+                                        <input type="hidden" name="_csrf" value="<?php echo $h($csrf) ?>">
                                     <?php endif; ?>
 
                                     <button class="submit-btn" type="submit">Créer le patient</button>
@@ -602,7 +605,7 @@ class SysadminView
                             <input type="hidden" name="action" value="delete_user">
                             <input type="hidden" name="delete_user_id" id="delete-user-id" value="">
                             <?php if (!empty($csrf)) : ?>
-                                <input type="hidden" name="_csrf" value="<?= $h($csrf) ?>">
+                                <input type="hidden" name="_csrf" value="<?php echo $h($csrf) ?>">
                             <?php endif; ?>
                             <div class="delete-modal-actions">
                                 <button type="button" class="modal-btn modal-btn-cancel" id="delete-cancel">Annuler</button>
@@ -760,18 +763,19 @@ class SysadminView
                         }
 
 
-                        <?php if (isset($_SESSION['success'])): ?>
-                        <?php unset($_SESSION['success']); ?>
+                        <?php if (isset($_SESSION['success'])) : ?>
+                            <?php unset($_SESSION['success']); ?>
                         <?php endif; ?>
 
-                        <?php if (isset($_SESSION['error'])): ?>
-                        <?php unset($_SESSION['error']); ?>
+                        <?php if (isset($_SESSION['error'])) : ?>
+                            <?php unset($_SESSION['error']); ?>
                         <?php endif; ?>
                     });
                 </script>
             </main>
 
-        <?php
-        });
+                <?php
+            }
+        );
     }
 }

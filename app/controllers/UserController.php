@@ -33,18 +33,24 @@ use PDO;
  * Replaces: CustomizationController, ProfileController.
  *
  * @package DashMed\Modules\Controllers
- * @author DashMed Team
+ * @author  DashMed Team
  * @license Proprietary
  */
 class UserController
 {
-    /** @var PDO Database connection */
+    /**
+     * @var PDO Database connection
+     */
     private PDO $pdo;
 
-    /** @var UserLayoutService Layout service */
+    /**
+     * @var UserLayoutService Layout service
+     */
     private UserLayoutService $layoutService;
 
-    /** @var bool Test mode flag */
+    /**
+     * @var bool Test mode flag
+     */
     protected bool $testMode = false;
 
     /**
@@ -102,7 +108,9 @@ class UserController
         $user = $this->getUserByEmail($userEmail);
         $professions = $this->getAllProfessions();
 
-        /** @var array{type: string, text: string}|null $msg */
+        /**
+ * @var array{type: string, text: string}|null $msg
+*/
         $msg = isset($_SESSION['profile_msg']) && is_array($_SESSION['profile_msg']) ? $_SESSION['profile_msg'] : null;
         unset($_SESSION['profile_msg']);
 
@@ -176,19 +184,23 @@ class UserController
             }
         }
 
-        $upd = $this->pdo->prepare("
+        $upd = $this->pdo->prepare(
+            "
             UPDATE users
                SET first_name = :f,
                    last_name = :l,
                    id_profession = :p
              WHERE email = :e
-        ");
-        $upd->execute([
+        "
+        );
+        $upd->execute(
+            [
             ':f' => $first,
             ':l' => $last,
             ':p' => $validId,
             ':e' => $_SESSION['email']
-        ]);
+            ]
+        );
 
         $_SESSION['profile_msg'] = ['type' => 'success', 'text' => 'Profil mis à jour'];
 
@@ -309,9 +321,13 @@ class UserController
 
         $data = $this->layoutService->buildWidgetsForCustomization($userId);
 
-        /** @var array<int, array{id: string, name: string, category: string, x: int, y: int, w: int, h: int}> $widgets */
+        /**
+ * @var array<int, array{id: string, name: string, category: string, x: int, y: int, w: int, h: int}> $widgets
+*/
         $widgets = $data['widgets'];
-        /** @var array<int, array{id: string, name: string}> $hidden */
+        /**
+ * @var array<int, array{id: string, name: string}> $hidden
+*/
         $hidden = $data['hidden'];
 
         (new CustomizationView())->show($widgets, $hidden, $allParameters, $existingGroups, $editGroupData);
@@ -416,7 +432,9 @@ class UserController
         }
 
         $rawIndicators = $_POST['indicators'] ?? [];
-        /** @var array<int, mixed> $rawArr */
+        /**
+ * @var array<int, mixed> $rawArr
+*/
         $rawArr = is_array($rawIndicators) ? $rawIndicators : [];
         $indicators = array_filter(array_map(static fn(mixed $v): string => is_scalar($v) ? (string) $v : '', $rawArr));
 
@@ -470,16 +488,24 @@ class UserController
         $userId = $this->requireAuth();
         $repo = new CustomGroupRepository($this->pdo);
 
-        /** @var mixed $rawGroupId */
+        /**
+ * @var mixed $rawGroupId
+*/
         $rawGroupId = $_POST['group_id'] ?? 0;
         $groupId = (int) (is_numeric($rawGroupId) ? $rawGroupId : 0);
-        /** @var mixed $rawName */
+        /**
+ * @var mixed $rawName
+*/
         $rawName = $_POST['group_name'] ?? '';
         $name = trim(is_string($rawName) ? $rawName : '');
-        /** @var mixed $rawColor */
+        /**
+ * @var mixed $rawColor
+*/
         $rawColor = $_POST['group_color'] ?? '#3b82f6';
         $color = trim(is_string($rawColor) ? $rawColor : '#3b82f6');
-        /** @var array<int, mixed> $rawEditInds */
+        /**
+ * @var array<int, mixed> $rawEditInds
+*/
         $rawEditInds = is_array($_POST['indicators'] ?? null) ? $_POST['indicators'] : [];
         $indicators = array_filter(array_map(static fn(mixed $v): string => is_scalar($v) ? (string) $v : '', $rawEditInds));
 
@@ -553,7 +579,7 @@ class UserController
     /**
      * Retrieves user by email.
      *
-     * @param string $email
+     * @param  string $email
      * @return array{
      *     first_name: string,
      *     last_name: string,
@@ -583,7 +609,9 @@ class UserController
         if (!is_array($result)) {
             return null;
         }
-        /** @var array{first_name: string, last_name: string, email: string, id_profession: int|null, profession_name: string|null} */
+        /**
+ * @var array{first_name: string, last_name: string, email: string, id_profession: int|null, profession_name: string|null}
+*/
         return $result;
     }
 
@@ -594,17 +622,21 @@ class UserController
      */
     private function getAllProfessions(): array
     {
-        $st = $this->pdo->query("
+        $st = $this->pdo->query(
+            "
             SELECT
                 id_profession AS id,
                 label_profession AS name
             FROM professions
             ORDER BY label_profession
-        ");
+        "
+        );
         if ($st === false) {
             return [];
         }
-        /** @var array<int, array{id: int, name: string}> */
+        /**
+ * @var array<int, array{id: int, name: string}>
+*/
         return $st->fetchAll(PDO::FETCH_ASSOC);
     }
 }

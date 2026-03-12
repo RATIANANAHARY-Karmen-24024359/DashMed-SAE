@@ -22,7 +22,7 @@ namespace modules\views\auth;
  * Includes CSRF protection, email/password fields, and navigation links.
  *
  * @package DashMed\Modules\Views\Auth
- * @author DashMed Team
+ * @author  DashMed Team
  * @license Proprietary
  */
 class LoginView
@@ -32,7 +32,7 @@ class LoginView
      *
      * The form sends a POST request to /?page=login.
      *
-     * @param array<int, array{
+     * @param  array<int, array{
      *   email: string,
      *   first_name: string,
      *   last_name: string
@@ -128,18 +128,18 @@ class LoginView
                             </div>
 
                             <div class="user-grid" id="user-list">
-                                <?php foreach ($users as $u):
+                                <?php foreach ($users as $u) :
                                     $uEmail = is_string($u['email'] ?? null) ? $u['email'] : '';
                                     $uFirst = is_string($u['first_name'] ?? null) ? $u['first_name'] : '';
                                     $uLast = is_string($u['last_name'] ?? null) ? $u['last_name'] : '';
                                     ?>
                                     <div class="user-card-item" data-email="
-                                    <?= htmlspecialchars($uEmail, ENT_QUOTES) ?>">
+                                    <?php echo htmlspecialchars($uEmail, ENT_QUOTES) ?>">
                                         <div class="user-avatar-placeholder">
-                                            <?= strtoupper(substr($uFirst, 0, 1)) ?>
+                                            <?php echo strtoupper(substr($uFirst, 0, 1)) ?>
                                         </div>
                                         <div class="user-name-text">
-                                            <?= htmlspecialchars(
+                                            <?php echo htmlspecialchars(
                                                 $uLast .
                                                 ' ' .
                                                 $uFirst,
@@ -173,8 +173,8 @@ class LoginView
                         $csrfValue = (!empty($csrf) && is_string($csrf)) ? $csrf : '';
                         ?>
 
-                        <?php if ($csrfValue !== ''): ?>
-                            <input type="hidden" name="_csrf" value="<?= htmlspecialchars($csrfValue, ENT_QUOTES, 'UTF-8') ?>">
+                        <?php if ($csrfValue !== '') : ?>
+                            <input type="hidden" name="_csrf" value="<?php echo htmlspecialchars($csrfValue, ENT_QUOTES, 'UTF-8') ?>">
                         <?php endif; ?>
 
                         <div class="form-actions-container">
@@ -201,7 +201,7 @@ class LoginView
                  * Handles session error notifications (e.g. account deletion).
                  */
                 document.addEventListener('DOMContentLoaded', () => {
-                    <?php if (isset($_SESSION['error'])): ?>
+                    <?php if (isset($_SESSION['error'])) : ?>
                         <?php
                         $msg = is_string($_SESSION['error']) ? $_SESSION['error'] : '';
                         $parts = explode('|', $msg);
@@ -212,7 +212,7 @@ class LoginView
                         ?>
                         iziToast.error({
                             title: 'Erreur',
-                            message: '<?= str_replace("'", "\'", $displayMsg) ?>',
+                            message: '<?php echo str_replace("'", "\'", $displayMsg) ?>',
                             position: 'bottomLeft',
                             color: 'red',
                             class: 'login-error-toast',

@@ -22,7 +22,7 @@ namespace modules\views\site;
  * Presents DashMed goals and links to auth.
  *
  * @package DashMed\Modules\Views\Pages\Site
- * @author DashMed Team
+ * @author  DashMed Team
  * @license Proprietary
  */
 class HomepageView

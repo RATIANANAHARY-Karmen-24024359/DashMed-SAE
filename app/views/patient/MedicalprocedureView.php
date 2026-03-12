@@ -24,7 +24,7 @@ use modules\models\entities\Consultation;
  * Includes modal for new consultations and filtering options.
  *
  * @package DashMed\Modules\Views\Pages
- * @author DashMed Team
+ * @author  DashMed Team
  * @license Proprietary
  */
 class MedicalprocedureView
@@ -58,7 +58,9 @@ class MedicalprocedureView
      */
     private $patientId;
 
-    /** @var array<string, mixed> Selected patient data */
+    /**
+     * @var array<string, mixed> Selected patient data
+     */
     private array $patientData;
 
     /**
@@ -72,18 +74,18 @@ class MedicalprocedureView
      *   last_name: string,
      *   first_name: string
      * }>|array<int, array<string, mixed>> $doctors Doctor list
-     * @param bool     $isAdmin       Is admin
-     * @param int      $currentUserId Current User ID
-     * @param int|null $patientId     Patient ID
-     * @param array<string, mixed> $patientData Patient info
+     * @param bool                                              $isAdmin       Is admin
+     * @param int                                               $currentUserId Current User ID
+     * @param int|null                                          $patientId     Patient ID
+     * @param array<string, mixed>                              $patientData   Patient info
      */
     public function __construct(
-            $consultations = [],
-            $doctors = [],
-            $isAdmin = false,
-            $currentUserId = 0,
-            $patientId = null,
-            array $patientData = []
+        $consultations = [],
+        $doctors = [],
+        $isAdmin = false,
+        $currentUserId = 0,
+        $patientId = null,
+        array $patientData = []
     ) {
         $this->consultations = $consultations;
         $this->doctors = $doctors;
@@ -96,7 +98,7 @@ class MedicalprocedureView
     /**
      * Formats a date for user display.
      *
-     * @param string $dateStr Raw date
+     * @param  string $dateStr Raw date
      * @return string Formatted date
      */
     private function formatDate($dateStr)
@@ -137,8 +139,9 @@ class MedicalprocedureView
             true
         );
 
-        $layout->render(function () {
-            ?>
+        $layout->render(
+            function () {
+                ?>
 
             <main class="container nav-space">
 
@@ -146,15 +149,16 @@ class MedicalprocedureView
 
                     <div class="searchbar-with-patient">
                         <span class="patient-name-label">
-                             <?= htmlspecialchars(
-                                     trim(
-                                             (is_scalar($v = $this->patientData['first_name'] ?? '') ? (string)$v : '') . ' ' .
-                                             (is_scalar($v = $this->patientData['last_name'] ?? '') ? (string)$v : '')
-                                     ),
-                                     ENT_QUOTES, 'UTF-8'
-                             ) ?>
-
-    </span>
+                            <?php echo htmlspecialchars(
+                                trim(
+                                    (is_scalar($v = $this->patientData['first_name'] ?? '') ? (string) $v : '')
+                                    . ' '
+                                    . (is_scalar($v = $this->patientData['last_name'] ?? '') ? (string) $v : '')
+                                ),
+                                ENT_QUOTES,
+                                'UTF-8'
+                            ); ?>
+                        </span>
                         <?php include dirname(__DIR__) . '/partials/_searchbar.php'; ?>
                         <div class="live-clock" id="live-clock">
                             <span class="live-clock__time" id="live-clock-time"></span>
@@ -182,8 +186,7 @@ class MedicalprocedureView
                         })();
                     </script>
 
-                    <input type="hidden" id="context-patient-id" value="<?= htmlspecialchars((string)
-                    $this->patientId) ?>">
+                    <input type="hidden" id="context-patient-id" value="<?php echo htmlspecialchars((string) $this->patientId, ENT_QUOTES, 'UTF-8'); ?>">
 
                     <div id="button-bar">
                         <div id="sort-container">
@@ -213,7 +216,7 @@ class MedicalprocedureView
 
                     <div class="skeleton-wrapper" id="skeleton-consultations" data-skeleton-for="real-consultations"
                          data-skeleton-auto data-skeleton-delay="350">
-                        <?php for ($i = 0; $i < 3; $i++): ?>
+                        <?php for ($i = 0; $i < 3; $i++) : ?>
                             <div class="skeleton-consultation">
                                 <div class="skeleton-consultation-header">
                                     <div class="skeleton-header-left">
@@ -249,8 +252,8 @@ class MedicalprocedureView
                     <div id="real-consultations" style="display: none;">
 
                         <section class="consultations-container">
-                            <?php if (!empty($this->consultations)): ?>
-                                <?php foreach ($this->consultations as $consultation):
+                            <?php if (!empty($this->consultations)) : ?>
+                                <?php foreach ($this->consultations as $consultation) :
                                     ?>
                                     <article class="consultation" id="consultation-<?php echo $consultation->getId(); ?>" data-date="<?php
                                     $d = (string) $consultation->getDate();
@@ -299,25 +302,25 @@ class MedicalprocedureView
                                                 $timeHi = $dateObj->format('H:i');
 
                                                 $type = htmlspecialchars(
-                                                        (string) $consultation->getType(),
-                                                        ENT_QUOTES,
-                                                        'UTF-8'
+                                                    (string) $consultation->getType(),
+                                                    ENT_QUOTES,
+                                                    'UTF-8'
                                                 );
                                                 $title = htmlspecialchars(
-                                                        (string) $consultation->getTitle(),
-                                                        ENT_QUOTES,
-                                                        'UTF-8'
+                                                    (string) $consultation->getTitle(),
+                                                    ENT_QUOTES,
+                                                    'UTF-8'
                                                 );
                                                 $note = htmlspecialchars(
-                                                        (string) $consultation->getNote(),
-                                                        ENT_QUOTES,
-                                                        'UTF-8'
+                                                    (string) $consultation->getNote(),
+                                                    ENT_QUOTES,
+                                                    'UTF-8'
                                                 );
 
                                                 $doctorAttr = htmlspecialchars(
-                                                        $doctor,
-                                                        ENT_QUOTES,
-                                                        'UTF-8'
+                                                    $doctor,
+                                                    ENT_QUOTES,
+                                                    'UTF-8'
                                                 );
 
                                                 ?>
@@ -342,23 +345,20 @@ class MedicalprocedureView
                                                         <line x1="3" y1="10" x2="21" y2="10"></line>
                                                     </svg>
                                                     <?php echo htmlspecialchars(
-                                                            $this->formatDate(
-                                                                    $consultation->getDate()
-                                                            )
+                                                        $this->formatDate(
+                                                            $consultation->getDate()
+                                                        )
                                                     ); ?>
-                                                    <?php if ($isPast): ?>
+                                                    <?php if ($isPast) : ?>
                                                         <span class="status-dot"></span>
                                                     <?php endif; ?>
                                                 </span>
-                                                <?php if (
-                                                        $this->isAdmin ||
-                                                        $consultation->getDoctorId() == $this->currentUserId
-                                                ): ?>
+                                                <?php if ($this->isAdmin || $consultation->getDoctorId() == $this->currentUserId) : ?>
                                                     <div class="action-buttons">
-                                                        <button class="btn-icon edit-btn" title="Modifier" data-id="<?= $id ?>"
-                                                                data-doctor-id="<?= $doctorId ?>" data-doctor="<?= $doctorAttr ?>"
-                                                                data-date="<?= $dateYmd ?>" data-time="<?= $timeHi ?>" data-type="<?= $type ?>"
-                                                                data-title="<?= $title ?>" data-note="<?= $note ?>">
+                                                        <button class="btn-icon edit-btn" title="Modifier" data-id="<?php echo $id ?>"
+                                                                data-doctor-id="<?php echo $doctorId ?>" data-doctor="<?php echo $doctorAttr ?>"
+                                                                data-date="<?php echo $dateYmd ?>" data-time="<?php echo $timeHi ?>" data-type="<?php echo $type ?>"
+                                                                data-title="<?php echo $title ?>" data-note="<?php echo $note ?>">
                                                             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                                                                  stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                                                                 <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2
@@ -414,10 +414,7 @@ class MedicalprocedureView
                                         </div>
 
                                         <div class="consultation-footer">
-                                            <?php if (
-                                                    $consultation->getDocument() &&
-                                                    $consultation->getDocument() !== 'Aucun'
-                                            ): ?>
+                                            <?php if ($consultation->getDocument() && $consultation->getDocument() !== 'Aucun') : ?>
                                                 <div class="document-section">
                                                     <span class="doc-label">Documents joints :</span>
                                                     <span class="doc-link">
@@ -430,7 +427,7 @@ class MedicalprocedureView
                                                         <?php echo htmlspecialchars($consultation->getDocument()); ?>
                                                     </span>
                                                 </div>
-                                            <?php else: ?>
+                                            <?php else : ?>
                                                 <div class="document-section empty">
                                                     <span class="doc-placeholder">Aucun document joint</span>
                                                 </div>
@@ -438,7 +435,7 @@ class MedicalprocedureView
                                         </div>
                                     </article>
                                 <?php endforeach; ?>
-                            <?php else: ?>
+                            <?php else : ?>
                                 <article class="consultation">
                                     <p>Aucune consultation à afficher</p>
                                 </article>
@@ -460,10 +457,10 @@ class MedicalprocedureView
 
                             <div class="form-group">
                                 <label for="doctor-select">Médecin</label>
-                                <?php if ($this->isAdmin): ?>
+                                <?php if ($this->isAdmin) : ?>
                                     <select id="doctor-select" name="doctor_id" required>
                                         <option value="">Sélectionner un médecin</option>
-                                        <?php foreach ($this->doctors as $doc):
+                                        <?php foreach ($this->doctors as $doc) :
                                             $currId = $doc['id_user'] ?? '';
                                             $currIdStr = is_scalar($currId) ? (string) $currId : '';
 
@@ -476,12 +473,12 @@ class MedicalprocedureView
                                             $isSelected = ($currId == $this->currentUserId) ? 'selected' : '';
                                             $fullName = $lastNameStr . ' ' . $firstNameStr;
                                             ?>
-                                            <option value="<?= htmlspecialchars($currIdStr) ?>" <?= $isSelected ?>>
-                                                Dr. <?= htmlspecialchars($fullName, ENT_QUOTES, 'UTF-8') ?>
+                                            <option value="<?php echo htmlspecialchars($currIdStr) ?>" <?php echo $isSelected ?>>
+                                                Dr. <?php echo htmlspecialchars($fullName, ENT_QUOTES, 'UTF-8') ?>
                                             </option>
                                         <?php endforeach; ?>
                                     </select>
-                                <?php else: ?>
+                                <?php else : ?>
                                     <?php
                                     $docName = 'Moi-même';
                                     foreach ($this->doctors as $doc) {
@@ -567,7 +564,8 @@ class MedicalprocedureView
 
             </main>
 
-            <?php
-        });
+                <?php
+            }
+        );
     }
 }

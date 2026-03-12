@@ -20,7 +20,7 @@ namespace modules\views\site;
  * Displays the sitemap for SEO and navigation.
  *
  * @package DashMed\Modules\Views\Pages\Site
- * @author DashMed Team
+ * @author  DashMed Team
  * @license Proprietary
  */
 class SitemapView
