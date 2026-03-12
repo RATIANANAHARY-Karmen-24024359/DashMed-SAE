@@ -183,6 +183,153 @@ class MonitorRepository extends BaseRepository
     }
 
     /**
+     * Retrieves the latest metrics for a patient, restricted to specific parameters.
+     *
+     * @param int $patientId Patient ID
+     * @param array<int, string> $parameterIds Parameter IDs to include
+     * @return array<int, \modules\models\entities\Indicator>
+     */
+    public function getLatestMetricsForParameters(int $patientId, array $parameterIds): array
+    {
+        $parameterIds = array_values(array_unique(array_filter(array_map('strval', $parameterIds))));
+        if (empty($parameterIds)) {
+            return [];
+        }
+
+        // If the list is huge, fallback to the full query (prevents building giant IN clauses).
+        if (count($parameterIds) > 200) {
+            return $this->getLatestMetrics($patientId);
+        }
+
+        try {
+            $placeholders = implode(',', array_fill(0, count($parameterIds), '?'));
+
+            $sql = "
+        SELECT
+            pr.parameter_id,
+            pd.value,
+            pd.`timestamp`,
+            pd.alert_flag,
+
+            pr.display_name,
+            pr.category,
+            pr.unit,
+            pr.description,
+            COALESCE(pat.normal_min, pr.normal_min) as normal_min,
+            COALESCE(pat.normal_max, pr.normal_max) as normal_max,
+            COALESCE(pat.critical_min, pr.critical_min) as critical_min,
+            COALESCE(pat.critical_max, pr.critical_max) as critical_max,
+            pr.display_min,
+            pr.display_max,
+
+            pr.default_chart,
+
+            (
+                SELECT GROUP_CONCAT(chart_type ORDER BY chart_type)
+                FROM parameter_chart_allowed
+                WHERE parameter_id = pr.parameter_id
+            ) AS allowed_charts_str,
+
+            CASE
+                WHEN pd.value IS NULL THEN 'unknown'
+                WHEN (
+                    pd.alert_flag = 1
+                    OR (COALESCE(pat.critical_min, pr.critical_min) IS NOT NULL AND pd.value <= COALESCE(pat.critical_min, pr.critical_min))
+                    OR (COALESCE(pat.critical_max, pr.critical_max) IS NOT NULL AND pd.value >= COALESCE(pat.critical_max, pr.critical_max))
+                ) THEN '" . self::STATUS_CRITICAL . "'
+                WHEN (
+                    (COALESCE(pat.normal_min, pr.normal_min) IS NOT NULL AND pd.value <= COALESCE(pat.normal_min, pr.normal_min))
+                    OR (COALESCE(pat.normal_max, pr.normal_max) IS NOT NULL AND pd.value >= COALESCE(pat.normal_max, pr.normal_max))
+                ) THEN '" . self::STATUS_WARNING . "'
+                ELSE '" . self::STATUS_NORMAL . "'
+                END AS status
+
+        FROM parameter_reference pr
+
+        LEFT JOIN patient_alert_threshold pat
+          ON pat.parameter_id = pr.parameter_id
+         AND pat.id_patient = ?
+
+        LEFT JOIN (
+            SELECT pd1.*
+            FROM {$this->table} pd1
+            INNER JOIN (
+                SELECT parameter_id, MAX(`timestamp`) AS ts
+                FROM {$this->table}
+                WHERE id_patient = ? AND archived = 0
+                  AND parameter_id IN ($placeholders)
+                GROUP BY parameter_id
+            ) last
+              ON last.parameter_id = pd1.parameter_id
+             AND last.ts = pd1.`timestamp`
+            WHERE pd1.id_patient = ? AND pd1.archived = 0
+              AND pd1.parameter_id IN ($placeholders)
+        ) pd
+          ON pd.parameter_id = pr.parameter_id
+
+        WHERE pr.parameter_id IN ($placeholders)
+
+        ORDER BY pr.display_name ASC
+        ";
+
+            $st = $this->pdo->prepare($sql);
+
+            // Bind values in the exact order of placeholders used above.
+            $bind = [];
+            $bind[] = $patientId; // pat.id_patient
+            $bind[] = $patientId; // inner id_patient
+            foreach ($parameterIds as $pid) {
+                $bind[] = $pid;
+            }
+            $bind[] = $patientId; // outer id_patient
+            foreach ($parameterIds as $pid) {
+                $bind[] = $pid;
+            }
+            foreach ($parameterIds as $pid) {
+                $bind[] = $pid;
+            }
+
+            $st->execute($bind);
+
+            $rows = $st->fetchAll();
+            $indicators = [];
+
+            foreach ($rows as $row) {
+                $allowedCharts = [];
+                if (!empty($row['allowed_charts_str'])) {
+                    $allowedCharts = explode(',', $row['allowed_charts_str']);
+                } else {
+                    $allowedCharts = ['line'];
+                }
+
+                $indicators[] = new \modules\models\entities\Indicator(
+                    (string) ($row['parameter_id'] ?? ''),
+                    isset($row['value']) ? (float) $row['value'] : null,
+                    isset($row['timestamp']) ? (string) $row['timestamp'] : null,
+                    isset($row['alert_flag']) ? (int) $row['alert_flag'] : 0,
+                    (string) ($row['display_name'] ?? ''),
+                    (string) ($row['category'] ?? ''),
+                    (string) ($row['unit'] ?? ''),
+                    isset($row['description']) ? (string) $row['description'] : null,
+                    isset($row['normal_min']) ? (float) $row['normal_min'] : null,
+                    isset($row['normal_max']) ? (float) $row['normal_max'] : null,
+                    isset($row['critical_min']) ? (float) $row['critical_min'] : null,
+                    isset($row['critical_max']) ? (float) $row['critical_max'] : null,
+                    isset($row['display_min']) ? (float) $row['display_min'] : null,
+                    isset($row['display_max']) ? (float) $row['display_max'] : null,
+                    (string) ($row['default_chart'] ?? 'line'),
+                    $allowedCharts,
+                    (string) ($row['status'] ?? self::STATUS_UNKNOWN)
+                );
+            }
+
+            return $indicators;
+        } catch (\PDOException $e) {
+            return [];
+        }
+    }
+
+    /**
      * Retrieves a standard buffered collection of historical data points.
      *
      * Standard implementation for small to medium ranges. For large scale analysis,

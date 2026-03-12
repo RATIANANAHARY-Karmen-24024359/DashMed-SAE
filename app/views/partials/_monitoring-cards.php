@@ -140,8 +140,8 @@ if (!empty($patientMetrics)): ?>
             data-nmax="<?= $escape($viewData['thresholds']['nmax'] ?? '') ?>"
             data-cmin="<?= $escape($viewData['thresholds']['cmin'] ?? '') ?>"
             data-cmax="<?= $escape($viewData['thresholds']['cmax'] ?? '') ?>"
-            data-display-duration="<?= $escape($viewData['display_duration'] ?? '0.0333') ?>"
-            data-card-display-duration="<?= $escape($viewData['card_display_duration'] ?? '0.0333') ?>">
+            data-display-duration="<?= $escape($viewData['display_duration'] ?? '1') ?>"
+            data-card-display-duration="<?= $escape($viewData['card_display_duration'] ?? '1') ?>">
 
             <div class="card-dismiss-btn" title="Masquer l'indicateur"
                 style="position: absolute; left: -10px; top: -10px; width: 22px; height: 22px; background: var(--primary-color, #275afe); display: flex; align-items: center; justify-content: center; cursor: pointer; opacity: 0; pointer-events: none; transition: opacity 0.2s, transform 0.15s; transform: scale(0); border-radius: 50%; z-index: 15; box-shadow: 0 2px 6px rgba(0,0,0,0.25);">
@@ -159,11 +159,11 @@ if (!empty($patientMetrics)): ?>
                 <div class="card-interval-wrapper">
                     <select class="card-interval-select" title="Durée d'affichage">
                         <?php
-                        $cardDuration = (string) ($viewData['card_display_duration'] ?? '0.0333');
+                        $cardDuration = (string) ($viewData['card_display_duration'] ?? '1');
                         $cardOptions = [
+                            '1' => '1H',
                             '0.0333' => '2m',
                             'all' => 'Tout',
-                            '1' => '1H',
                             '24' => '24H'
                         ];
                         foreach ($cardOptions as $val => $lab): ?>
@@ -299,14 +299,14 @@ if (!empty($patientMetrics)): ?>
 
                                 <select class="modal-interval-select" title="Durée d'affichage">
                                     <?php
-                                    $currentDuration = (string) ($viewData['display_duration'] ?? '0.0333');
+                                    $currentDuration = (string) ($viewData['display_duration'] ?? '1');
                                     $options = [
+                                        '1' => '1H',
                                         '0.0333' => '2m',
                                         'all' => 'Tout',
                                         '0.0833' => '5m',
                                         '0.25' => '15m',
                                         '0.5' => '30m',
-                                        '1' => '1H',
                                         '12' => '12H',
                                         '24' => '24H',
                                         '168' => '7J',

@@ -179,7 +179,7 @@ async function updatePanelChart(panelId, chartId, title) {
             const dateParam = targetDate ? `&date=${encodeURIComponent(targetDate)}` : '';
             const cacheKey = `${paramId}-${targetDate || 'now'}`;
 
-            const durationVal = panel.dataset.displayDuration || '0.0333';
+            const durationVal = panel.dataset.displayDuration || '1';
             const durationHours = durationVal !== 'all' ? parseFloat(durationVal) : NaN;
             const durationSeconds = Number.isFinite(durationHours) ? Math.round(durationHours * 3600) : 0;
 
@@ -565,7 +565,7 @@ function getChartVisibleDurationMs(chart, panel) {
 
     const dVal = panel.dataset.displayDuration;
     if (dVal === 'all') return 0;
-    const hours = parseFloat(dVal || '0.0333');
+    const hours = parseFloat(dVal || '1');
     return hours * 3600 * 1000;
 }
 

@@ -1234,45 +1234,49 @@ class PatientController
         }
 
         try {
-            $metrics = $this->monitorModel->getLatestMetrics($patientId);
-
-            /**
-             * PERFORMANCE OPTIMIZATION:
-             * Instead of loading the entire history table for all parameters (O(N)),
-             * we fetch only the last 1000 points per parameter (O(Params * 1000)).
-             * This prevents memory exhaustion on the initial page load while
-             * keeping sparklines perfectly accurate.
-             */
-            // PERF: do not pre-load full sparkline history on initial Dashboard render.
-            // The frontend loads history lazily (exact chunks) and caches it.
-            $rawHistory = [];
+            // PERF: allow loading the dashboard without blocking on monitoring.
+            // Use: /?page=dashboard&fast=1
+            if (isset($_GET['fast']) && (string) $_GET['fast'] === '1') {
+                return [[], []];
+            }
 
             $prefs = $this->prefModel->getUserPreferences($userId);
             $userLayout = (array) $this->prefModel->getUserLayoutSimple($userId);
 
+            // Determine the visible indicators from the saved layout.
             $visibleIds = [];
             if (!empty($userLayout)) {
                 foreach ($userLayout as $item) {
-                    if (is_array($item) && empty($item['is_hidden'])) {
-                        $visibleIds[] = $item['parameter_id'];
+                    if (is_array($item) && empty($item['is_hidden']) && !empty($item['parameter_id'])) {
+                        $visibleIds[] = (string) $item['parameter_id'];
                     }
                 }
-            } else {
-                $visibleIds = array_slice(array_keys($metrics), 0, 6);
+            }
+            $visibleIds = array_values(array_unique($visibleIds));
+
+            // Only load latest metrics for visible cards to reduce TTFB.
+            $metrics = !empty($visibleIds)
+                ? $this->monitorModel->getLatestMetricsForParameters($patientId, $visibleIds)
+                : $this->monitorModel->getLatestMetrics($patientId);
+
+            // Fallback: if no layout exists yet, show a small default subset.
+            if (empty($visibleIds)) {
+                $visibleIds = array_slice(
+                    array_values(array_filter(array_map(
+                        fn($m) => method_exists($m, 'getId') ? (string) $m->getId() : null,
+                        is_array($metrics) ? $metrics : []
+                    ))),
+                    0,
+                    6
+                );
             }
 
-            $customGroupRepo = new CustomGroupRepository($this->pdo);
-            $groups = $customGroupRepo->getGroupsByUser($userId);
-            $groupIdents = [];
-            foreach ($groups as $g) {
-                $groupIdents = array_merge($groupIdents, $customGroupRepo->getIndicatorsByGroup((int) $g['id']));
-            }
-
-            $requiredHistoryIds = array_unique(array_merge($visibleIds, $groupIdents));
-
+            // PERF: only prefetch sparkline history for visible cards.
+            // Custom-group indicators are fetched on demand when the user switches group.
             $rawHistory = [];
-            if (!empty($requiredHistoryIds)) {
-                $rawHistory = $this->monitorModel->getLatestHistoryForSpecificParameters($patientId, $requiredHistoryIds, 1000);
+            if (!empty($visibleIds)) {
+                // 250 points keeps the initial render snappy; the frontend can load more lazily.
+                $rawHistory = $this->monitorModel->getLatestHistoryForSpecificParameters($patientId, $visibleIds, 250);
             }
 
             $processedMetrics = $this->monitoringService->processMetrics($metrics, $rawHistory, $prefs, true);
