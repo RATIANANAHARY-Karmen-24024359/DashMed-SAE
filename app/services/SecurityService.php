@@ -257,7 +257,7 @@ class SecurityService
                 $remaining = $lockoutTime - time();
                 self::logSecurityEvent(
                     'LOGIN_LOCKED',
-                    "Account locked for {$identifier}. {$remaining}s remaining."
+                    "Account locked for {$identifier}. " . (string) $remaining . "s remaining."
                 );
                 return false;
             }
@@ -287,19 +287,19 @@ class SecurityService
 
         self::logSecurityEvent(
             'LOGIN_FAILED',
-            "Failed login attempt #{$attempts} for {$identifier} from IP " . self::getClientIp()
+            "Failed login attempt #" . (string) $attempts . " for {$identifier} from IP " . self::getClientIp()
         );
 
         if ($attempts >= self::MAX_LOGIN_ATTEMPTS) {
             $_SESSION[$lockKey] = time() + self::LOCKOUT_DURATION;
             self::logSecurityEvent(
                 'LOGIN_LOCKOUT',
-                "Account locked for {$identifier} after {$attempts} failed attempts."
+                "Account locked for {$identifier} after " . (string) $attempts . " failed attempts."
             );
             return 0;
         }
 
-        return self::MAX_LOGIN_ATTEMPTS - $attempts;
+        return (int) (self::MAX_LOGIN_ATTEMPTS - $attempts);
     }
 
     /**
@@ -331,7 +331,7 @@ class SecurityService
         $lockoutRaw = $_SESSION[$lockKey] ?? null;
         $lockoutTime = is_numeric($lockoutRaw) ? (int) $lockoutRaw : 0;
         $remaining = $lockoutTime - time();
-        return max(0, $remaining);
+        return (int) max(0, $remaining);
     }
 
     /**

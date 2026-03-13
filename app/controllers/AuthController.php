@@ -125,7 +125,7 @@ class AuthController
         if (!SecurityService::checkLoginRateLimit($email)) {
             $remaining = SecurityService::getLockoutRemaining($email);
             $minutes = (int) ceil($remaining / 60);
-            $_SESSION['error'] = "Compte temporairement verrouillé. Réessayez dans {$minutes} minute(s).";
+            $_SESSION['error'] = "Compte temporairement verrouillé. Réessayez dans " . (string) $minutes . " minute(s).";
             header('Location: /?page=login');
             exit;
         }
@@ -134,7 +134,7 @@ class AuthController
         if (!$user) {
             $attemptsLeft = SecurityService::recordFailedLogin($email);
             if ($attemptsLeft > 0) {
-                $_SESSION['error'] = "Identifiants invalides. {$attemptsLeft} tentative(s) restante(s).";
+                $_SESSION['error'] = "Identifiants invalides. " . (string) $attemptsLeft . " tentative(s) restante(s).";
             } else {
                 $_SESSION['error'] = "Compte verrouillé après trop de tentatives. Réessayez dans 15 minutes.";
             }

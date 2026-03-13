@@ -228,8 +228,8 @@ final class CustomizationView
                                     <input type="hidden" name="reset_layout" id="reset-layout">
                                     <div class="grid-stack dm-grid">
                                         <?php foreach ($widgets as $w) : ?>
-                                            <div class="grid-stack-item" gs-x="<?php echo (int)$w['x']?>" gs-y="<?php echo (int)$w['y']?>"
-                                                gs-w="<?php echo max(4, (int)$w['w'])?>" gs-h="<?php echo max(3, (int)$w['h'])?>" gs-min-w="4"
+                                            <div class="grid-stack-item" gs-x="<?php echo (string)(int)$w['x']?>" gs-y="<?php echo (string)(int)$w['y']?>"
+                                                gs-w="<?php echo (string)max(4, (int)$w['w'])?>" gs-h="<?php echo (string)max(3, (int)$w['h'])?>" gs-min-w="4"
                                                 gs-min-h="3" gs-id="<?php echo $h($w['id'])?>" data-widget-id="<?php echo $h($w['id'])?>">
                                                 <div class="grid-stack-item-content">
                                                     <div class="dm-widget">
@@ -307,11 +307,11 @@ final class CustomizationView
                                                         </td>
                                                         <td>
                                                             <?php $count = count($group['indicator_ids']); ?>
-                                                            <?php echo $count?> indicateur<?php echo $count > 1 ? 's' : ''?>
+                                                            <?php echo (string)$count?> indicateur<?php echo $count > 1 ? 's' : ''?>
                                                         </td>
                                                         <td>
                                                             <div style="display:flex; gap:10px; justify-content: flex-end;">
-                                                                <a href="/?page=customization&tab=edit_group&id=<?php echo (int)$group['id']?>"
+                                                                <a href="/?page=customization&tab=edit_group&id=<?php echo (string)(int)$group['id']?>"
                                                                     class="btn-icon edit-btn">
                                                                     <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
                                                                         stroke="currentColor" stroke-width="2" stroke-linecap="round"
@@ -325,7 +325,7 @@ final class CustomizationView
                                                                 <form method="POST" action="/?page=custom_group"
                                                                     onsubmit="return confirm('Supprimer le groupe « <?php echo $h($group['name'])?> » ?')">
                                                                     <input type="hidden" name="action" value="delete_group">
-                                                                    <input type="hidden" name="group_id" value="<?php echo (int)$group['id']?>">
+                                                                    <input type="hidden" name="group_id" value="<?php echo (string)(int)$group['id']?>">
                                                                     <button type="submit" class="btn-icon delete-btn">
                                                                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
                                                                             stroke="#ef4444" stroke-width="2" stroke-linecap="round"
@@ -364,9 +364,9 @@ final class CustomizationView
 
                                         <div class="grid-stack dm-grid" id="edit-group-grid">
                                             <?php foreach ($egInds as $w) : ?>
-                                                <div class="grid-stack-item group-grid-item" gs-x="<?php echo (int)$w['x']?>"
-                                                    gs-y="<?php echo (int)$w['y']?>" gs-w="<?php echo max(4, (int)$w['w'])?>"
-                                                    gs-h="<?php echo max(3, (int)$w['h'])?>" gs-min-w="4" gs-min-h="3"
+                                                <div class="grid-stack-item group-grid-item" gs-x="<?php echo (string)(int)$w['x']?>"
+                                                    gs-y="<?php echo (string)(int)$w['y']?>" gs-w="<?php echo (string)max(4, (int)$w['w'])?>"
+                                                    gs-h="<?php echo (string)max(3, (int)$w['h'])?>" gs-min-w="4" gs-min-h="3"
                                                     gs-id="<?php echo $h($w['id'])?>" data-widget-id="<?php echo $h($w['id'])?>">
                                                     <div class="grid-stack-item-content">
                                                         <div class="dm-widget">

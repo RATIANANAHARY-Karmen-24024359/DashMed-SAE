@@ -92,10 +92,10 @@ class PatientRepository extends BaseRepository
      *   gender: string|null,
      *   admission_cause: string|null,
      *   medical_history: string
-     * }|false Patient data or false
+     * }|null Patient data or null
      * @throws PDOException
      */
-    public function findById(int $id): array|false
+    public function findById(int $id): ?array
     {
         $sql = "SELECT
                 p.id_patient,
@@ -121,9 +121,9 @@ class PatientRepository extends BaseRepository
                 return $data;
             }
 
-            return false;
+            return null;
         } catch (PDOException $e) {
-            error_log("[PatientRepository] Error fetching patient $id: " . $e->getMessage());
+            error_log("[PatientRepository] Error fetching patient " . (string) $id . ": " . $e->getMessage());
             throw $e;
         }
     }
@@ -165,7 +165,7 @@ class PatientRepository extends BaseRepository
                 ]
             );
         } catch (PDOException $e) {
-            error_log("[PatientRepository] Error updating patient $id: " . $e->getMessage());
+            error_log("[PatientRepository] Error updating patient " . (string) $id . ": " . $e->getMessage());
             throw $e;
         }
     }

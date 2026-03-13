@@ -97,6 +97,11 @@ class PatientController
     private AlertThresholdRepository $thresholdRepo;
 
     /**
+     * @var CustomGroupRepository Custom indicators group repository
+     */
+    private CustomGroupRepository $customGroupRepo;
+
+    /**
      * Constructor
      *
      * @param PDO|null $pdo Database connection (optional)
@@ -115,6 +120,7 @@ class PatientController
         $this->monitoringService = new MonitoringService();
         $this->contextService = new PatientContextService($this->patientRepo);
         $this->thresholdRepo = new AlertThresholdRepository($this->pdo);
+        $this->customGroupRepo = new CustomGroupRepository($this->pdo);
     }
 
     /**
@@ -173,12 +179,11 @@ class PatientController
         [$processedMetrics, $userLayout] = $this->loadMonitoringData($userId, $patientId);
         $chartTypes = $this->monitorModel->getAllChartTypes();
 
-        $customGroupRepo = new CustomGroupRepository($this->pdo);
-        $rawGroups = $customGroupRepo->getGroupsByUser($userId);
+        $rawGroups = $this->customGroupRepo->getGroupsByUser($userId);
         $customGroups = [];
         foreach ($rawGroups as $group) {
             $gid = (int) $group['id'];
-            $layoutRows = $customGroupRepo->getGroupIndicatorsWithLayout($gid, $userId);
+            $layoutRows = $this->customGroupRepo->getGroupIndicatorsWithLayout($gid, $userId);
             $layoutMap = [];
             foreach ($layoutRows as $lr) {
                 $layoutMap[$lr['id']] = [
@@ -192,7 +197,7 @@ class PatientController
                 'id' => $gid,
                 'name' => (string) $group['name'],
                 'color' => (string) $group['color'],
-                'indicator_ids' => $customGroupRepo->getIndicatorsByGroup($gid),
+                'indicator_ids' => $this->customGroupRepo->getIndicatorsByGroup($gid),
                 'layout' => $layoutMap,
             ];
         }
@@ -599,7 +604,7 @@ class PatientController
                 $title
             );
             if ($success) {
-                header("Location: ?page=medicalprocedure&id_patient=" . $patientId);
+                header("Location: ?page=medicalprocedure&id_patient=" . (string) $patientId);
                 exit;
             }
         }
@@ -620,7 +625,7 @@ class PatientController
             }
             if (!$isAdmin && $consultation->getDoctorId() !== $currentUserId) {
                 error_log(
-                    "Access denied: User $currentUserId tried to modify consultation $consultationId"
+                    "Access denied: User " . (string) $currentUserId . " tried to modify consultation " . (string) $consultationId
                 );
                 return;
             }
@@ -653,7 +658,7 @@ class PatientController
                 $title
             );
             if ($success) {
-                header("Location: ?page=medicalprocedure&id_patient=" . $patientId);
+                header("Location: ?page=medicalprocedure&id_patient=" . (string) $patientId);
                 exit;
             }
         }
@@ -677,13 +682,13 @@ class PatientController
             }
             if (!$isAdmin && $consultation->getDoctorId() !== $currentUserId) {
                 error_log(
-                    "Access denied: User $currentUserId tried to delete consultation $consultationId"
+                    "Access denied: User " . (string) $currentUserId . " tried to delete consultation " . (string) $consultationId
                 );
                 return;
             }
             $success = $this->consultationRepo->deleteConsultation($consultationId);
             if ($success) {
-                header("Location: ?page=medicalprocedure&id_patient=" . $patientId);
+                header("Location: ?page=medicalprocedure&id_patient=" . (string) $patientId);
                 exit;
             }
         }
@@ -913,7 +918,7 @@ class PatientController
                 if ($isCsv) {
                     $timestamp = date('Ymd_His');
                     header('Content-Type: text/csv');
-                    header('Content-Disposition: attachment; filename="export_patient_' . $patientId . '_' . $parameterId . '_' . $timestamp . '.csv"');
+                    header('Content-Disposition: attachment; filename="export_patient_' . (string) $patientId . '_' . $parameterId . '_' . $timestamp . '.csv"');
 
                     $out = fopen('php://output', 'w');
                     if ($out === false) {
@@ -969,7 +974,7 @@ class PatientController
             $appEnv = $_ENV['APP_ENV'] ?? getenv('APP_ENV') ?: '';
             $enableCache = $appEnv !== 'testing';
 
-            $cacheKey = md5("history_v2_{$patientId}_{$parameterId}_{$targetDate}");
+            $cacheKey = md5("history_v2_" . (string) $patientId . "_" . $parameterId . "_" . (string) $targetDate);
             $cacheFile = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'dashmed_cache' . DIRECTORY_SEPARATOR . $cacheKey . '.json';
 
             if ($enableCache && file_exists($cacheFile) && (time() - filemtime($cacheFile) < 30)) {
@@ -1005,8 +1010,11 @@ class PatientController
                     }
                 };
 
-                $generator = $formattedStream();
-                $formatted = $downsampling->downsampleLTTBStream(new \IteratorIterator($generator), $count, $threshold);
+                $formatted = $downsampling->downsampleLTTBStream(
+                    new \IteratorIterator($formattedStream()),
+                    $count,
+                    $threshold
+                );
             } else {
                 $history = $this->monitorModel->getRawHistoryByParameter($patientId, $parameterId, $targetDate, 0);
                 $formatted = [];
@@ -1542,7 +1550,7 @@ class PatientController
                 $targetDate = $_GET['date'];
             }
 
-            $cacheKey = md5("tail_v1_{$patientId}_{$parameterId}_{$limit}_{$targetDate}");
+            $cacheKey = md5("tail_v1_" . (string) $patientId . "_" . $parameterId . "_" . (string) $limit . "_" . (string) $targetDate);
             $cacheFile = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'dashmed_cache' . DIRECTORY_SEPARATOR . $cacheKey . '.json';
             if (file_exists($cacheFile) && (time() - filemtime($cacheFile) < 10)) {
                 echo (string) file_get_contents($cacheFile);

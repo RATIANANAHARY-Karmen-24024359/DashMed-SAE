@@ -306,12 +306,12 @@ class SysadminView
                                         <p class="no-profiles">Aucun profil trouvé.</p>
                                     <?php else : ?>
                                         <?php foreach ($users as $u) : ?>
-                                            <div class="profile-card-item" data-user-id="<?php echo (int) $u['id_user'] ?>"
+                                            <div class="profile-card-item" data-user-id="<?php echo (string)(int) $u['id_user'] ?>"
                                                 data-name="<?php echo $h($u['last_name'] . ' ' . $u['first_name']) ?>"
                                                 data-first-name="<?php echo $h($u['first_name']) ?>"
                                                 data-last-name="<?php echo $h($u['last_name']) ?>" data-email="<?php echo $h($u['email']) ?>"
-                                                data-admin-status="<?php echo (int) $u['admin_status'] ?>"
-                                                data-profession-id="<?php echo (int) ($u['id_profession'] ?? 0) ?>">
+                                                data-admin-status="<?php echo (string)(int) $u['admin_status'] ?>"
+                                                data-profession-id="<?php echo (string)(int) ($u['id_profession'] ?? 0) ?>">
                                                 <div class="profile-card-info">
                                                     <div class="profile-avatar">
                                                         <?php echo strtoupper(
@@ -338,7 +338,7 @@ class SysadminView
                                                 <div class="profile-card-actions">
                                                     <?php if ((int) $u['admin_status'] !== 1) : ?>
                                                         <button type="button" class="delete-profile-btn"
-                                                            data-user-id="<?php echo (int) $u['id_user'] ?>"
+                                                            data-user-id="<?php echo (string)(int) $u['id_user'] ?>"
                                                             data-user-name="<?php echo $h($u['last_name'] . ' ' . $u['first_name']) ?>"
                                                             title="Supprimer ce profil">
                                                             <svg viewBox="0 0 24 24" width="18" height="18">

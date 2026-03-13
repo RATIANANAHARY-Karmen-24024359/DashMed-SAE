@@ -28,7 +28,7 @@ use modules\models\repositories\MonitorPreferenceRepository;
  * @author  DashMed Team
  * @license Proprietary
  */
-final class UserLayoutService
+class UserLayoutService
 {
     private const GRID_COLUMNS = 12;
     private const DEFAULT_WIDTH = 4;

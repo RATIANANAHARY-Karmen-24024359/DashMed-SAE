@@ -187,10 +187,10 @@ class AdminController
         $admissionReason = trim(is_string($rawAdmissionReason) ? $rawAdmissionReason : '');
 
         $rawHeight = $_POST['height'] ?? '';
-        $height = trim(is_string($rawHeight) ? $rawHeight : '');
+        $height = str_replace(',', '.', trim(is_string($rawHeight) ? $rawHeight : ''));
 
         $rawWeight = $_POST['weight'] ?? '';
-        $weight = trim(is_string($rawWeight) ? $rawWeight : '');
+        $weight = str_replace(',', '.', trim(is_string($rawWeight) ? $rawWeight : ''));
 
         if (
             $room === '' || $lastName === '' || $firstName === '' || $email === ''
@@ -227,8 +227,8 @@ class AdminController
                 'last_name' => $lastName,
                 'email' => $email,
                 'birth_date' => $birthDate,
-                'weight' => (float) str_replace(',', '.', $weight),
-                'height' => (float) str_replace(',', '.', $height),
+                'weight' => (float) $weight,
+                'height' => (float) $height,
                 'gender' => $genderValue,
                 'status' => 'En réanimation',
                 'description' => $admissionReason,
@@ -479,9 +479,9 @@ class AdminController
         $rawBirthDate = $_POST['birth_date'] ?? '';
         $birthDate = is_string($rawBirthDate) ? trim($rawBirthDate) : '';
         $rawHeight = $_POST['height'] ?? '';
-        $height = is_string($rawHeight) ? trim($rawHeight) : '';
+        $height = str_replace(',', '.', is_string($rawHeight) ? trim($rawHeight) : '');
         $rawWeight = $_POST['weight'] ?? '';
-        $weight = is_string($rawWeight) ? trim($rawWeight) : '';
+        $weight = str_replace(',', '.', is_string($rawWeight) ? trim($rawWeight) : '');
         $rawAdmission = $_POST['admission_reason'] ?? '';
         $admissionReason = is_string($rawAdmission) ? trim($rawAdmission) : '';
 
