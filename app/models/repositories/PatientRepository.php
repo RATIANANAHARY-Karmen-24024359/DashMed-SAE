@@ -26,7 +26,7 @@ use PDOException;
  * Data access layer for Patients.
  *
  * @package DashMed\Modules\Models\Repositories
- * @author DashMed Team
+ * @author  DashMed Team
  * @license Proprietary
  */
 class PatientRepository extends BaseRepository
@@ -36,7 +36,7 @@ class PatientRepository extends BaseRepository
     /**
      * Creates a new patient record.
      *
-     * @param array{
+     * @param  array{
      *   first_name: string,
      *   last_name: string,
      *   email: string,
@@ -59,7 +59,8 @@ class PatientRepository extends BaseRepository
         $st = $this->pdo->prepare($sql);
 
         try {
-            $st->execute([
+            $st->execute(
+                [
                 ':first_name' => $data['first_name'],
                 ':last_name' => $data['last_name'],
                 ':email' => $data['email'],
@@ -70,7 +71,8 @@ class PatientRepository extends BaseRepository
                 ':status' => $data['status'],
                 ':description' => $data['description'] ?? null,
                 ':room_id' => $data['room_id'] ?? null,
-            ]);
+                ]
+            );
         } catch (PDOException $e) {
             throw $e;
         }
@@ -81,7 +83,7 @@ class PatientRepository extends BaseRepository
     /**
      * Finds a patient by ID.
      *
-     * @param int $id Patient ID
+     * @param  int $id Patient ID
      * @return array{
      *   id_patient: int,
      *   first_name: string,
@@ -112,7 +114,9 @@ class PatientRepository extends BaseRepository
             $data = $stmt->fetch(PDO::FETCH_ASSOC);
 
             if (is_array($data) && !empty($data)) {
-                /** @var array{id_patient: int, first_name: string, last_name: string, birth_date: string|null, gender: string|null, admission_cause: string|null, medical_history: string} $data */
+                /**
+ * @var array{id_patient: int, first_name: string, last_name: string, birth_date: string|null, gender: string|null, admission_cause: string|null, medical_history: string} $data
+*/
                 $data['medical_history'] = 'Non renseigné';
                 return $data;
             }
@@ -127,8 +131,8 @@ class PatientRepository extends BaseRepository
     /**
      * Updates patient information.
      *
-     * @param int $id Patient ID
-     * @param array{
+     * @param  int    $id Patient ID
+     * @param  array{
      *   first_name: string,
      *   last_name: string,
      *   birth_date?: string,
@@ -151,13 +155,15 @@ class PatientRepository extends BaseRepository
         $stmt = $this->pdo->prepare($sql);
 
         try {
-            return $stmt->execute([
+            return $stmt->execute(
+                [
                 ':first_name' => $data['first_name'],
                 ':last_name' => $data['last_name'],
                 ':birth_date' => !empty($data['birth_date']) ? $data['birth_date'] : null,
                 ':admission_cause' => $data['admission_cause'],
                 ':id' => $id
-            ]);
+                ]
+            );
         } catch (PDOException $e) {
             error_log("[PatientRepository] Error updating patient $id: " . $e->getMessage());
             throw $e;
@@ -167,7 +173,7 @@ class PatientRepository extends BaseRepository
     /**
      * Retrieves doctors assigned to a patient.
      *
-     * @param int $patientId Patient ID
+     * @param  int $patientId Patient ID
      * @return array<int, array{
      *   id_user: int,
      *   first_name: string,
@@ -191,7 +197,9 @@ class PatientRepository extends BaseRepository
         try {
             $stmt = $this->pdo->prepare($sql);
             $stmt->execute([':patientId' => $patientId]);
-            /** @var array<int, array{id_user: int, first_name: string, last_name: string, profession_name: string|null}> */
+            /**
+ * @var array<int, array{id_user: int, first_name: string, last_name: string, profession_name: string|null}>
+*/
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
         } catch (PDOException $e) {
             error_log("PatientRepository::getDoctors Error: " . $e->getMessage());
@@ -202,7 +210,7 @@ class PatientRepository extends BaseRepository
     /**
      * Retrieves the Patient ID associated with a room.
      *
-     * @param int $roomId Room ID
+     * @param  int $roomId Room ID
      * @return int|null Patient ID or null
      */
     public function getPatientIdByRoom(int $roomId): ?int
@@ -243,7 +251,9 @@ class PatientRepository extends BaseRepository
             if ($stmt === false) {
                 return [];
             }
-            /** @var array<int, array{room_id: int, id_patient: int, first_name: string, last_name: string}> */
+            /**
+ * @var array<int, array{room_id: int, id_patient: int, first_name: string, last_name: string}>
+*/
             return $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
         } catch (\PDOException $e) {
             return [];
@@ -253,7 +263,7 @@ class PatientRepository extends BaseRepository
     /**
      * Creates a new patient in the patients table.
      *
-     * @param array{
+     * @param  array{
      *   first_name: string,
      *   last_name: string,
      *   email: string,
@@ -274,7 +284,8 @@ class PatientRepository extends BaseRepository
         $st = $this->pdo->prepare($sql);
 
         try {
-            $st->execute([
+            $st->execute(
+                [
                 ':first_name'  => $data['first_name'],
                 ':last_name'   => $data['last_name'],
                 ':email'       => $data['email'],
@@ -283,7 +294,8 @@ class PatientRepository extends BaseRepository
                 ':height'      => (float) $data['height'],
                 ':gender'      => $data['gender'],
                 ':description' => $data['description'] ?? null,
-            ]);
+                ]
+            );
         } catch (PDOException $e) {
             throw $e;
         }
@@ -294,7 +306,7 @@ class PatientRepository extends BaseRepository
     /**
      * Checks if a patient email already exists.
      *
-     * @param string $email Patient email
+     * @param  string $email Patient email
      * @return bool True if exists
      */
     public function emailExists(string $email): bool

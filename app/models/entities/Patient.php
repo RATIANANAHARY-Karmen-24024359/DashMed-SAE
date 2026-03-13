@@ -24,7 +24,7 @@ use modules\models\interfaces\EntityInterface;
  * Represents a patient in the system.
  *
  * @package DashMed\Modules\Models\Entities
- * @author DashMed Team
+ * @author  DashMed Team
  * @license Proprietary
  */
 class Patient implements EntityInterface

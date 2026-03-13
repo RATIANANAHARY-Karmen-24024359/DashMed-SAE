@@ -13,7 +13,7 @@ use PDO;
  * Manages custom indicator groups created by users.
  *
  * @package DashMed\Modules\Models\Repositories
- * @author DashMed Team
+ * @author  DashMed Team
  * @license Proprietary
  */
 class CustomGroupRepository extends BaseRepository
@@ -32,9 +32,9 @@ class CustomGroupRepository extends BaseRepository
     /**
      * Creates a custom group for a user.
      *
-     * @param int    $userId
-     * @param string $name
-     * @param string $color
+     * @param  int    $userId
+     * @param  string $name
+     * @param  string $color
      * @return int Inserted group ID
      */
     public function createGroup(int $userId, string $name, string $color = '#3b82f6'): int
@@ -49,8 +49,8 @@ class CustomGroupRepository extends BaseRepository
     /**
      * Adds an indicator to a group.
      *
-     * @param int    $groupId
-     * @param string $parameterId
+     * @param  int    $groupId
+     * @param  string $parameterId
      * @return void
      */
     public function addIndicator(int $groupId, string $parameterId): void
@@ -65,7 +65,7 @@ class CustomGroupRepository extends BaseRepository
     /**
      * Returns all groups belonging to a user.
      *
-     * @param int $userId
+     * @param  int $userId
      * @return array<int, array{id: int, name: string, color: string, created_at: string}>
      */
     public function getGroupsByUser(int $userId): array
@@ -77,15 +77,17 @@ class CustomGroupRepository extends BaseRepository
              ORDER BY created_at ASC'
         );
         $st->execute([':user_id' => $userId]);
-        /** @var array<int, array{id: int, name: string, color: string, created_at: string}> */
+        /**
+ * @var array<int, array{id: int, name: string, color: string, created_at: string}>
+*/
         return $st->fetchAll();
     }
 
     /**
      * Returns a group by its ID.
      *
-     * @param int $groupId
-     * @param int $userId
+     * @param  int $groupId
+     * @param  int $userId
      * @return array{id: int, name: string, color: string}|null
      */
     public function getGroupById(int $groupId, int $userId): ?array
@@ -97,14 +99,16 @@ class CustomGroupRepository extends BaseRepository
         );
         $st->execute([':id' => $groupId, ':user_id' => $userId]);
         $row = $st->fetch();
-        /** @var array{id: int, name: string, color: string}|false $row */
+        /**
+ * @var array{id: int, name: string, color: string}|false $row
+*/
         return is_array($row) ? $row : null;
     }
 
     /**
      * Returns indicator IDs for a given group.
      *
-     * @param int $groupId
+     * @param  int $groupId
      * @return array<int, string>
      */
     public function getIndicatorsByGroup(int $groupId): array
@@ -121,8 +125,8 @@ class CustomGroupRepository extends BaseRepository
     /**
      * Deletes a group (only if it belongs to the user).
      *
-     * @param int $groupId
-     * @param int $userId
+     * @param  int $groupId
+     * @param  int $userId
      * @return void
      */
     public function deleteGroup(int $groupId, int $userId): void
@@ -136,8 +140,8 @@ class CustomGroupRepository extends BaseRepository
     /**
      * Checks if a group name already exists for the user.
      *
-     * @param int    $userId
-     * @param string $name
+     * @param  int    $userId
+     * @param  string $name
      * @return bool
      */
     public function groupNameExists(int $userId, string $name): bool
@@ -162,18 +166,20 @@ class CustomGroupRepository extends BaseRepository
              ORDER BY category ASC, display_name ASC'
         );
         $st->execute();
-        /** @var array<int, array{parameter_id: string, display_name: string, category: string}> */
+        /**
+ * @var array<int, array{parameter_id: string, display_name: string, category: string}>
+*/
         return $st->fetchAll();
     }
 
     /**
      * Updates group details and its indicators.
      *
-     * @param int $groupId
-     * @param int $userId
-     * @param string $name
-     * @param string $color
-     * @param array<string> $indicatorIds
+     * @param  int           $groupId
+     * @param  int           $userId
+     * @param  string        $name
+     * @param  string        $color
+     * @param  array<string> $indicatorIds
      * @return void
      */
     public function updateGroup(int $groupId, int $userId, string $name, string $color, array $indicatorIds): void
@@ -212,8 +218,8 @@ class CustomGroupRepository extends BaseRepository
     /**
      * Returns indicators with their layout, falling back to general disposition.
      *
-     * @param int $groupId
-     * @param int $userId
+     * @param  int $groupId
+     * @param  int $userId
      * @return array<int, array{id: string, name: string, category: string, x: int|null, y: int|null, w: int, h: int}>
      */
     public function getGroupIndicatorsWithLayout(int $groupId, int $userId): array
@@ -240,10 +246,12 @@ class CustomGroupRepository extends BaseRepository
             $w = $row['grid_w'] !== null ? $row['grid_w'] : $row['def_w'];
             $h = $row['grid_h'] !== null ? $row['grid_h'] : $row['def_h'];
 
-            if ($w === null)
+            if ($w === null) {
                 $w = 4;
-            if ($h === null)
+            }
+            if ($h === null) {
                 $h = 3;
+            }
 
             if ($x === null || $y === null) {
                 $x = $fallbackX;
@@ -270,8 +278,8 @@ class CustomGroupRepository extends BaseRepository
 
     /**
      * Save group-specific widget layout
-     * 
-     * @param int $groupId
+     *
+     * @param int                                                           $groupId
      * @param array<int, array{id: string, x: int, y: int, w: int, h: int}> $layoutItems
      */
     public function saveGroupLayout(int $groupId, array $layoutItems): void
@@ -282,14 +290,16 @@ class CustomGroupRepository extends BaseRepository
              WHERE group_id = :group_id AND indicator_id = :indicator_id'
         );
         foreach ($layoutItems as $item) {
-            $st->execute([
+            $st->execute(
+                [
                 ':x' => $item['x'],
                 ':y' => $item['y'],
                 ':w' => $item['w'],
                 ':h' => $item['h'],
                 ':group_id' => $groupId,
                 ':indicator_id' => $item['id'],
-            ]);
+                ]
+            );
         }
     }
 }

@@ -30,15 +30,19 @@ use PDOException;
  * - Dashboard layout (position, size, visibility of widgets)
  *
  * @package DashMed\Modules\Models\Repositories
- * @author DashMed Team
+ * @author  DashMed Team
  * @license Proprietary
  */
 class MonitorPreferenceRepository extends BaseRepository
 {
-    /** @var bool Flag to check if layout columns exist */
+    /**
+     * @var bool Flag to check if layout columns exist
+     */
     private bool $layoutColumnsChecked = false;
 
-    /** @var bool Flag to check if chart pref columns exist */
+    /**
+     * @var bool Flag to check if chart pref columns exist
+     */
     private bool $chartColumnsChecked = false;
 
     /**
@@ -49,8 +53,8 @@ class MonitorPreferenceRepository extends BaseRepository
     public function __construct(?PDO $pdo = null)
     {
         parent::__construct($pdo);
-        $this->pdo->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
-        $this->pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+        $this->pdo->setAttribute(\PDO::ATTR_DEFAULT_FETCH_MODE, \PDO::FETCH_ASSOC);
+        $this->pdo->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
     }
 
     /**
@@ -59,10 +63,10 @@ class MonitorPreferenceRepository extends BaseRepository
      * This method handles both standard dashboard card chart preferences,
      * modal-specific chart preferences, and display duration.
      *
-     * @param int $userId The ID of the user.
+     * @param int    $userId      The ID of the user.
      * @param string $parameterId The ID of the monitored parameter.
-     * @param string $value The assigned value (chart type or duration).
-     * @param string $type The preference type: 'chart', 'modal_chart', 'duration', or 'card_duration'.
+     * @param string $value       The assigned value (chart type or duration).
+     * @param string $type        The preference type: 'chart', 'modal_chart', 'duration', or 'card_duration'.
      */
     public function saveUserChartPreference(int $userId, string $parameterId, string $value, string $type = 'chart'): void
     {
@@ -86,11 +90,13 @@ class MonitorPreferenceRepository extends BaseRepository
                 $sql = "UPDATE user_parameter_chart_pref
                         SET $col = :val, updated_at = CURRENT_TIMESTAMP
                         WHERE id_user = :uid AND parameter_id = :pid";
-                $this->pdo->prepare($sql)->execute([
+                $this->pdo->prepare($sql)->execute(
+                    [
                     ':uid' => $userId,
                     ':pid' => $parameterId,
                     ':val' => $value,
-                ]);
+                    ]
+                );
             } else {
                 $defStmt = $this->pdo->prepare('SELECT default_chart FROM parameter_reference WHERE parameter_id = :pid');
                 $defStmt->execute([':pid' => $parameterId]);
@@ -99,20 +105,24 @@ class MonitorPreferenceRepository extends BaseRepository
                 if ($type === 'modal_chart' || $type === 'duration' || $type === 'card_duration') {
                     $sql = "INSERT INTO user_parameter_chart_pref (id_user, parameter_id, chart_type, $col, updated_at)
                             VALUES (:uid, :pid, :defChart, :val, CURRENT_TIMESTAMP)";
-                    $this->pdo->prepare($sql)->execute([
+                    $this->pdo->prepare($sql)->execute(
+                        [
                         ':uid' => $userId,
                         ':pid' => $parameterId,
                         ':val' => $value,
                         ':defChart' => $defChart
-                    ]);
+                        ]
+                    );
                 } else {
                     $sql = "INSERT INTO user_parameter_chart_pref (id_user, parameter_id, chart_type, updated_at)
                             VALUES (:uid, :pid, :val, CURRENT_TIMESTAMP)";
-                    $this->pdo->prepare($sql)->execute([
+                    $this->pdo->prepare($sql)->execute(
+                        [
                         ':uid' => $userId,
                         ':pid' => $parameterId,
                         ':val' => $value,
-                    ]);
+                        ]
+                    );
                 }
             }
         } catch (PDOException $e) {
@@ -123,7 +133,7 @@ class MonitorPreferenceRepository extends BaseRepository
     /**
      * Retrieves all preferences (charts, order) for a user.
      *
-     * @param int $userId User ID
+     * @param  int $userId User ID
      * @return array{charts: array<string, array<string, mixed>>, orders: array<string, array<string, mixed>>}
      *         Associative array ['charts' => ..., 'orders' => ...]
      */
@@ -137,7 +147,7 @@ class MonitorPreferenceRepository extends BaseRepository
 
             $chartPrefs = [];
             while (true) {
-                $row = $stChart->fetch(PDO::FETCH_ASSOC);
+                $row = $stChart->fetch(\PDO::FETCH_ASSOC);
                 if (!is_array($row)) {
                     break;
                 }
@@ -162,7 +172,7 @@ class MonitorPreferenceRepository extends BaseRepository
                          ORDER BY display_order';
             $stOrder = $this->pdo->prepare($sqlOrder);
             $stOrder->execute([':uid' => $userId]);
-            $rows = $stOrder->fetchAll(PDO::FETCH_ASSOC);
+            $rows = $stOrder->fetchAll(\PDO::FETCH_ASSOC);
             $orderPrefs = [];
             foreach ($rows as $row) {
                 if (!is_array($row)) {
@@ -195,7 +205,7 @@ class MonitorPreferenceRepository extends BaseRepository
             if ($stmt === false) {
                 return [];
             }
-            return $stmt->fetchAll(PDO::FETCH_ASSOC);
+            return $stmt->fetchAll(\PDO::FETCH_ASSOC);
         } catch (PDOException $e) {
             error_log('[MonitorPreferenceRepository] getAllParameters error: ' . $e->getMessage());
             return [];
@@ -205,7 +215,7 @@ class MonitorPreferenceRepository extends BaseRepository
     /**
      * Saves user's complete layout.
      *
-     * @param int $userId User ID
+     * @param int                                                                          $userId      User ID
      * @param array<int, array{id: string, x: int, y: int, w: int, h: int, visible: bool}> $layoutItems
      */
     public function saveUserLayoutSimple(int $userId, array $layoutItems): void
@@ -234,7 +244,8 @@ class MonitorPreferenceRepository extends BaseRepository
                     continue;
                 }
 
-                $insert->execute([
+                $insert->execute(
+                    [
                     ':uid' => $userId,
                     ':pid' => $pid,
                     ':x' => (int) $item['x'],
@@ -243,7 +254,8 @@ class MonitorPreferenceRepository extends BaseRepository
                     ':h' => max(3, (int) $item['h']),
                     ':hid' => empty($item['visible']) ? 1 : 0,
                     ':ord' => $ord + 1,
-                ]);
+                    ]
+                );
             }
 
             $this->pdo->commit();
@@ -256,7 +268,7 @@ class MonitorPreferenceRepository extends BaseRepository
     /**
      * Retrieves user's saved layout.
      *
-     * @param int $userId User ID
+     * @param  int $userId User ID
      * @return array<int, array{
      *   parameter_id: string,
      *   display_order: int,
@@ -280,7 +292,7 @@ class MonitorPreferenceRepository extends BaseRepository
             );
             $st->execute([':uid' => $userId]);
 
-            return $st->fetchAll(PDO::FETCH_ASSOC);
+            return $st->fetchAll(\PDO::FETCH_ASSOC);
         } catch (PDOException $e) {
             error_log('[MonitorPreferenceRepository] getUserLayoutSimple error: ' . $e->getMessage());
             return [];
@@ -314,7 +326,7 @@ class MonitorPreferenceRepository extends BaseRepository
         }
 
         try {
-            if ($this->pdo->getAttribute(PDO::ATTR_DRIVER_NAME) === 'sqlite') {
+            if ($this->pdo->getAttribute(\PDO::ATTR_DRIVER_NAME) === 'sqlite') {
                 $this->layoutColumnsChecked = true;
                 return;
             }
@@ -349,7 +361,7 @@ class MonitorPreferenceRepository extends BaseRepository
         }
 
         try {
-            if ($this->pdo->getAttribute(PDO::ATTR_DRIVER_NAME) === 'sqlite') {
+            if ($this->pdo->getAttribute(\PDO::ATTR_DRIVER_NAME) === 'sqlite') {
                 $this->chartColumnsChecked = true;
                 return;
             }

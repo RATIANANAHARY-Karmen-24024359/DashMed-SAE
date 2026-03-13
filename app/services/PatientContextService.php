@@ -23,12 +23,14 @@ use modules\models\repositories\PatientRepository;
  * Centralizes logic for reading/writing cookies and resolving patient ID.
  *
  * @package DashMed\Modules\Services
- * @author DashMed Team
+ * @author  DashMed Team
  * @license Proprietary
  */
 class PatientContextService
 {
-    /** @var PatientRepository Patient repository */
+    /**
+     * @var PatientRepository Patient repository
+     */
     private PatientRepository $patientModel;
 
     /**

@@ -35,15 +35,19 @@ use PDO;
  * Replaces: LoginController, SignupController, LogoutController, PasswordController.
  *
  * @package DashMed\Modules\Controllers
- * @author DashMed Team
+ * @author  DashMed Team
  * @license Proprietary
  */
 class AuthController
 {
-    /** @var UserRepository User repository */
+    /**
+     * @var UserRepository User repository
+     */
     private UserRepository $userRepo;
 
-    /** @var PDO Database connection */
+    /**
+     * @var PDO Database connection
+     */
     private PDO $pdo;
 
     /**
@@ -363,7 +367,9 @@ class AuthController
             return;
         }
 
-        /** @var array{type: string, text: string}|null $msg */
+        /**
+ * @var array{type: string, text: string}|null $msg
+*/
         $msg = isset($_SESSION['pw_msg']) && is_array($_SESSION['pw_msg']) ? $_SESSION['pw_msg'] : null;
         unset($_SESSION['pw_msg']);
 
@@ -561,7 +567,9 @@ class AuthController
         if ($st === false) {
             return [];
         }
-        /** @var array<int, array{id_profession: int, label_profession: string}> */
+        /**
+ * @var array<int, array{id_profession: int, label_profession: string}>
+*/
         return $st->fetchAll(\PDO::FETCH_ASSOC);
     }
 }

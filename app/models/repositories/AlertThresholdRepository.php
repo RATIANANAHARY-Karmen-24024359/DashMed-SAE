@@ -14,7 +14,7 @@ use PDOException;
  * When a patient has no custom threshold, the global parameter_reference values apply.
  *
  * @package DashMed\Modules\Models\Repositories
- * @author DashMed Team
+ * @author  DashMed Team
  * @license Proprietary
  */
 class AlertThresholdRepository
@@ -31,7 +31,7 @@ class AlertThresholdRepository
      *
      * Returns the custom threshold if set, otherwise the global default.
      *
-     * @param int $patientId
+     * @param  int $patientId
      * @return array<int, array<string, mixed>>
      */
     public function getThresholdsForPatient(int $patientId): array
@@ -64,7 +64,9 @@ class AlertThresholdRepository
             ";
             $stmt = $this->pdo->prepare($sql);
             $stmt->execute([':patient_id' => $patientId]);
-            /** @var array<int, array<string, mixed>> */
+            /**
+ * @var array<int, array<string, mixed>>
+*/
             return $stmt->fetchAll(PDO::FETCH_ASSOC);
         } catch (PDOException $e) {
             error_log('[AlertThresholdRepository] getThresholdsForPatient: ' . $e->getMessage());
@@ -77,13 +79,13 @@ class AlertThresholdRepository
      *
      * Uses INSERT ... ON DUPLICATE KEY UPDATE for atomic upsert.
      *
-     * @param int $patientId
-     * @param string $parameterId
-     * @param float|null $normalMin
-     * @param float|null $normalMax
-     * @param float|null $criticalMin
-     * @param float|null $criticalMax
-     * @param int|null $updatedBy User ID of the user making the change
+     * @param  int        $patientId
+     * @param  string     $parameterId
+     * @param  float|null $normalMin
+     * @param  float|null $normalMax
+     * @param  float|null $criticalMin
+     * @param  float|null $criticalMax
+     * @param  int|null   $updatedBy   User ID of the user making the change
      * @return bool
      */
     public function saveThreshold(
@@ -109,7 +111,8 @@ class AlertThresholdRepository
                     updated_by   = VALUES(updated_by)
             ";
             $stmt = $this->pdo->prepare($sql);
-            return $stmt->execute([
+            return $stmt->execute(
+                [
                 ':patient_id'   => $patientId,
                 ':parameter_id' => $parameterId,
                 ':normal_min'   => $normalMin,
@@ -117,7 +120,8 @@ class AlertThresholdRepository
                 ':critical_min' => $criticalMin,
                 ':critical_max' => $criticalMax,
                 ':updated_by'   => $updatedBy,
-            ]);
+                ]
+            );
         } catch (PDOException $e) {
             error_log('[AlertThresholdRepository] saveThreshold: ' . $e->getMessage());
             return false;
@@ -127,8 +131,8 @@ class AlertThresholdRepository
     /**
      * Resets custom thresholds for a patient on a specific parameter (reverts to global).
      *
-     * @param int $patientId
-     * @param string $parameterId
+     * @param  int    $patientId
+     * @param  string $parameterId
      * @return bool
      */
     public function resetThreshold(int $patientId, string $parameterId): bool
@@ -146,7 +150,7 @@ class AlertThresholdRepository
     /**
      * Resets all custom thresholds for a patient.
      *
-     * @param int $patientId
+     * @param  int $patientId
      * @return bool
      */
     public function resetAllThresholds(int $patientId): bool
@@ -165,8 +169,8 @@ class AlertThresholdRepository
      * Returns the effective thresholds for a specific parameter and patient.
      * Falls back to global defaults if no custom threshold is set.
      *
-     * @param int $patientId
-     * @param string $parameterId
+     * @param  int    $patientId
+     * @param  string $parameterId
      * @return array<string, mixed>|null
      */
     public function getEffectiveThreshold(int $patientId, string $parameterId): ?array
@@ -187,7 +191,9 @@ class AlertThresholdRepository
             $stmt = $this->pdo->prepare($sql);
             $stmt->execute([':patient_id' => $patientId, ':parameter_id' => $parameterId]);
             $row = $stmt->fetch(PDO::FETCH_ASSOC);
-            /** @var array<string, mixed>|false $row */
+            /**
+ * @var array<string, mixed>|false $row
+*/
             return is_array($row) ? $row : null;
         } catch (PDOException $e) {
             error_log('[AlertThresholdRepository] getEffectiveThreshold: ' . $e->getMessage());

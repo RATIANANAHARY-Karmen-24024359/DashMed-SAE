@@ -22,18 +22,24 @@ namespace modules\services;
  * - A10:2025 - Mishandling of Exceptional Conditions → Graceful error handling
  *
  * @package DashMed\Modules\Services
- * @author DashMed Team
+ * @author  DashMed Team
  * @license Proprietary
  */
 class SecurityService
 {
-    /** @var int Maximum login attempts before lockout */
+    /**
+     * @var int Maximum login attempts before lockout
+     */
     private const MAX_LOGIN_ATTEMPTS = 5;
 
-    /** @var int Lockout duration in seconds (15 minutes) */
+    /**
+     * @var int Lockout duration in seconds (15 minutes)
+     */
     private const LOCKOUT_DURATION = 900;
 
-    /** @var int Session timeout in seconds (30 minutes) */
+    /**
+     * @var int Session timeout in seconds (30 minutes)
+     */
     private const SESSION_TIMEOUT = 1800;
 
     /**
@@ -50,8 +56,10 @@ class SecurityService
             return;
         }
 
+        $serverPort = $_SERVER['SERVER_PORT'] ?? null;
+        $serverPort = is_numeric($serverPort) ? (int) $serverPort : 0;
         $isHttps = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
-            || (isset($_SERVER['SERVER_PORT']) && (int) $_SERVER['SERVER_PORT'] === 443);
+            || $serverPort === 443;
 
         ini_set('session.use_strict_mode', '1');
         ini_set('session.use_only_cookies', '1');
@@ -64,14 +72,16 @@ class SecurityService
             ini_set('session.cookie_secure', '1');
         }
 
-        session_set_cookie_params([
+        session_set_cookie_params(
+            [
             'lifetime' => 0,
             'path' => '/',
             'domain' => '',
             'secure' => $isHttps,
             'httponly' => true,
             'samesite' => 'Strict',
-        ]);
+            ]
+        );
     }
 
     /**
@@ -143,7 +153,9 @@ class SecurityService
             return true;
         }
 
-        if ((time() - (int) $_SESSION['_last_activity']) > self::SESSION_TIMEOUT) {
+        $lastActivityRaw = $_SESSION['_last_activity'];
+        $lastActivity = is_numeric($lastActivityRaw) ? (int) $lastActivityRaw : 0;
+        if ((time() - $lastActivity) > self::SESSION_TIMEOUT) {
             self::destroySession();
             return false;
         }
@@ -163,14 +175,22 @@ class SecurityService
 
         if (ini_get('session.use_cookies')) {
             $params = session_get_cookie_params();
+            $cookieName = session_name();
+            if ($cookieName === false) {
+                $cookieName = 'PHPSESSID';
+            }
+            $domain = $params['domain'];
+            $path = $params['path'];
+            $secure = $params['secure'];
+            $httpOnly = $params['httponly'];
             setcookie(
-                session_name(),
+                $cookieName,
                 '',
                 time() - 42000,
-                $params['path'],
-                $params['domain'],
-                $params['secure'],
-                $params['httponly']
+                $path,
+                $domain,
+                $secure,
+                $httpOnly
             );
         }
 
@@ -204,7 +224,7 @@ class SecurityService
      *
      * Addresses: A01 (Broken Access Control)
      *
-     * @param string $token Token from the form
+     * @param  string $token Token from the form
      * @return bool True if the token is valid
      */
     public static function validateCsrfToken(string $token): bool
@@ -222,7 +242,7 @@ class SecurityService
      *
      * Addresses: A07 (Authentication Failures), A06 (Insecure Design)
      *
-     * @param string $identifier Email or IP address
+     * @param  string $identifier Email or IP address
      * @return bool True if the attempt is allowed, false if locked out
      */
     public static function checkLoginRateLimit(string $identifier): bool
@@ -231,7 +251,8 @@ class SecurityService
         $lockKey = 'login_lockout_' . md5($identifier);
 
         if (isset($_SESSION[$lockKey])) {
-            $lockoutTime = (int) $_SESSION[$lockKey];
+            $lockoutRaw = $_SESSION[$lockKey] ?? null;
+            $lockoutTime = is_numeric($lockoutRaw) ? (int) $lockoutRaw : 0;
             if (time() < $lockoutTime) {
                 $remaining = $lockoutTime - time();
                 self::logSecurityEvent(
@@ -251,7 +272,7 @@ class SecurityService
      *
      * Addresses: A07 (Authentication Failures), A09 (Logging)
      *
-     * @param string $identifier Email or IP address
+     * @param  string $identifier Email or IP address
      * @return int Remaining attempts before lockout
      */
     public static function recordFailedLogin(string $identifier): int
@@ -259,7 +280,8 @@ class SecurityService
         $key = 'login_attempts_' . md5($identifier);
         $lockKey = 'login_lockout_' . md5($identifier);
 
-        $attempts = isset($_SESSION[$key]) ? (int) $_SESSION[$key] : 0;
+        $attemptsRaw = $_SESSION[$key] ?? null;
+        $attempts = is_numeric($attemptsRaw) ? (int) $attemptsRaw : 0;
         $attempts++;
         $_SESSION[$key] = $attempts;
 
@@ -283,7 +305,7 @@ class SecurityService
     /**
      * Resets the login attempt counter after a successful login.
      *
-     * @param string $identifier Email or IP address
+     * @param  string $identifier Email or IP address
      * @return void
      */
     public static function resetLoginAttempts(string $identifier): void
@@ -296,7 +318,7 @@ class SecurityService
     /**
      * Returns the remaining lockout time in seconds.
      *
-     * @param string $identifier Email or IP address
+     * @param  string $identifier Email or IP address
      * @return int Seconds remaining, 0 if not locked
      */
     public static function getLockoutRemaining(string $identifier): int
@@ -306,7 +328,9 @@ class SecurityService
             return 0;
         }
 
-        $remaining = (int) $_SESSION[$lockKey] - time();
+        $lockoutRaw = $_SESSION[$lockKey] ?? null;
+        $lockoutTime = is_numeric($lockoutRaw) ? (int) $lockoutRaw : 0;
+        $remaining = $lockoutTime - time();
         return max(0, $remaining);
     }
 
@@ -315,8 +339,8 @@ class SecurityService
      *
      * Addresses: A09 (Security Logging and Alerting Failures)
      *
-     * @param string $event Event type (e.g., LOGIN_FAILED, CSRF_MISMATCH)
-     * @param string $details Additional context
+     * @param  string $event   Event type (e.g., LOGIN_FAILED, CSRF_MISMATCH)
+     * @param  string $details Additional context
      * @return void
      */
     public static function logSecurityEvent(string $event, string $details = ''): void
@@ -324,9 +348,10 @@ class SecurityService
         $timestamp = date('Y-m-d H:i:s');
         $ip = self::getClientIp();
         $userId = $_SESSION['user_id'] ?? 'anonymous';
+        $userIdStr = is_scalar($userId) ? (string) $userId : 'anonymous';
 
         $logMessage = "[SECURITY][{$timestamp}][{$event}] "
-            . "IP={$ip} User={$userId} {$details}";
+            . "IP={$ip} User={$userIdStr} {$details}";
 
         error_log($logMessage);
     }
@@ -348,7 +373,7 @@ class SecurityService
      *
      * Addresses: A05 (Injection)
      *
-     * @param mixed $value Value to sanitize
+     * @param  mixed $value Value to sanitize
      * @return string Sanitized string
      */
     public static function escapeHtml(mixed $value): string
@@ -365,12 +390,13 @@ class SecurityService
      *
      * Addresses: A01 (Broken Access Control)
      *
-     * @param array<int, string> $allowedMethods Allowed HTTP methods
+     * @param  array<int, string> $allowedMethods Allowed HTTP methods
      * @return bool True if the method is allowed
      */
     public static function validateHttpMethod(array $allowedMethods): bool
     {
-        $method = strtoupper($_SERVER['REQUEST_METHOD'] ?? 'GET');
+        $methodRaw = $_SERVER['REQUEST_METHOD'] ?? 'GET';
+        $method = strtoupper(is_string($methodRaw) ? $methodRaw : 'GET');
         return in_array($method, $allowedMethods, true);
     }
 }

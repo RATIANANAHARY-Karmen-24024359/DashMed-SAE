@@ -22,7 +22,7 @@ namespace modules\models\interfaces;
  * Contract for all entity classes, ensuring consistent data conversion.
  *
  * @package DashMed\Modules\Models\Interfaces
- * @author DashMed Team
+ * @author  DashMed Team
  * @license Proprietary
  */
 interface EntityInterface

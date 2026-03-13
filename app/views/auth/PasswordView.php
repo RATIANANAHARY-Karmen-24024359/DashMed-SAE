@@ -22,7 +22,7 @@ namespace modules\views\auth;
  * Handles two states: requesting email and entering new password.
  *
  * @package DashMed\Modules\Views\Auth
- * @author DashMed Team
+ * @author  DashMed Team
  * @license Proprietary
  */
 class PasswordView
@@ -30,7 +30,7 @@ class PasswordView
     /**
      * Renders the password reset page.
      *
-     * @param array{type: string, text: string}|null $msg Flash message (type, text)
+     * @param  array{type: string, text: string}|null $msg Flash message (type, text)
      * @return void
      */
     public function show(?array $msg = null): void
@@ -84,7 +84,7 @@ class PasswordView
 
                     <?php if ($msg) : ?>
                         <div class="message-box
-                        <?= htmlspecialchars($msg['type']) === 'error' ? 'error' : 'success' ?>">
+                        <?php echo htmlspecialchars($msg['type']) === 'error' ? 'error' : 'success' ?>">
                             <?php if ($msg['type'] === 'error') : ?>
                                 <svg style="width:20px;height:20px;fill:currentColor" viewBox="0 0 24 24">
                                     <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1
@@ -95,7 +95,7 @@ class PasswordView
                                     <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" />
                                 </svg>
                             <?php endif; ?>
-                            <span><?= htmlspecialchars($msg['text']) ?></span>
+                            <span><?php echo htmlspecialchars($msg['text']) ?></span>
                         </div>
                     <?php endif; ?>
 
@@ -126,7 +126,7 @@ class PasswordView
                             </div>
 
                         <?php else : ?>
-                            <input type="hidden" name="token" value="<?= htmlspecialchars($token, ENT_QUOTES) ?>">
+                            <input type="hidden" name="token" value="<?php echo htmlspecialchars($token, ENT_QUOTES) ?>">
 
                             <div class="security-notice">
                                 <svg style="width:20px;height:20px;flex-shrink:0;fill:currentColor" viewBox="0 0 24 24">
@@ -145,15 +145,15 @@ class PasswordView
                                         <?php foreach ($codeDigits as $i => $digit) : ?>
                                             <input type="text" maxlength="1" pattern="[0-9]"
                                                    inputmode="numeric" class="code-digit"
-                                                name="code_digits[]" value="<?= htmlspecialchars($digit) ?>" required
-                                                aria-label="Chiffre <?= $i + 1 ?>"
+                                                name="code_digits[]" value="<?php echo htmlspecialchars($digit) ?>" required
+                                                aria-label="Chiffre <?php echo $i + 1 ?>"
                                                    oninput="this.value=this.value.replace(/[^0-9]/g,'');
                                                 if(this.value.length === 1) {
                                                     var next = this.nextElementSibling; if(next) next.focus(); }">
                                         <?php endforeach; ?>
                                     </div>
                                     <input type="hidden" id="code" name="code" value="
-                                    <?= htmlspecialchars($codeFromUrl) ?>">
+                                    <?php echo htmlspecialchars($codeFromUrl) ?>">
                                 </div>
                             </div>
 

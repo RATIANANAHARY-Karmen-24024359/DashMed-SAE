@@ -22,7 +22,7 @@ namespace modules\views\auth;
  * Used primarily for password reset emails.
  *
  * @package DashMed\Modules\Views\Auth
- * @author DashMed Team
+ * @author  DashMed Team
  * @license Proprietary
  */
 class MailerView
@@ -30,8 +30,8 @@ class MailerView
     /**
      * Returns HTML content for password reset email.
      *
-     * @param string $code Temporary code
-     * @param string $link Reset link
+     * @param  string $code Temporary code
+     * @param  string $link Reset link
      * @return string Full HTML content
      */
     public function show(string $code, string $link): string

@@ -28,7 +28,9 @@ use Exception;
  */
 class RoomRepository
 {
-    /** @var PDO Database connection */
+    /**
+     * @var PDO Database connection
+     */
     private PDO $pdo;
 
     /**

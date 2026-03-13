@@ -27,7 +27,7 @@ use PDOException;
  * Manages user accounts (doctors/staff).
  *
  * @package DashMed\Modules\Models\Repositories
- * @author DashMed Team
+ * @author  DashMed Team
  * @license Proprietary
  */
 class UserRepository extends BaseRepository
@@ -37,7 +37,7 @@ class UserRepository extends BaseRepository
     /**
      * Retrieves a user by email.
      *
-     * @param string $email
+     * @param  string $email
      * @return User|null User entity or null
      */
     public function getByEmail(string $email): ?User
@@ -53,7 +53,9 @@ class UserRepository extends BaseRepository
         try {
             $stmt = $this->pdo->prepare($sql);
             $stmt->execute([':email' => $email]);
-            /** @var array<string, mixed>|false $row */
+            /**
+ * @var array<string, mixed>|false $row
+*/
             $row = $stmt->fetch(PDO::FETCH_ASSOC);
 
             if (is_array($row)) {
@@ -63,7 +65,9 @@ class UserRepository extends BaseRepository
             $sqlFallback = "SELECT * FROM {$this->table} WHERE email = :email LIMIT 1";
             $stmt = $this->pdo->prepare($sqlFallback);
             $stmt->execute([':email' => $email]);
-            /** @var array<string, mixed>|false $row */
+            /**
+ * @var array<string, mixed>|false $row
+*/
             $row = $stmt->fetch(PDO::FETCH_ASSOC);
             if (is_array($row)) {
                 return $this->mapRowToUser($row);
@@ -76,7 +80,7 @@ class UserRepository extends BaseRepository
     /**
      * Retrieves a user by ID.
      *
-     * @param int $id User ID
+     * @param  int $id User ID
      * @return User|null
      */
     public function getById(int $id): ?User
@@ -90,7 +94,9 @@ class UserRepository extends BaseRepository
         try {
             $stmt = $this->pdo->prepare($sql);
             $stmt->execute([':id' => $id]);
-            /** @var array<string, mixed>|false $row */
+            /**
+ * @var array<string, mixed>|false $row
+*/
             $row = $stmt->fetch(PDO::FETCH_ASSOC);
             return is_array($row) ? $this->mapRowToUser($row) : null;
         } catch (PDOException $e) {
@@ -101,8 +107,8 @@ class UserRepository extends BaseRepository
     /**
      * Verifies user credentials.
      *
-     * @param string $email
-     * @param string $plainPassword
+     * @param  string $email
+     * @param  string $plainPassword
      * @return User|null User entity if valid, null otherwise
      */
     public function verifyCredentials(string $email, string $plainPassword): ?User
@@ -122,7 +128,7 @@ class UserRepository extends BaseRepository
     /**
      * Creates a new user.
      *
-     * @param array<string, mixed> $data Raw data array
+     * @param  array<string, mixed> $data Raw data array
      * @return int New User ID
      */
     public function create(array $data): int
@@ -135,7 +141,8 @@ class UserRepository extends BaseRepository
             $stmt = $this->pdo->prepare($sql);
             $emailRaw = $data['email'] ?? '';
             $passRaw = $data['password'] ?? '';
-            $stmt->execute([
+            $stmt->execute(
+                [
                 ':first_name' => $data['first_name'],
                 ':last_name' => $data['last_name'],
                 ':email' => strtolower(trim(is_string($emailRaw) ? $emailRaw : '')),
@@ -143,7 +150,8 @@ class UserRepository extends BaseRepository
                 ':admin_status' => is_numeric($data['admin_status'] ?? null) ? (int) $data['admin_status'] : 0,
                 ':id_profession' => $data['id_profession'] ?? null,
                 ':created_at' => date('Y-m-d H:i:s')
-            ]);
+                ]
+            );
             return (int) $this->pdo->lastInsertId();
         } catch (PDOException $e) {
             error_log("Error creating user: " . $e->getMessage());
@@ -188,7 +196,7 @@ class UserRepository extends BaseRepository
      * Deletes a user by ID.
      * Supprime un utilisateur par son ID.
      *
-     * @param int $id User ID | ID utilisateur
+     * @param  int $id User ID | ID utilisateur
      * @return bool True if deleted | Vrai si supprimé
      */
     public function deleteById(int $id): bool
@@ -203,8 +211,8 @@ class UserRepository extends BaseRepository
      * Updates a user by ID.
      * Met à jour un utilisateur par son ID.
      *
-     * @param int $id User ID | ID utilisateur
-     * @param array<string, mixed> $data Fields to update | Champs à mettre à jour
+     * @param  int                  $id   User ID | ID utilisateur
+     * @param  array<string, mixed> $data Fields to update | Champs à mettre à jour
      * @return bool True if updated | Vrai si mis à jour
      */
     public function updateById(int $id, array $data): bool
@@ -225,9 +233,11 @@ class UserRepository extends BaseRepository
                     $val = $data[$field];
                     $values[":$field"] = is_numeric($val) || is_bool($val) ? (int) $val : 0;
                 } elseif ($field === 'alert_volume') {
-                    $values[":$field"] = (float) $data[$field];
+                    $val = $data[$field];
+                    $values[":$field"] = is_numeric($val) ? (float) $val : 0.5;
                 } elseif ($field === 'alert_duration') {
-                    $values[":$field"] = (int) $data[$field];
+                    $val = $data[$field];
+                    $values[":$field"] = is_numeric($val) ? (int) $val : 20000;
                 } else {
                     $values[":$field"] = $data[$field];
                 }
@@ -275,7 +285,9 @@ class UserRepository extends BaseRepository
             $result = [];
             foreach ($rows as $row) {
                 if (is_array($row)) {
-                    /** @var array<string, mixed> $row */
+                    /**
+ * @var array<string, mixed> $row
+*/
                     $user = $this->mapRowToUser($row);
                     $result[] = $user->toArray();
                 }
@@ -306,8 +318,8 @@ class UserRepository extends BaseRepository
             is_string($password) ? $password : null,
             isset($row['id_profession']) && is_numeric($row['id_profession']) ? (int) $row['id_profession'] : null,
             is_string($profLabel) ? $profLabel : null,
-            isset($row['alert_volume']) ? (float) $row['alert_volume'] : 0.50,
-            isset($row['alert_duration']) ? (int) $row['alert_duration'] : 20000,
+            isset($row['alert_volume']) && is_numeric($row['alert_volume']) ? (float) $row['alert_volume'] : 0.50,
+            isset($row['alert_duration']) && is_numeric($row['alert_duration']) ? (int) $row['alert_duration'] : 20000,
             isset($row['alert_dnd']) ? (bool) $row['alert_dnd'] : false,
             isset($row['chart_animation']) ? (bool) $row['chart_animation'] : true
         );

@@ -26,7 +26,7 @@ use PDOException;
  * Global Search Repository.
  *
  * @package DashMed\Modules\Models\Repositories
- * @author DashMed Team
+ * @author  DashMed Team
  * @license Proprietary
  */
 class SearchRepository extends BaseRepository
@@ -34,9 +34,9 @@ class SearchRepository extends BaseRepository
     /**
      * Executes a global multi-criteria search.
      *
-     * @param string $query Search term (min 2 chars)
-     * @param int $limit Max results per category
-     * @param int|null $patientId Optional context patient ID
+     * @param  string   $query     Search term (min 2 chars)
+     * @param  int      $limit     Max results per category
+     * @param  int|null $patientId Optional context patient ID
      * @return array{
      *   patients: array<int, array<string, mixed>>,
      *   doctors: array<int, array<string, mixed>>,

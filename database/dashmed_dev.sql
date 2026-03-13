@@ -428,12 +428,12 @@ SELECT
         WHEN l.`value` IS NULL THEN 'unknown'
         WHEN (
             l.`alert_flag` = 1
-                OR (pr.`critical_min` IS NOT NULL AND l.`value` < pr.`critical_min`)
-                OR (pr.`critical_max` IS NOT NULL AND l.`value` > pr.`critical_max`)
+                OR (pr.`critical_min` IS NOT NULL AND l.`value` <= pr.`critical_min`)
+                OR (pr.`critical_max` IS NOT NULL AND l.`value` >= pr.`critical_max`)
             ) THEN 'critical'
         WHEN (
-            (pr.`normal_min` IS NOT NULL AND l.`value` < pr.`normal_min`)
-                OR (pr.`normal_max` IS NOT NULL AND l.`value` > pr.`normal_max`)
+            (pr.`normal_min` IS NOT NULL AND l.`value` <= pr.`normal_min`)
+                OR (pr.`normal_max` IS NOT NULL AND l.`value` >= pr.`normal_max`)
             ) THEN 'warning'
         ELSE 'normal'
         END AS `status`,
@@ -441,12 +441,12 @@ SELECT
         WHEN l.`value` IS NULL THEN -1
         WHEN (
             l.`alert_flag` = 1
-                OR (pr.`critical_min` IS NOT NULL AND l.`value` < pr.`critical_min`)
-                OR (pr.`critical_max` IS NOT NULL AND l.`value` > pr.`critical_max`)
+                OR (pr.`critical_min` IS NOT NULL AND l.`value` <= pr.`critical_min`)
+                OR (pr.`critical_max` IS NOT NULL AND l.`value` >= pr.`critical_max`)
             ) THEN 2
         WHEN (
-            (pr.`normal_min` IS NOT NULL AND l.`value` < pr.`normal_min`)
-                OR (pr.`normal_max` IS NOT NULL AND l.`value` > pr.`normal_max`)
+            (pr.`normal_min` IS NOT NULL AND l.`value` <= pr.`normal_min`)
+                OR (pr.`normal_max` IS NOT NULL AND l.`value` >= pr.`normal_max`)
             ) THEN 1
         ELSE 0
         END AS `priority`

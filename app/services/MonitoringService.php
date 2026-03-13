@@ -26,7 +26,7 @@ use modules\models\repositories\MonitorRepository;
  * Applies user preferences, calculates priorities, and formats data for the view.
  *
  * @package DashMed\Modules\Services
- * @author DashMed Team
+ * @author  DashMed Team
  * @license Proprietary
  */
 class MonitoringService
@@ -34,13 +34,13 @@ class MonitoringService
     /**
      * Processes and organizes raw metrics by applying user preferences.
      *
-     * @param array<int, Indicator> $metrics    Raw metrics data
-     * @param array<int, array<string, mixed>> $rawHistory Raw history data
-     * @param array{
+     * @param  array<int, Indicator>            $metrics    Raw metrics data
+     * @param  array<int, array<string, mixed>> $rawHistory Raw history data
+     * @param  array{
      *   charts?: array<string, array<string, mixed>>,
      *   orders?: array<string, array<string, mixed>>
      * } $prefs User preferences
-     * @param bool  $showAll    Show all metrics ignoring hidden prefs
+     * @param  bool                             $showAll    Show all metrics ignoring hidden prefs
      * @return array<int, Indicator> Processed and sorted metrics
      */
     public function processMetrics(array $metrics, array $rawHistory, array $prefs, bool $showAll = false): array
@@ -64,10 +64,14 @@ class MonitoringService
 
         $processed = [];
 
-        /** @var array<string, array<string, mixed>> $chartPrefs */
+        /**
+ * @var array<string, array<string, mixed>> $chartPrefs
+*/
         $chartPrefs = is_array($prefs['charts'] ?? null) ? $prefs['charts'] : [];
 
-        /** @var array<string, array<string, mixed>> $orderPrefs */
+        /**
+ * @var array<string, array<string, mixed>> $orderPrefs
+*/
         $orderPrefs = is_array($prefs['orders'] ?? null) ? $prefs['orders'] : [];
 
         foreach ($metrics as $m) {
@@ -115,8 +119,21 @@ class MonitoringService
             $cp = $chartPrefs[$pid] ?? null;
             $userChart = is_array($cp) ? ($cp['chart_type'] ?? null) : null;
             $userModalChart = is_array($cp) ? ($cp['modal_chart_type'] ?? null) : null;
-            $userDuration = is_array($cp) ? ($cp['display_duration'] ?? '0.0333') : '0.0333';
-            $userCardDuration = is_array($cp) ? ($cp['card_display_duration'] ?? '0.0333') : '0.0333';
+            // Duration values are stored as hours (string):
+            // - 'all' = full history
+            // - numeric string (e.g. '1' = last hour)
+            // Legacy/default used to be '0.0333' (~2 minutes). We now default to '1' (last hour).
+            $rawDuration = is_array($cp) ? ($cp['display_duration'] ?? '1') : '1';
+            $rawCardDuration = is_array($cp) ? ($cp['card_display_duration'] ?? '1') : '1';
+            $userDuration = is_scalar($rawDuration) ? (string) $rawDuration : '1';
+            $userCardDuration = is_scalar($rawCardDuration) ? (string) $rawCardDuration : '1';
+
+            if ($userDuration === '0.0333') {
+                $userDuration = '1';
+            }
+            if ($userCardDuration === '0.0333') {
+                $userCardDuration = '1';
+            }
 
             $defaultChart = $m->getDefaultChart();
 
@@ -150,12 +167,15 @@ class MonitoringService
             $processed[] = $m;
         }
 
-        usort($processed, function (Indicator $a, Indicator $b) {
-            if ($a->getDisplayOrder() !== $b->getDisplayOrder()) {
-                return $a->getDisplayOrder() <=> $b->getDisplayOrder();
+        usort(
+            $processed,
+            function (Indicator $a, Indicator $b) {
+                if ($a->getDisplayOrder() !== $b->getDisplayOrder()) {
+                    return $a->getDisplayOrder() <=> $b->getDisplayOrder();
+                }
+                return strcmp($a->getDisplayName(), $b->getDisplayName());
             }
-            return strcmp($a->getDisplayName(), $b->getDisplayName());
-        });
+        );
 
         return $processed;
     }
@@ -163,7 +183,7 @@ class MonitoringService
     /**
      * Calculates display priority based on status.
      *
-     * @param Indicator $m Metric data
+     * @param  Indicator $m Metric data
      * @return int Priority (2=critical, 1=warning, 0=normal)
      */
     public function calculatePriority(Indicator $m): int
@@ -181,7 +201,7 @@ class MonitoringService
     /**
      * Prepares all view data (CSS classes, labels, etc.).
      *
-     * @param Indicator $row Indicator entity
+     * @param  Indicator $row Indicator entity
      * @return array<string, mixed> Formatted view data
      */
     public function prepareViewData(Indicator $row): array
@@ -236,11 +256,14 @@ class MonitoringService
         $viewData['history_html_data'] = [];
         $histForHtml = $row->getHistory();
 
-        usort($histForHtml, function ($a, $b): int {
-            $tsA = is_string($a['timestamp'] ?? null) ? strtotime($a['timestamp']) : 0;
-            $tsB = is_string($b['timestamp'] ?? null) ? strtotime($b['timestamp']) : 0;
-            return $tsA <=> $tsB;
-        });
+        usort(
+            $histForHtml,
+            function ($a, $b): int {
+                $tsA = is_string($a['timestamp'] ?? null) ? strtotime($a['timestamp']) : 0;
+                $tsB = is_string($b['timestamp'] ?? null) ? strtotime($b['timestamp']) : 0;
+                return $tsA <=> $tsB;
+            }
+        );
 
         /**
          * Limits the number of points for dashboard sparklines to optimize
@@ -262,7 +285,7 @@ class MonitoringService
 
             $viewData['history_html_data'][] = [
                 'time_iso' => $tsStr !== '' ? date('c', (int) strtotime($rawTsStr)) : '',
-                'value' => is_numeric($rawHVal) ? (string)$rawHVal : null,
+                'value' => is_numeric($rawHVal) ? (string) $rawHVal : null,
                 'flag' => (is_numeric($rawHFlag) && (int) $rawHFlag === 1) ? '1' : '0'
             ];
         }
@@ -325,7 +348,8 @@ class MonitoringService
         $viewData['modal_class'] = $stateClassModal;
         $viewData['is_crit_flag'] = ($stateClass === 'card--alert');
 
-        $viewData['chart_config'] = json_encode([
+        $viewData['chart_config'] = json_encode(
+            [
             "type" => $viewData['chart_type'],
             "title" => $viewData['display_name'],
             "labels" => array_map(
@@ -346,7 +370,8 @@ class MonitoringService
             "color" => "#4f46e5",
             "thresholds" => $viewData['thresholds'],
             "view" => $viewData['view_limits'],
-        ]);
+            ]
+        );
 
         return $viewData;
     }

@@ -11,8 +11,8 @@ $currentPage = $_GET['page'] ?? 'dashboard';
 /**
  * Determines if a page name corresponds to the current page and returns the active ID attribute.
  *
- * @param string $pageName Page name to check.
- * @param string $current  Currently active page.
+ * @param  string $pageName Page name to check.
+ * @param  string $current  Currently active page.
  * @return string Returns 'id="active"' if the page is active, otherwise an empty string.
  */
 $isActive = static function (string $pageName, string $current): string {
@@ -31,19 +31,19 @@ $currentPage = is_string($rawPage) ? $rawPage : 'dashboard';
     </section>
 
     <section class="tabs">
-        <a href="/?page=dashboard" <?= $isActive('dashboard', $currentPage) ?>>
+        <a href="/?page=dashboard" <?php echo $isActive('dashboard', $currentPage) ?>>
             <img src="assets/img/icons/dashboard.svg" class="icon" alt="Dashboard">
         </a>
-        <a href="/?page=monitoring" <?= $isActive('monitoring', $currentPage) ?>>
+        <a href="/?page=monitoring" <?php echo $isActive('monitoring', $currentPage) ?>>
             <img src="assets/img/icons/ecg.svg" class="icon" alt="Surveillance ECG">
         </a>
-        <a href="/?page=explorer" <?= $isActive('explorer', $currentPage) ?>>
+        <a href="/?page=explorer" <?php echo $isActive('explorer', $currentPage) ?>>
             <img src="assets/img/icons/viewer.svg" class="icon" alt="Explorateur de données">
         </a>
-        <a href="/?page=medicalprocedure" <?= $isActive('medicalprocedure', $currentPage) ?>>
+        <a href="/?page=medicalprocedure" <?php echo $isActive('medicalprocedure', $currentPage) ?>>
             <img src="assets/img/icons/patient-record.svg" class="icon" alt="Dossier patient">
         </a>
-        <a href="/?page=patientrecord" <?= $isActive('patientrecord', $currentPage) ?>>
+        <a href="/?page=patientrecord" <?php echo $isActive('patientrecord', $currentPage) ?>>
             <img src="assets/img/icons/folder.svg" class="icon" alt="Dossier patient">
         </a>
 
@@ -52,9 +52,9 @@ $currentPage = is_string($rawPage) ? $rawPage : 'dashboard';
     <section class="login">
         <?php
         $adminStatus = $_SESSION['admin_status'] ?? 0;
-        if (is_numeric($adminStatus) && (int) $adminStatus === 1):
+        if (is_numeric($adminStatus) && (int) $adminStatus === 1) :
             ?>
-            <a href="/?page=sysadmin" <?= $isActive('sysadmin', $currentPage) ?>>
+            <a href="/?page=sysadmin" <?php echo $isActive('sysadmin', $currentPage) ?>>
                 <img src="assets/img/icons/admin.svg" class="icon" alt="Administration">
             </a>
         <?php endif; ?>

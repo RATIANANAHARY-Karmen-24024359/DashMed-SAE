@@ -264,6 +264,15 @@ const DashMedGlobalAlerts = (function () {
 
     function showAlert(a) {
         if (!a?.type) return;
+        const id = getAlertId(a);
+        if (displayedIds.has(id)) return;
+        if (typeof NotifHistory !== 'undefined' && typeof NotifHistory.isInHistory === 'function') {
+            if (NotifHistory.isInHistory(id)) {
+                displayedIds.add(id);
+                return;
+            }
+        }
+        displayedIds.add(id);
 
         if (typeof NotifHistory !== 'undefined') NotifHistory.add(a);
 
@@ -467,6 +476,13 @@ const NotifHistory = (function () {
         updateBadge();
     }
 
+    function isInHistory(alertId) {
+        const h = getHistory();
+        return h.some(n => {
+            const nId = `${n.parameterId}_${n.value || n.rdvTime || ''}`;
+            return nId === alertId;
+        });
+    }
 
     function updateBadge() {
         const btns = document.querySelectorAll('.action-btn[aria-label="Notifications"]');
@@ -893,7 +909,7 @@ const NotifHistory = (function () {
         }
     }
 
-    return { init, add: addToHistory, syncDnd: syncProfileToggle, syncUI: syncPanelUI };
+    return { init, add: addToHistory, syncDnd: syncProfileToggle, syncUI: syncPanelUI, isInHistory };
 })();
 
 if (document.readyState === 'loading') {

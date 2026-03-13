@@ -567,9 +567,14 @@
                                     const ds = option.series[0].data || [];
                                     const exists = ds.some(p => p[0] === timeMs);
                                     if (!exists) {
-                                        ds.push([timeMs, val]);
-                                        ds.sort((a, b) => a[0] - b[0]);
-                                        if (ds.length > 1000) ds.shift();
+                                        const maxPoints = parseInt(card.dataset.maxPoints || '300', 10);
+                                        if (ds.length === 0 || timeMs >= ds[ds.length - 1][0]) {
+                                            ds.push([timeMs, val]);
+                                        } else {
+                                            ds.push([timeMs, val]);
+                                            ds.sort((a, b) => a[0] - b[0]);
+                                        }
+                                        if (ds.length > maxPoints) ds.splice(0, ds.length - maxPoints);
 
                                         const updateObj = { series: [{ data: ds }] };
 

@@ -31,8 +31,8 @@ class DownsamplingService
     /**
      * Applies the Largest Triangle Three Buckets (LTTB) algorithm on an in-memory array.
      *
-     * @param array<int, array{time_iso: string, value: string, flag: string}> $data The raw historical dataset.
-     * @param int $threshold The desired maximum number of data points to return.
+     * @param array<int, array{time_iso: string, value: string, flag: string}> $data      The raw historical dataset.
+     * @param int                                                              $threshold The desired maximum number of data points to return.
      *
      * @return array<int, array{time_iso: string, value: string, flag: string}>
      */
@@ -105,9 +105,9 @@ class DownsamplingService
      * This method processes data in a streaming fashion, maintaining O(k) memory
      * where k is the bucket size, rather than loading the entire dataset into memory.
      *
-     * @param \Iterator<int, array{time_iso: string, value: string, flag: string|int}> $stream Data source
-     * @param int $dataLength Total numbers of points in the source (required for interval calculation)
-     * @param int $threshold Target number of points
+     * @param \Iterator<int, array{time_iso: string, value: string, flag: string|int}> $stream     Data source
+     * @param int                                                                      $dataLength Total numbers of points in the source (required for interval calculation)
+     * @param int                                                                      $threshold  Target number of points
      *
      * @return array<int, array{time_iso: string, value: string, flag: string|int}> Downsampled points
      */

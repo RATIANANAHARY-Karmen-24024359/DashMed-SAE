@@ -4,7 +4,7 @@ namespace Tests\Models;
 
 use PHPUnit\Framework\TestCase;
 use modules\models\repositories\ConsultationRepository;
-use modules\models\Consultation;
+use modules\models\entities\Consultation;
 use PDO;
 
 /**

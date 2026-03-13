@@ -45,7 +45,7 @@ use PDO;
  * Refactored from: DashboardController, MonitoringController, PatientrecordController, and MedicalprocedureController.
  *
  * @package DashMed\Modules\Controllers
- * @author DashMed Team
+ * @author  DashMed Team
  * @version 2.1.0
  * @license Proprietary
  */
@@ -91,7 +91,9 @@ class PatientController
      */
     private PatientContextService $contextService;
 
-    /** @var AlertThresholdRepository Alert threshold repository */
+    /**
+     * @var AlertThresholdRepository Alert threshold repository
+     */
     private AlertThresholdRepository $thresholdRepo;
 
     /**
@@ -195,9 +197,13 @@ class PatientController
             ];
         }
 
-        /** @var array<int, \modules\models\entities\Consultation> $pastCons */
+        /**
+ * @var array<int, \modules\models\entities\Consultation> $pastCons
+*/
         $pastCons = array_values($pastConsultations);
-        /** @var array<int, \modules\models\entities\Consultation> $futCons */
+        /**
+ * @var array<int, \modules\models\entities\Consultation> $futCons
+*/
         $futCons = array_values($futureConsultations);
 
         $view = new DashboardView(
@@ -342,7 +348,9 @@ class PatientController
                 }
             }
 
-            /** @var array{type: string, text: string}|null $msg */
+            /**
+ * @var array{type: string, text: string}|null $msg
+*/
             $msg = isset($_SESSION['patient_msg']) && is_array($_SESSION['patient_msg'])
                 ? $_SESSION['patient_msg']
                 : null;
@@ -350,10 +358,13 @@ class PatientController
                 unset($_SESSION['patient_msg']);
             }
 
-            $safeDoctors = array_map(function ($d) {
-                $d['profession_name'] = (string) ($d['profession_name'] ?? '');
-                return $d;
-            }, $doctors);
+            $safeDoctors = array_map(
+                function ($d) {
+                    $d['profession_name'] = (string) ($d['profession_name'] ?? '');
+                    return $d;
+                },
+                $doctors
+            );
 
             $thresholds = $this->thresholdRepo->getThresholdsForPatient($idPatient);
 
@@ -492,17 +503,20 @@ class PatientController
             $consultations = $this->consultationRepo->getConsultationsByPatientId($patientId);
         }
 
-        usort($consultations, function ($a, $b) {
-            $dateA = \DateTime::createFromFormat('Y-m-d', $a->getDate());
-            $dateB = \DateTime::createFromFormat('Y-m-d', $b->getDate());
-            if (!$dateA) {
-                return 1;
+        usort(
+            $consultations,
+            function ($a, $b) {
+                $dateA = \DateTime::createFromFormat('Y-m-d', $a->getDate());
+                $dateB = \DateTime::createFromFormat('Y-m-d', $b->getDate());
+                if (!$dateA) {
+                    return 1;
+                }
+                if (!$dateB) {
+                    return -1;
+                }
+                return $dateB <=> $dateA;
             }
-            if (!$dateB) {
-                return -1;
-            }
-            return $dateB <=> $dateA;
-        });
+        );
 
         $doctors = $this->userRepo->getAllDoctors();
 
@@ -791,7 +805,7 @@ class PatientController
     /**
      * Checks if user is admin.
      *
-     * @param int $userId
+     * @param  int $userId
      * @return bool
      */
     private function isAdminUser(int $userId): bool
@@ -915,10 +929,13 @@ class PatientController
                         $rawTs = (strpos($ts, '+') === false && strpos($ts, 'Z') === false) ? $ts . ' UTC' : $ts;
 
                         $val = $row['value'];
-                        fputcsv($out, [
+                        fputcsv(
+                            $out,
+                            [
                             date('c', (int) strtotime($rawTs)),
                             is_numeric($val) ? round((float) $val, 2) : ''
-                        ]);
+                            ]
+                        );
                     }
                     fclose($out);
                 } else {
@@ -933,11 +950,13 @@ class PatientController
                         $ts = $row['timestamp'];
                         $rawTs = (strpos($ts, '+') === false && strpos($ts, 'Z') === false) ? $ts . ' UTC' : $ts;
                         $val = $row['value'];
-                        echo json_encode([
+                        echo json_encode(
+                            [
                             'time_iso' => date('c', (int) strtotime($rawTs)),
                             'value' => is_numeric($val) ? (string) round((float) $val, 2) : '0',
                             'flag' => (string) $row['alert_flag'],
-                        ]);
+                            ]
+                        );
                         $first = false;
                     }
                     echo ']';
@@ -1092,12 +1111,15 @@ class PatientController
                 }
 
                 $timeRaw = $metric->getTimestamp();
-                $rawTs = (is_string($timeRaw) && strpos($timeRaw, '+') === false && strpos($timeRaw, 'Z') === false)
-                    ? $timeRaw . ' UTC'
-                    : $timeRaw;
+                $rawTs = '';
+                if (is_string($timeRaw) && $timeRaw !== '') {
+                    $rawTs = (strpos($timeRaw, '+') === false && strpos($timeRaw, 'Z') === false)
+                        ? $timeRaw . ' UTC'
+                        : $timeRaw;
+                }
 
                 $timeIso = $latestTimeIso;
-                if (is_string($rawTs) && is_string($timeRaw) && $timeRaw !== '') {
+                if ($rawTs !== '') {
                     $timeIso = date('c', (int) strtotime($rawTs));
                 }
 
@@ -1148,7 +1170,9 @@ class PatientController
     private function loadRooms(): array
     {
         try {
-            /** @var array<int, array{room_id: int|string, first_name?: string}> */
+            /**
+ * @var array<int, array{room_id: int|string, first_name?: string}>
+*/
             return $this->patientRepo->getAllRoomsWithPatients();
         } catch (\Throwable $e) {
             error_log('[PatientController] loadRooms error: ' . $e->getMessage());
@@ -1159,7 +1183,7 @@ class PatientController
     /**
      * Loads patient data.
      *
-     * @param int|null $patientId
+     * @param  int|null $patientId
      * @return array<string, mixed>
      */
     private function loadPatientData(?int $patientId): array
@@ -1182,7 +1206,7 @@ class PatientController
     /**
      * Loads and sorts consultations.
      *
-     * @param int|null $patientId
+     * @param  int|null $patientId
      * @return array{0: array<int, Consultation>, 1: array<int, Consultation>}
      */
     private function loadConsultations(?int $patientId): array
@@ -1191,7 +1215,9 @@ class PatientController
             return [[], []];
         }
 
-        /** @var array<int, Consultation> $allConsultations */
+        /**
+ * @var array<int, Consultation> $allConsultations
+*/
         $allConsultations = $this->consultationRepo->getConsultationsByPatientId($patientId);
 
         $today = new DateTime();
@@ -1218,15 +1244,19 @@ class PatientController
     /**
      * Loads monitoring data and user layout.
      *
-     * @param int $userId
-     * @param int|null $patientId
-     * @return array{0: array<int, array<string, mixed>>, 1: array<string, mixed>}
+     * @param  int      $userId
+     * @param  int|null $patientId
+     * @return array{0: array<int, array<string, mixed>|\modules\models\entities\Indicator>, 1: array<int|string, mixed>}
      */
     private function loadMonitoringData(int $userId, ?int $patientId): array
     {
-        /** @var array<int, array<string, mixed>> $processedMetrics */
+        /**
+ * @var array<int, array<string, mixed>|\modules\models\entities\Indicator> $processedMetrics
+*/
         $processedMetrics = [];
-        /** @var array<string, mixed> $userLayout */
+        /**
+ * @var array<string, mixed> $userLayout
+*/
         $userLayout = [];
 
         if ($patientId === null) {
@@ -1234,49 +1264,56 @@ class PatientController
         }
 
         try {
-            $metrics = $this->monitorModel->getLatestMetrics($patientId);
-
-            /**
-             * PERFORMANCE OPTIMIZATION:
-             * Instead of loading the entire history table for all parameters (O(N)),
-             * we fetch only the last 1000 points per parameter (O(Params * 1000)).
-             * This prevents memory exhaustion on the initial page load while
-             * keeping sparklines perfectly accurate.
-             */
-            // PERF: do not pre-load full sparkline history on initial Dashboard render.
-            // The frontend loads history lazily (exact chunks) and caches it.
-            $rawHistory = [];
+            // PERF: allow loading the dashboard without blocking on monitoring.
+            // Use: /?page=dashboard&fast=1
+            $fastParam = $_GET['fast'] ?? null;
+            if (is_scalar($fastParam) && (string) $fastParam === '1') {
+                return [[], []];
+            }
 
             $prefs = $this->prefModel->getUserPreferences($userId);
             $userLayout = (array) $this->prefModel->getUserLayoutSimple($userId);
 
+            // Determine the visible indicators from the saved layout.
             $visibleIds = [];
             if (!empty($userLayout)) {
                 foreach ($userLayout as $item) {
-                    if (is_array($item) && empty($item['is_hidden'])) {
-                        $visibleIds[] = $item['parameter_id'];
+                    if (!empty($item['is_hidden'])) {
+                        continue;
+                    }
+                    if (!empty($item['parameter_id'])) {
+                        $visibleIds[] = (string) $item['parameter_id'];
                     }
                 }
-            } else {
-                $visibleIds = array_slice(array_keys($metrics), 0, 6);
+            }
+            $visibleIds = array_values(array_unique($visibleIds));
+
+            // Only load latest metrics for visible cards to reduce TTFB.
+            $metrics = !empty($visibleIds)
+                ? $this->monitorModel->getLatestMetricsForParameters($patientId, $visibleIds)
+                : $this->monitorModel->getLatestMetrics($patientId);
+
+            // Fallback: if no layout exists yet, show a small default subset.
+            if (empty($visibleIds)) {
+                $visibleIds = array_slice(
+                    array_values(array_filter(array_map(
+                        fn(\modules\models\entities\Indicator $m) => (string) $m->getId(),
+                        $metrics
+                    ))),
+                    0,
+                    6
+                );
             }
 
-            $customGroupRepo = new CustomGroupRepository($this->pdo);
-            $groups = $customGroupRepo->getGroupsByUser($userId);
-            $groupIdents = [];
-            foreach ($groups as $g) {
-                $groupIdents = array_merge($groupIdents, $customGroupRepo->getIndicatorsByGroup((int) $g['id']));
-            }
-
-            $requiredHistoryIds = array_unique(array_merge($visibleIds, $groupIdents));
-
+            // PERF: only prefetch sparkline history for visible cards.
+            // Custom-group indicators are fetched on demand when the user switches group.
             $rawHistory = [];
-            if (!empty($requiredHistoryIds)) {
-                $rawHistory = $this->monitorModel->getLatestHistoryForSpecificParameters($patientId, $requiredHistoryIds, 1000);
+            if (!empty($visibleIds)) {
+                // 250 points keeps the initial render snappy; the frontend can load more lazily.
+                $rawHistory = $this->monitorModel->getLatestHistoryForSpecificParameters($patientId, $visibleIds, 250);
             }
 
             $processedMetrics = $this->monitoringService->processMetrics($metrics, $rawHistory, $prefs, true);
-
         } catch (\Exception $e) {
             error_log('[PatientController] loadMonitoringData error: ' . $e->getMessage());
         }
@@ -1287,7 +1324,7 @@ class PatientController
     /**
      * Calculates age from birth date.
      *
-     * @param string|null $birthDateString
+     * @param  string|null $birthDateString
      * @return int
      */
     private function calculateAge(?string $birthDateString): int
@@ -1356,7 +1393,9 @@ class PatientController
             $rawUserId = $_SESSION['user_id'] ?? 0;
             $prefs = $this->prefModel->getUserPreferences(is_numeric($rawUserId) ? (int) $rawUserId : 0);
 
-            /** @var \modules\models\entities\Indicator[] $indicators */
+            /**
+ * @var \modules\models\entities\Indicator[] $indicators
+*/
             $indicators = $this->monitorModel->getLatestMetrics($patientId);
             $indicatorsById = [];
             $lastSentTimestamp = '1970-01-01 00:00:00';
@@ -1524,12 +1563,14 @@ class PatientController
                 ];
             }
 
-            $json = json_encode([
+            $json = json_encode(
+                [
                 'patient_id' => $patientId,
                 'param' => $parameterId,
                 'points' => $formatted,
                 'last_time_iso' => !empty($formatted) ? $formatted[count($formatted) - 1]['time_iso'] : null,
-            ]);
+                ]
+            );
 
             if (!is_dir(dirname($cacheFile))) {
                 mkdir(dirname($cacheFile), 0777, true);
@@ -1650,14 +1691,16 @@ class PatientController
                 ];
             }
 
-            echo json_encode([
+            echo json_encode(
+                [
                 'patient_id' => $patientId,
                 'param' => $parameterId,
                 'points' => $formatted,
                 'next_after' => $lastIso,
                 'next_after_seq' => $lastSeq,
                 'has_more' => count($formatted) >= $limit,
-            ]);
+                ]
+            );
         } catch (\Throwable $e) {
             error_log('[PatientController] apiHistoryChunk error: ' . $e->getMessage());
             echo json_encode(['error' => 'Erreur interne']);
@@ -1718,7 +1761,8 @@ class PatientController
             }
 
             $meta = $this->monitorModel->getHistoryMeta($patientId, $parameterId);
-            echo json_encode([
+            echo json_encode(
+                [
                 'patient_id' => $patientId,
                 'param' => $parameterId,
                 'max_ts' => $meta['max_ts'] ?? null,
@@ -1726,7 +1770,8 @@ class PatientController
                 'count' => $meta['count'] ?? null,
                 'server_time' => date('c'),
                 'schema_version' => 1,
-            ]);
+                ]
+            );
         } catch (\Throwable $e) {
             error_log('[PatientController] apiHistoryMeta error: ' . $e->getMessage());
             echo json_encode(['error' => 'Erreur interne']);
@@ -1765,11 +1810,13 @@ class PatientController
             }
 
             header('Content-Type: application/json');
-            echo json_encode([
+            echo json_encode(
+                [
                 'id_patient' => $patient['id_patient'],
                 'first_name' => $patient['first_name'],
                 'last_name' => $patient['last_name']
-            ]);
+                ]
+            );
         } catch (\Exception $e) {
             error_log('[PatientController] apiPatientName error: ' . $e->getMessage());
             header('Content-Type: application/json');

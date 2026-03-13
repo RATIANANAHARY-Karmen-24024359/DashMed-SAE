@@ -1,7 +1,7 @@
 <?php
 
 /**
- * app/views/static/LegalnoticeView.php
+ * app/views/site/LegalnoticeView.php
  *
  * View file for the DashMed-SAE project.
  *
@@ -12,7 +12,7 @@
  * @package DashMed\SAE
  */
 
-namespace modules\views\static;
+namespace modules\views\site;
 
 /**
  * Class LegalnoticeView
@@ -21,8 +21,8 @@ namespace modules\views\static;
  *
  * Includes information about editor, host, and licenses.
  *
- * @package DashMed\Modules\Views\Pages\Static
- * @author DashMed Team
+ * @package DashMed\Modules\Views\Pages\Site
+ * @author  DashMed Team
  * @license Proprietary
  */
 class LegalnoticeView

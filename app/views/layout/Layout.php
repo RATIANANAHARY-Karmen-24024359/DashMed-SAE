@@ -25,38 +25,50 @@ namespace modules\views\layout;
  * global alerts, scroll-to-top, and shared scripts.
  *
  * @package DashMed\Modules\Views\Layout
- * @author DashMed Team
+ * @author  DashMed Team
  * @license Proprietary
  */
 class Layout
 {
-    /** @var string Page title */
+    /**
+     * @var string Page title
+     */
     private string $title;
 
-    /** @var array<int, string> Extra CSS files for the page */
+    /**
+     * @var array<int, string> Extra CSS files for the page
+     */
     private array $cssFiles;
 
-    /** @var array<int, string> Extra JS files for the page */
+    /**
+     * @var array<int, string> Extra JS files for the page
+     */
     private array $jsFiles;
 
-    /** @var string Extra inline styles */
+    /**
+     * @var string Extra inline styles
+     */
     private string $inlineStyles;
 
-    /** @var bool Whether to include sidebar */
+    /**
+     * @var bool Whether to include sidebar
+     */
     private bool $showSidebar;
 
-    /** @var bool Whether to include global alerts */
+    /**
+     * @var bool Whether to include global alerts
+     */
     private bool $showAlerts;
 
     /**
      * Constructor
      *
-     * @param string $title Page title
-     * @param array<int, string> $cssFiles Additional CSS files
-     * @param array<int, string> $jsFiles Additional JS files
-     * @param string $inlineStyles Inline <style> content
-     * @param bool $showSidebar Show sidebar (default: true)
-     * @param bool $showAlerts Show global alerts (default: true)
+     * @param string             $title        Page title
+     * @param array<int, string> $cssFiles     Additional CSS files
+     * @param array<int, string> $jsFiles      Additional JS files
+     * @param string             $inlineStyles Inline <style> content
+     * @param bool               $showSidebar  Show sidebar (default: true)
+     * @param bool               $showAlerts   Show global alerts (default: true)
      */
     public function __construct(
         string $title = 'DashMed',
@@ -79,7 +91,7 @@ class Layout
      *
      * The callback receives no arguments and should output the page-specific HTML.
      *
-     * @param callable(): void $contentCallback Function that outputs the main page content
+     * @param  callable(): void $contentCallback Function that outputs the main page content
      * @return void
      */
     public function render(callable $contentCallback): void
@@ -103,7 +115,7 @@ class Layout
                     });
                 })();
             </script>
-            <title>DashMed - <?= htmlspecialchars($this->title, ENT_QUOTES, 'UTF-8') ?></title>
+            <title>DashMed - <?php echo htmlspecialchars($this->title, ENT_QUOTES, 'UTF-8') ?></title>
             <meta name="viewport" content="width=device-width, initial-scale=1.0">
             <meta name="robots" content="noindex, nofollow">
             <meta name="author" content="DashMed Team">
@@ -114,19 +126,19 @@ class Layout
             <link rel="stylesheet" href="assets/css/base/style.css">
             <link rel="stylesheet" href="assets/css/components/skeleton.css">
 
-            <?php if ($this->showSidebar): ?>
+            <?php if ($this->showSidebar) : ?>
                 <link rel="stylesheet" href="assets/css/layout/sidebar.css">
             <?php endif; ?>
 
-            <?php foreach ($this->cssFiles as $css): ?>
-                <link rel="stylesheet" href="<?= htmlspecialchars($css, ENT_QUOTES, 'UTF-8') ?>">
+            <?php foreach ($this->cssFiles as $css) : ?>
+                <link rel="stylesheet" href="<?php echo htmlspecialchars($css, ENT_QUOTES, 'UTF-8') ?>">
             <?php endforeach; ?>
 
             <link rel="icon" type="image/svg+xml" href="assets/img/logo.svg">
 
-            <?php if ($this->inlineStyles !== ''): ?>
+            <?php if ($this->inlineStyles !== '') : ?>
                 <style>
-                    <?= $this->inlineStyles ?>
+                    <?php echo $this->inlineStyles ?>
                 </style>
             <?php endif; ?>
         </head>
@@ -152,25 +164,25 @@ class Layout
                 <div class="loader-text">DASHMED</div>
             </div>
 
-            <?php if ($this->showSidebar && file_exists($partialsDir . '/_sidebar.php')): ?>
+            <?php if ($this->showSidebar && file_exists($partialsDir . '/_sidebar.php')) : ?>
                 <?php include $partialsDir . '/_sidebar.php'; ?>
             <?php endif; ?>
 
             <?php $contentCallback(); ?>
 
-            <?php if ($this->showAlerts && file_exists($partialsDir . '/_global-alerts.php')): ?>
+            <?php if ($this->showAlerts && file_exists($partialsDir . '/_global-alerts.php')) : ?>
                 <?php include $partialsDir . '/_global-alerts.php'; ?>
             <?php endif; ?>
 
-            <?php if (file_exists($partialsDir . '/_scroll-to-top.php')): ?>
+            <?php if (file_exists($partialsDir . '/_scroll-to-top.php')) : ?>
                 <?php include $partialsDir . '/_scroll-to-top.php'; ?>
             <?php endif; ?>
 
             <script src="assets/js/component/loader.js"></script>
             <script src="assets/js/component/skeleton.js"></script>
 
-            <?php foreach ($this->jsFiles as $js): ?>
-                <script src="<?= htmlspecialchars($js, ENT_QUOTES, 'UTF-8') ?>"></script>
+            <?php foreach ($this->jsFiles as $js) : ?>
+                <script src="<?php echo htmlspecialchars($js, ENT_QUOTES, 'UTF-8') ?>"></script>
             <?php endforeach; ?>
 
         </body>

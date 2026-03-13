@@ -34,29 +34,37 @@ use PDO;
  * Remplace : SysadminController.
  *
  * @package DashMed\Modules\Controllers
- * @author DashMed Team
+ * @author  DashMed Team
  * @license Proprietary
  */
 class AdminController
 {
-    /** @var UserRepository User repository | Repository utilisateur */
+    /**
+     * @var UserRepository User repository | Repository utilisateur
+     */
     private UserRepository $userRepo;
 
-    /** @var PatientRepository Patient repository */
+    /**
+     * @var PatientRepository Patient repository
+     */
     private PatientRepository $patientRepo;
 
-    /** @var RoomRepository Room repository */
+    /**
+     * @var RoomRepository Room repository
+     */
     private RoomRepository $roomRepo;
-    
-    /** @var PDO Database connection | Connexion BDD */
+
+    /**
+     * @var PDO Database connection | Connexion BDD
+     */
     private PDO $pdo;
 
     /**
      * Constructor | Constructeur
      *
-     * @param UserRepository|null $model Optional user repository injection
+     * @param UserRepository|null    $model        Optional user repository injection
      * @param PatientRepository|null $patientModel Optional patient repository injection
-     * @param RoomRepository|null $roomModel Optional room repository injection
+     * @param RoomRepository|null    $roomModel    Optional room repository injection
      */
     public function __construct(
         ?UserRepository $model = null,
@@ -185,8 +193,8 @@ class AdminController
         $weight = trim(is_string($rawWeight) ? $rawWeight : '');
 
         if (
-            $room === '' || $lastName === '' || $firstName === '' || $email === '' ||
-            $gender === '' || $birthDate === '' || $admissionReason === '' || $height === '' || $weight === ''
+            $room === '' || $lastName === '' || $firstName === '' || $email === ''
+            || $gender === '' || $birthDate === '' || $admissionReason === '' || $height === '' || $weight === ''
         ) {
             $_SESSION['error'] = "Tous les champs patient sont obligatoires.";
             header('Location: /?page=sysadmin');
@@ -213,7 +221,8 @@ class AdminController
         }
 
         try {
-            $this->patientRepo->create([
+            $this->patientRepo->create(
+                [
                 'first_name' => $firstName,
                 'last_name' => $lastName,
                 'email' => $email,
@@ -224,11 +233,11 @@ class AdminController
                 'status' => 'En réanimation',
                 'description' => $admissionReason,
                 'room_id' => (int) $room
-            ]);
+                ]
+            );
 
             unset($_SESSION['old_sysadmin']);
             $_SESSION['success'] = "Patient créé avec succès dans la chambre {$room}.";
-
         } catch (\Throwable $e) {
             error_log('[AdminController] Patient creation SQL error: ' . $e->getMessage());
             $_SESSION['error'] = "Échec de la création du patient (email déjà utilisé ou chambre occupée ?).";
@@ -291,14 +300,16 @@ class AdminController
         }
 
         try {
-            $this->userRepo->create([
+            $this->userRepo->create(
+                [
                 'first_name' => $first,
                 'last_name' => $last,
                 'email' => $email,
                 'password' => $pass,
                 'id_profession' => $profId,
                 'admin_status' => $admin,
-            ]);
+                ]
+            );
 
             unset($_SESSION['old_sysadmin']);
             $_SESSION['success'] = "Compte créé avec succès pour {$email}";
@@ -531,7 +542,8 @@ class AdminController
         }
 
         try {
-            $this->patientRepo->createPatient([
+            $this->patientRepo->createPatient(
+                [
                 'first_name'  => $first,
                 'last_name'   => $last,
                 'email'       => $email,
@@ -540,7 +552,8 @@ class AdminController
                 'height'      => $height,
                 'gender'      => $gender,
                 'description' => $admissionReason !== '' ? $admissionReason : null,
-            ]);
+                ]
+            );
         } catch (\Throwable $e) {
             error_log('[AdminController] Patient creation error: ' . $e->getMessage());
             $_SESSION['error'] = "Échec de la création du patient (email déjà utilisé ?).";
@@ -581,7 +594,7 @@ class AdminController
      * Redirects to location.
      * Redirige vers une destination.
      *
-     * @param string $location
+     * @param  string $location
      * @return void
      */
     protected function redirect(string $location): void
@@ -612,7 +625,9 @@ class AdminController
         if ($st === false) {
             return [];
         }
-        /** @var array<int, array{id_profession: int, label_profession: string}> */
+        /**
+ * @var array<int, array{id_profession: int, label_profession: string}>
+*/
         return $st->fetchAll(PDO::FETCH_ASSOC);
     }
 }

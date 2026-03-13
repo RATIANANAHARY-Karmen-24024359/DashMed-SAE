@@ -158,7 +158,7 @@ VALUES
 
 ('SpO2_m', 'Saturation pulsée en O2 (SpO2)', 'Ventilation', '%', 'line',
  'Saturation en oxygène mesurée par oxymétrie de pouls',
- 90.00, 100.00, 85.00, 100.00, 50.00, 100.00),
+ 90.00, NULL, 85.00, NULL, 50.00, 100.00),
 
 ('PaCO2', 'Pression artérielle en CO2 (PaCO2)', 'Ventilation', 'mmHg', 'line',
  'Ventilation alvéolaire / élimination du CO2 (gaz du sang)',
@@ -204,7 +204,7 @@ VALUES
 -- Neurologie
 ('GCS', 'Glasgow Coma Scale (GCS)', 'Neurologie', '/15', 'bar',
  'Évaluation du niveau de conscience (3 à 15)',
- 13.00, 15.00, 3.00, 8.00, 3.00, 15.00),
+ 13.00, NULL, 8.00, NULL, 3.00, 15.00),
 
 ('RASS', 'Richmond Agitation-Sedation Scale (RASS)', 'Neurologie', 'score', 'bar',
  'Échelle agitation/sédation (-5 à +4)',
@@ -241,7 +241,7 @@ VALUES
 
 ('SaO2', 'Saturation artérielle en O2 (SaO2)', 'Biologie', '%', 'line',
  'Saturation sur gaz du sang (différente de SpO2)',
- 92.00, 98.00, 85.00, 100.00, 50.00, 100.00);
+ 92.00, NULL, 85.00, NULL, 50.00, 100.00);
 
 INSERT INTO `chart_types` (`chart_type`,`label`) VALUES
   ('line','Courbe'),

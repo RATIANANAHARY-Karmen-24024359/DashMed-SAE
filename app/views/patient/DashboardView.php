@@ -49,7 +49,7 @@ class DashboardView
     /** @var array<string, mixed> Chart types config */
     private array $chartTypes;
 
-    /** @var array<string, mixed> User layout preferences */
+    /** @var array<int|string, mixed> User layout preferences */
     private array $userLayout;
 
     /** @var array<int, array{id: int, name: string, color: string, indicator_ids: array<int, string>, layout: array<string, array{x: ?int, y: ?int, w: int, h: int}>}> Custom groups */
@@ -69,7 +69,7 @@ class DashboardView
      * @param array<int, \modules\models\entities\Indicator|array<string, mixed>> $patientMetrics Health data
      * @param array<string, mixed> $patientData Patient info
      * @param array<string, mixed> $chartTypes Visualizations
-     * @param array<string, mixed> $userLayout Layout prefs
+     * @param array<int|string, mixed> $userLayout Layout prefs
      * @param array<int, array{id: int, name: string, color: string, indicator_ids: array<int, string>, layout: array<string, array{x: ?int, y: ?int, w: int, h: int}>}> $customGroups Custom groups
      */
     public function __construct(
@@ -138,10 +138,6 @@ class DashboardView
             $current = null;
         }
 
-        $h = static function ($v) {
-            return htmlspecialchars(is_scalar($v) ? (string) $v : '', ENT_QUOTES, 'UTF-8');
-        };
-
         $layout = new \modules\views\layout\Layout(
             'Dashboard',
             [
@@ -185,7 +181,7 @@ class DashboardView
         );
 
 
-        $layout->render(function () use ($current, $h) {
+        $layout->render(function () use ($current) {
             $patientId = $this->patientData['id_patient'] ?? '';
             if (!is_scalar($patientId)) {
                 $patientId = '';
@@ -257,7 +253,7 @@ class DashboardView
                     sort($uniqueCategories);
                     ?>
 
-                    <?php if (!empty($uniqueCategories)): ?>
+                    <?php if (!empty($uniqueCategories)) : ?>
                         <div class="category-filters">
                             <button class="category-filter-btn urgent-filter" data-filter="urgent"
                                 style="color: var(--color-critical, #EF4444); font-weight: bold; display: flex; align-items: center; gap: 8px;">
@@ -272,21 +268,21 @@ class DashboardView
                                 </span>
                             </button>
                             <button class="category-filter-btn active" data-filter="all">Toutes</button>
-                            <?php foreach ($uniqueCategories as $cat): ?>
+                            <?php foreach ($uniqueCategories as $cat) : ?>
                                 <button class="category-filter-btn"
                                     data-filter="<?= htmlspecialchars((string) $cat, ENT_QUOTES, 'UTF-8') ?>">
                                     <?= htmlspecialchars((string) $cat, ENT_QUOTES, 'UTF-8') ?>
                                 </button>
                             <?php endforeach; ?>
-                            <?php if (!empty($this->customGroups)): ?>
+                            <?php if (!empty($this->customGroups)) : ?>
                                 <div class="category-vert-separator"></div>
-                                <?php foreach ($this->customGroups as $cg): ?>
+                                <?php foreach ($this->customGroups as $cg) : ?>
                                     <button class="category-filter-btn category-filter-btn--custom" data-filter="custom_group"
                                         data-group-id="<?= (int) $cg['id'] ?>"
                                         data-group-indicators="<?= htmlspecialchars(implode(',', $cg['indicator_ids']), ENT_QUOTES, 'UTF-8') ?>"
                                         data-group-layout='<?= htmlspecialchars((string) json_encode($cg['layout']), ENT_QUOTES, 'UTF-8') ?>'
                                         style="--cg-color:
-                <?= htmlspecialchars($cg['color'], ENT_QUOTES, 'UTF-8') ?>;">
+                                    <?= htmlspecialchars($cg['color'], ENT_QUOTES, 'UTF-8') ?>;">
                                         <?= htmlspecialchars($cg['name'], ENT_QUOTES, 'UTF-8') ?>
                                     </button>
                                 <?php endforeach; ?>
@@ -357,8 +353,8 @@ class DashboardView
                                 <option value="" <?= $current === null ? 'selected' : '' ?>>
                                     -- Sélectionnez une chambre --
                                 </option>
-                                <?php if (!empty($this->rooms)): ?>
-                                    <?php foreach ($this->rooms as $s):
+                                <?php if (!empty($this->rooms)) : ?>
+                                    <?php foreach ($this->rooms as $s) :
                                         $room_id = (int) $s['room_id'];
                                         if ($room_id <= 0) {
                                             continue;
@@ -402,11 +398,11 @@ class DashboardView
                                 $this->consultationsFutures
                             );
 
-                            if (!empty($toutesConsultations)):
+                            if (!empty($toutesConsultations)) :
                                 $consultationsAffichees = $toutesConsultations;
                                 ?>
                                 <section class="evenement" id="consultation-list">
-                                    <?php foreach ($consultationsAffichees as $consultation):
+                                    <?php foreach ($consultationsAffichees as $consultation) :
                                         $dateStr = (string) $consultation->getDate();
                                         try {
                                             $dateObj = new \DateTime($dateStr);
@@ -432,19 +428,19 @@ class DashboardView
                                         }
                                         ?>
                                         <a href="/?page=medicalprocedure&id_patient=
-                                    <?php echo urlencode((string) $patientId); ?>
+                                        <?php echo urlencode((string) $patientId); ?>
                                     #<?php echo $this->getConsultationId($consultation); ?>" class="consultation-link"
                                             data-date="<?php echo $isoDate; ?>">
                                             <div class="evenement-content">
                                                 <div class="date-container <?php if ($isPast) {
                                                     echo 'has-tooltip';
-                                                } ?>" <?php if ($isPast) {
-                                                     echo 'data-tooltip="Consultation déjà effectuée"';
-                                                 } ?>>
+                                                                           } ?>" <?php if ($isPast) {
+                          echo 'data-tooltip="Consultation déjà effectuée"';
+                                                                           } ?>>
                                                     <span class="date">
                                                         <?php echo htmlspecialchars($this->formatDate($dateStr)); ?>
                                                     </span>
-                                                    <?php if ($isPast):
+                                                    <?php if ($isPast) :
                                                         ?><span class="status-dot"></span>
                                                         <?php
                                                     endif; ?>
@@ -456,7 +452,7 @@ class DashboardView
                                         </a>
                                     <?php endforeach; ?>
                                 </section>
-                            <?php else: ?>
+                            <?php else : ?>
                                 <p>Aucune consultation</p>
                             <?php endif; ?>
 
