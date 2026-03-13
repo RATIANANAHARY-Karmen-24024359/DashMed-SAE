@@ -772,6 +772,23 @@ final class CustomizationView
                         });
                     }
 
+                    function collectGroupLayout(gridEl) {
+                        if (!gridEl) return [];
+                        const items = [];
+                        gridEl.querySelectorAll('.group-grid-item').forEach(el => {
+                            const id = el.dataset.widgetId || el.getAttribute('data-widget-id') || el.getAttribute('gs-id');
+                            if (!id) return;
+
+                            const x = Number(el.getAttribute('gs-x') ?? el.getAttribute('data-gs-x') ?? el.dataset.gsX ?? 0);
+                            const y = Number(el.getAttribute('gs-y') ?? el.getAttribute('data-gs-y') ?? el.dataset.gsY ?? 0);
+                            const w = Number(el.getAttribute('gs-w') ?? el.getAttribute('data-gs-w') ?? el.dataset.gsW ?? 4);
+                            const h = Number(el.getAttribute('gs-h') ?? el.getAttribute('data-gs-h') ?? el.dataset.gsH ?? 3);
+
+                            items.push({ id, x, y, w, h, visible: true });
+                        });
+                        return items;
+                    }
+
                     form.addEventListener('submit', function (e) {
                         let valid = true;
                         nameError.textContent = '';
@@ -792,6 +809,16 @@ final class CustomizationView
                             indicatorsError.textContent = 'Sélectionnez au moins un indicateur.';
                             if (valid) indicatorsError.scrollIntoView({ behavior: 'smooth', block: 'center' });
                             valid = false;
+                        }
+
+                        if (window._addGridManager) {
+                            window._addGridManager.updateLayout();
+                        }
+
+                        const addGridEl = document.getElementById('add-group-grid');
+                        const layoutInput = document.getElementById('add-layout-data');
+                        if (layoutInput) {
+                            layoutInput.value = JSON.stringify(collectGroupLayout(addGridEl));
                         }
 
                         if (!valid) e.preventDefault();
@@ -936,6 +963,11 @@ final class CustomizationView
 
                             if (editGridManager) {
                                 editGridManager.updateLayout();
+                            }
+
+                            const editLayoutInput = document.getElementById('edit-layout-data');
+                            if (editLayoutInput && editGridEl) {
+                                editLayoutInput.value = JSON.stringify(collectGroupLayout(editGridEl));
                             }
 
                             if (!valid) e.preventDefault();

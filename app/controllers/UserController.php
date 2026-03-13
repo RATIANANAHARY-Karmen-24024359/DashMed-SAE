@@ -452,8 +452,45 @@ class UserController
             $repo->addIndicator($groupId, $parameterId);
         }
 
+        $layoutItems = [];
+        $layoutJson = $_POST['layout_data'] ?? '';
+        if (is_string($layoutJson) && $layoutJson !== '') {
+            try {
+                $parsed = $this->layoutService->validateAndParseLayoutData($layoutJson);
+                foreach ($parsed as $item) {
+                    $layoutItems[] = [
+                        'id' => $item['id'],
+                        'x' => $item['x'],
+                        'y' => $item['y'],
+                        'w' => $item['w'],
+                        'h' => $item['h'],
+                    ];
+                }
+            } catch (\Throwable $e) {
+                $layoutItems = [];
+            }
+        }
+
+        if (empty($layoutItems)) {
+            $col = 0;
+            foreach ($indicators as $parameterId) {
+                $layoutItems[] = [
+                    'id' => $parameterId,
+                    'x' => ($col % 3) * 4,
+                    'y' => (int) floor($col / 3) * 3,
+                    'w' => 4,
+                    'h' => 3,
+                ];
+                $col++;
+            }
+        }
+
+        if (!empty($layoutItems)) {
+            $repo->saveGroupLayout($groupId, $layoutItems);
+        }
+
         $_SESSION['group_msg'] = ['type' => 'success', 'text' => "Groupe \"$name\" créé avec succès."];
-        header('Location: /?page=customization&tab=my_groups');
+        header('Location: /?page=customization&tab=my_groups&id=' . $groupId);
         exit;
     }
 
