@@ -219,11 +219,11 @@ class PatientrecordView
                                 <button type="button" class="btn-edit-patient" onclick="openThresholdsModal()"
                                     aria-label="Modifier les seuils d'alerte">
                                     <img src="assets/img/icons/edit.svg" alt="" />
-                                    <span>Modifier le Seuils</span>
+                                    <span>Seuils d'alerte</span>
                                 </button>
                                 <button class="btn-edit-patient" onclick="openEditModal()" aria-label="Modifier le dossier">
                                     <img src="assets/img/icons/edit.svg" alt="" />
-                                    <span>Modifier le Patient </span>
+                                    <span>Infromations patient</span>
                                 </button>
                             </div>
                         </header>
