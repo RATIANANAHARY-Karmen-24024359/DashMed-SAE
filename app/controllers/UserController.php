@@ -448,19 +448,13 @@ class UserController
 
         $groupId = $repo->createGroup($userId, $name, $color);
 
-        foreach ($indicators as $parameterId) {
-            $repo->addIndicator($groupId, $parameterId);
-        }
-
         $layoutItems = [];
         $layoutJson = $_POST['layout_data'] ?? '';
         if (is_string($layoutJson) && $layoutJson !== '') {
             try {
                 $parsed = $this->layoutService->validateAndParseLayoutData($layoutJson);
-                $layoutItems = [];
                 foreach ($parsed as $item) {
-                    $layoutItems[] = [
-                        'id' => $item['id'],
+                    $layoutItems[$item['id']] = [
                         'x' => $item['x'],
                         'y' => $item['y'],
                         'w' => $item['w'],
@@ -472,21 +466,27 @@ class UserController
             }
         }
 
-        if ($layoutItems === []) {
-            $col = 0;
-            foreach ($indicators as $parameterId) {
-                $layoutItems[] = [
-                    'id' => $parameterId,
+        $col = 0;
+        foreach ($indicators as $parameterId) {
+            $layout = $layoutItems[$parameterId] ?? null;
+            if ($layout === null) {
+                $layout = [
                     'x' => ($col % 3) * 4,
                     'y' => (int) floor($col / 3) * 3,
                     'w' => 4,
                     'h' => 3,
                 ];
-                $col++;
             }
+            $repo->saveIndicatorLayout(
+                $groupId,
+                $parameterId,
+                (int) $layout['x'],
+                (int) $layout['y'],
+                (int) $layout['w'],
+                (int) $layout['h']
+            );
+            $col++;
         }
-
-        $repo->saveGroupLayout($groupId, $layoutItems);
 
         $_SESSION['group_msg'] = ['type' => 'success', 'text' => "Groupe \"$name\" créé avec succès."];
         header('Location: /?page=customization&tab=my_groups&id=' . $groupId);

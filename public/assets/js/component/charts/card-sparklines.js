@@ -4,6 +4,20 @@
     const cards = document.querySelectorAll("article.card");
     if (!cards.length) return;
 
+    cards.forEach(card => {
+        const slug = card.dataset.slug;
+        if (!slug) return;
+        const key = `dashmed_card_duration_${slug}`;
+        const stored = localStorage.getItem(key);
+        const val = stored && stored !== '' ? stored : '0.0333';
+        card.dataset.cardDisplayDuration = val;
+        card.dataset.displayDuration = val;
+        const select = card.querySelector('.card-interval-select');
+        if (select) {
+            select.value = val;
+        }
+    });
+
     const getCssVar = (name) => {
         let val = getComputedStyle(document.body || document.documentElement).getPropertyValue(name).trim();
         if (!val) return name;
@@ -88,6 +102,20 @@
         }
 
         rawData.sort((a, b) => a[0] - b[0]);
+
+        const durationRaw = card.dataset.cardDisplayDuration || card.dataset.displayDuration || '0.0333';
+        if (durationRaw !== 'all') {
+            const durationHours = Number(durationRaw);
+            if (Number.isFinite(durationHours) && durationHours > 0) {
+                const lastTs = rawData[rawData.length - 1][0];
+                const cutoff = lastTs - (durationHours * 3600 * 1000);
+                const filtered = rawData.filter(point => point[0] >= cutoff);
+                if (filtered.length) {
+                    rawData.length = 0;
+                    rawData.push(...filtered);
+                }
+            }
+        }
 
         if (canvas) canvas.style.display = 'block';
         if (noDataPlaceholder) noDataPlaceholder.style.display = 'none';
@@ -400,6 +428,9 @@
 
             const val = select.value;
             const slug = card.dataset.slug;
+
+            const key = `dashmed_card_duration_${slug}`;
+            localStorage.setItem(key, val);
 
             card.dataset.cardDisplayDuration = val;
 

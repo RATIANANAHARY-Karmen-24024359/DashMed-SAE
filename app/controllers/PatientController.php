@@ -1296,13 +1296,21 @@ class PatientController
             }
             $visibleIds = array_values(array_unique($visibleIds));
 
-            // Only load latest metrics for visible cards to reduce TTFB.
-            $metrics = !empty($visibleIds)
-                ? $this->monitorModel->getLatestMetricsForParameters($patientId, $visibleIds)
-                : $this->monitorModel->getLatestMetrics($patientId);
+            $groupIds = [];
+            $groups = $this->customGroupRepo->getGroupsByUser($userId);
+            foreach ($groups as $group) {
+                $gid = (int) $group['id'];
+                if ($gid > 0) {
+                    $groupIds = array_merge($groupIds, $this->customGroupRepo->getIndicatorsByGroup($gid));
+                }
+            }
+
+            $allIds = array_values(array_unique(array_merge($visibleIds, $groupIds)));
+
+            $metrics = $this->monitorModel->getLatestMetrics($patientId);
 
             // Fallback: if no layout exists yet, show a small default subset.
-            if (empty($visibleIds)) {
+            if (empty($allIds)) {
                 $visibleIds = array_slice(
                     array_values(array_filter(array_map(
                         fn(\modules\models\entities\Indicator $m) => (string) $m->getId(),
@@ -1311,14 +1319,15 @@ class PatientController
                     0,
                     6
                 );
+                $allIds = $visibleIds;
             }
 
             // PERF: only prefetch sparkline history for visible cards.
             // Custom-group indicators are fetched on demand when the user switches group.
             $rawHistory = [];
-            if (!empty($visibleIds)) {
+            if (!empty($allIds)) {
                 // 250 points keeps the initial render snappy; the frontend can load more lazily.
-                $rawHistory = $this->monitorModel->getLatestHistoryForSpecificParameters($patientId, $visibleIds, 250);
+                $rawHistory = $this->monitorModel->getLatestHistoryForSpecificParameters($patientId, $allIds, 250);
             }
 
             $processedMetrics = $this->monitoringService->processMetrics($metrics, $rawHistory, $prefs, true);

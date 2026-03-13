@@ -66,6 +66,44 @@ class CustomGroupRepository extends BaseRepository
         $st->execute([':group_id' => $groupId, ':indicator_id' => $parameterId]);
     }
 
+    public function saveIndicatorLayout(
+        int $groupId,
+        string $parameterId,
+        int $x,
+        int $y,
+        int $w,
+        int $h
+    ): void {
+        $driver = $this->pdo->getAttribute(PDO::ATTR_DRIVER_NAME);
+        if ($driver === 'sqlite') {
+            $sql = 'INSERT INTO custom_group_indicators (group_id, indicator_id, grid_x, grid_y, grid_w, grid_h)
+                VALUES (:group_id, :indicator_id, :x, :y, :w, :h)
+                ON CONFLICT(group_id, indicator_id) DO UPDATE SET
+                grid_x = excluded.grid_x,
+                grid_y = excluded.grid_y,
+                grid_w = excluded.grid_w,
+                grid_h = excluded.grid_h';
+        } else {
+            $sql = 'INSERT INTO custom_group_indicators (group_id, indicator_id, grid_x, grid_y, grid_w, grid_h)
+                VALUES (:group_id, :indicator_id, :x, :y, :w, :h)
+                ON DUPLICATE KEY UPDATE
+                grid_x = VALUES(grid_x),
+                grid_y = VALUES(grid_y),
+                grid_w = VALUES(grid_w),
+                grid_h = VALUES(grid_h)';
+        }
+
+        $st = $this->pdo->prepare($sql);
+        $st->execute([
+            ':group_id' => $groupId,
+            ':indicator_id' => $parameterId,
+            ':x' => $x,
+            ':y' => $y,
+            ':w' => $w,
+            ':h' => $h,
+        ]);
+    }
+
     /**
      * Returns all groups belonging to a user.
      *
