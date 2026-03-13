@@ -457,6 +457,7 @@ class UserController
         if (is_string($layoutJson) && $layoutJson !== '') {
             try {
                 $parsed = $this->layoutService->validateAndParseLayoutData($layoutJson);
+                $layoutItems = [];
                 foreach ($parsed as $item) {
                     $layoutItems[] = [
                         'id' => $item['id'],
@@ -471,7 +472,7 @@ class UserController
             }
         }
 
-        if (empty($layoutItems)) {
+        if ($layoutItems === []) {
             $col = 0;
             foreach ($indicators as $parameterId) {
                 $layoutItems[] = [
@@ -485,9 +486,7 @@ class UserController
             }
         }
 
-        if (!empty($layoutItems)) {
-            $repo->saveGroupLayout($groupId, $layoutItems);
-        }
+        $repo->saveGroupLayout($groupId, $layoutItems);
 
         $_SESSION['group_msg'] = ['type' => 'success', 'text' => "Groupe \"$name\" créé avec succès."];
         header('Location: /?page=customization&tab=my_groups&id=' . $groupId);
