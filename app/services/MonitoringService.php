@@ -133,12 +133,8 @@ class MonitoringService
             $userDuration = is_scalar($rawDuration) ? (string) $rawDuration : '1';
             $userCardDuration = is_scalar($rawCardDuration) ? (string) $rawCardDuration : '1';
 
-            if ($userDuration === '0.0333') {
-                $userDuration = '1';
-            }
-            if ($userCardDuration === '0.0333') {
-                $userCardDuration = '1';
-            }
+            $userDuration = $userDuration;
+            $userCardDuration = $userCardDuration;
 
             $defaultChart = $m->getDefaultChart();
 
