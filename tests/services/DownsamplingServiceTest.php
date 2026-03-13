@@ -16,22 +16,22 @@ final class DownsamplingServiceTest extends TestCase
         $this->service = new DownsamplingService();
     }
 
-    /** @return array<int, array{time_iso: string, value: string, flag: int}> */
+    /** @return array<int, array{time_iso: string, value: string, flag: string}> */
     private function generateDummyData(int $count): array
     {
         $data = [];
         $startTime = time();
         for ($i = 0; $i < $count; $i++) {
             $data[] = [
-                'time_iso' => date('c', $startTime + $i * 60),
-                'value'    => (string) (sin($i / 10) * 50 + 50),
-                'flag'     => 0,
+                'time_iso' => date('c', (int)($startTime + $i * 60)),
+                'value' => (string)(sin($i / 10) * 50 + 50),
+                'flag' => '0',
             ];
         }
         return $data;
     }
 
-    /** @param array<int, array{time_iso: string, value: string, flag: int}> $data */
+    /** @param array<int, array{time_iso: string, value: string, flag: string}> $data */
     private function generateStream(array $data): \Generator
     {
         foreach ($data as $row) {
@@ -69,11 +69,9 @@ final class DownsamplingServiceTest extends TestCase
     {
         $data = $this->generateDummyData(5);
 
-        // threshold >= count -> should return original
         $sampled = $this->service->downsampleLTTB($data, 10);
         self::assertSame($data, $sampled);
 
-        // threshold < 3 -> still should be safe (implementation dependent, but must not error)
         $sampled2 = $this->service->downsampleLTTB($data, 2);
         self::assertNotEmpty($sampled2);
     }

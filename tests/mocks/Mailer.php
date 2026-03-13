@@ -4,7 +4,6 @@ namespace assets\includes;
 
 /**
  * Mock of the Mailer class.
- * Mock de la classe Mailer.
  */
 class Mailer
 {

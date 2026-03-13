@@ -35,7 +35,7 @@ class SysadminView
      * @param  array<int, array{
      *   id_profession: int|string,
      *   label_profession: string
-     * }> $professions List of available professions for doctors | Liste des professions disponibles pour les médecins.
+     * }> $professions List of available professions for doctors.
      * @param  array<int, array{
      *   id_user: int,
      *   first_name: string,

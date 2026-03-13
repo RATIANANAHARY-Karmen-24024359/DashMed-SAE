@@ -80,12 +80,21 @@ class MonitoringService
             $hist = $historyByParam[$pid] ?? [];
             $m->setHistory($hist);
 
-            if (($m->getValue() === null) && !empty($hist)) {
+            if (!empty($hist)) {
                 $latest = end($hist);
                 $val = $latest['value'];
-                $m->setValue(is_numeric($val) ? (float) $val : null);
-                $m->setTimestamp($latest['timestamp']);
-                $m->setAlertFlag($latest['alert_flag']);
+                $latestAlert = $latest['alert_flag'];
+                $latestTs = $latest['timestamp'];
+
+                if ($m->getValue() === null) {
+                    $m->setValue(is_numeric($val) ? (float) $val : null);
+                }
+
+                if ($latestTs !== '') {
+                    $m->setTimestamp($latestTs);
+                }
+
+                $m->setAlertFlag($latestAlert);
             }
 
             $val = $m->getValue();

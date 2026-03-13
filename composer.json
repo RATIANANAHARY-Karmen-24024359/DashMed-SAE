@@ -4,7 +4,8 @@
   "license": "proprietary",
   "autoload": {
     "psr-4": {
-      "modules\\": "app/"
+      "modules\\": "app/",
+      "assets\\": "assets/"
     }
   },
   "require": {

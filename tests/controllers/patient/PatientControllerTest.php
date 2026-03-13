@@ -1,167 +1,207 @@
 <?php
 
-namespace Tests\Controllers\Patient;
-
-use PHPUnit\Framework\TestCase;
-use modules\controllers\PatientController;
-use modules\models\repositories\ConsultationRepository;
-use modules\models\repositories\PatientRepository;
-use modules\models\repositories\UserRepository;
-use modules\models\repositories\MonitorRepository;
-use modules\models\repositories\MonitorPreferenceRepository;
-use modules\services\MonitoringService;
-use modules\services\PatientContextService;
-use PDO;
-
-class PatientControllerTest extends TestCase
-{
-    private $patientController;
-    private $pdoMock;
-    private $patientRepoMock;
-    private $consultationRepoMock;
-    private $userRepoMock;
-    private $monitorModelMock;
-    private $prefModelMock;
-    private $monitoringServiceMock;
-    private $contextServiceMock;
-
-    protected function setUp(): void
-    {
-        $this->pdoMock = $this->createMock(PDO::class);
-
-        $this->patientRepoMock = $this->createMock(PatientRepository::class);
-        $this->consultationRepoMock = $this->createMock(ConsultationRepository::class);
-        $this->userRepoMock = $this->createMock(UserRepository::class);
-        $this->monitorModelMock = $this->createMock(MonitorRepository::class);
-        $this->prefModelMock = $this->createMock(MonitorPreferenceRepository::class);
-
-        $this->monitoringServiceMock = $this->createMock(MonitoringService::class);
-        $this->contextServiceMock = $this->createMock(PatientContextService::class);
-
-        $this->patientController = new PatientController($this->pdoMock);
-
-        $this->injectProperty($this->patientController, 'patientRepo', $this->patientRepoMock);
-        $this->injectProperty($this->patientController, 'consultationRepo', $this->consultationRepoMock);
-        $this->injectProperty($this->patientController, 'userRepo', $this->userRepoMock);
-        $this->injectProperty($this->patientController, 'monitorModel', $this->monitorModelMock);
-        $this->injectProperty($this->patientController, 'prefModel', $this->prefModelMock);
-        $this->injectProperty($this->patientController, 'monitoringService', $this->monitoringServiceMock);
-        $this->injectProperty($this->patientController, 'contextService', $this->contextServiceMock);
-
+namespace modules\controllers {
+    /**
+     * Override header() in the controller's namespace to prevent "headers already sent"
+     * and throw an exception ONLY on redirects to short-circuit the execution before exit; is called.
+     */
+    if (!function_exists(__NAMESPACE__ . '\\header')) {
+        function header($string, $replace = true, $http_response_code = null): void
+        {
+            if (str_contains(strtolower($string), 'location:')) {
+                throw new \Exception($string);
+            }
+        }
     }
+}
 
-    private function injectProperty($object, $propertyName, $value)
+namespace Tests\Controllers\Patient {
+    use PHPUnit\Framework\TestCase;
+    use modules\controllers\PatientController;
+    use modules\models\repositories\ConsultationRepository;
+    use modules\models\repositories\PatientRepository;
+    use modules\models\repositories\UserRepository;
+    use modules\models\repositories\MonitorRepository;
+    use modules\models\repositories\MonitorPreferenceRepository;
+    use modules\services\MonitoringService;
+    use modules\services\PatientContextService;
+    use modules\models\repositories\CustomGroupRepository;
+    use modules\models\repositories\AlertThresholdRepository;
+    use PDO;
+
+    class PatientControllerTest extends TestCase
     {
-        $reflection = new \ReflectionClass($object);
-        $property = $reflection->getProperty($propertyName);
-        $property->setAccessible(true);
-        $property->setValue($object, $value);
-    }
+        private $patientController;
+        private $pdoMock;
+        private $patientRepoMock;
+        private $consultationRepoMock;
+        private $userRepoMock;
+        private $monitorModelMock;
+        private $prefModelMock;
+        private $monitoringServiceMock;
+        private $contextServiceMock;
+        private $customGroupRepoMock;
+        private $thresholdRepoMock;
 
-    public function testDashboardCallsDependenciesAndRendersView()
-    {
-        $_SERVER['REQUEST_METHOD'] = 'GET';
-        $_SESSION['email'] = 'test@example.com';
-        $_SESSION['user_id'] = 1;
+        protected function setUp(): void
+        {
+            $this->pdoMock = $this->createMock(PDO::class);
 
-        $this->contextServiceMock->expects($this->once())->method('handleRequest');
-        $this->contextServiceMock->expects($this->once())
-            ->method('getCurrentPatientId')
-            ->willReturn(123);
+            $this->patientRepoMock = $this->createMock(PatientRepository::class);
+            $this->consultationRepoMock = $this->createMock(ConsultationRepository::class);
+            $this->userRepoMock = $this->createMock(UserRepository::class);
+            $this->monitorModelMock = $this->createMock(MonitorRepository::class);
+            $this->prefModelMock = $this->createMock(MonitorPreferenceRepository::class);
 
-        $this->patientRepoMock->expects($this->once())
-            ->method('getAllRoomsWithPatients')
-            ->willReturn([]);
+            $this->monitoringServiceMock = $this->createMock(MonitoringService::class);
+            $this->contextServiceMock = $this->createMock(PatientContextService::class);
+            $this->customGroupRepoMock = $this->createMock(CustomGroupRepository::class);
+            $this->thresholdRepoMock = $this->createMock(AlertThresholdRepository::class);
 
-        $this->patientRepoMock->expects($this->once())
-            ->method('findById')
-            ->with(123)
-            ->willReturn(['first_name' => 'John', 'last_name' => 'Doe']);
+            $this->patientController = new PatientController($this->pdoMock);
 
-        ob_start();
-        $this->patientController->dashboard();
-        $output = ob_get_clean();
+            $this->injectProperty($this->patientController, 'patientRepo', $this->patientRepoMock);
+            $this->injectProperty($this->patientController, 'consultationRepo', $this->consultationRepoMock);
+            $this->injectProperty($this->patientController, 'userRepo', $this->userRepoMock);
+            $this->injectProperty($this->patientController, 'monitorModel', $this->monitorModelMock);
+            $this->injectProperty($this->patientController, 'prefModel', $this->prefModelMock);
+            $this->injectProperty($this->patientController, 'monitoringService', $this->monitoringServiceMock);
+            $this->injectProperty($this->patientController, 'contextService', $this->contextServiceMock);
+            $this->injectProperty($this->patientController, 'customGroupRepo', $this->customGroupRepoMock);
+            $this->injectProperty($this->patientController, 'thresholdRepo', $this->thresholdRepoMock);
 
-        $this->assertStringContainsString('DashMed', $output ?? '');
-    }
+        }
 
-    public function testApiHistoryReturnsJson()
-    {
-        $_SESSION['user_id'] = 1;
-        $_GET['param'] = 'FC';
+        private function injectProperty($object, $propertyName, $value)
+        {
+            $reflection = new \ReflectionClass($object);
+            $property = $reflection->getProperty($propertyName);
+            $property->setAccessible(true);
+            $property->setValue($object, $value);
+        }
 
-        $this->contextServiceMock->expects($this->once())
-            ->method('handleRequest');
-        $this->contextServiceMock->expects($this->once())
-            ->method('getCurrentPatientId')
-            ->willReturn(123);
+        public function testDashboardCallsDependenciesAndRendersView()
+        {
+            $_SERVER['REQUEST_METHOD'] = 'GET';
+            $_SESSION['email'] = 'test@example.com';
+            $_SESSION['user_id'] = 1;
 
-        $this->monitorModelMock->expects($this->once())
-            ->method('getRawHistoryByParameter')
-            ->willReturn([
+            $this->contextServiceMock->expects($this->once())->method('handleRequest');
+            $this->contextServiceMock->expects($this->once())
+                ->method('getCurrentPatientId')
+                ->willReturn(123);
+
+            $this->patientRepoMock->expects($this->once())
+                ->method('getAllRoomsWithPatients')
+                ->willReturn([]);
+
+            $this->patientRepoMock->expects($this->once())
+                ->method('findById')
+                ->with(123)
+                ->willReturn([
+                    'id_patient' => 123,
+                    'first_name' => 'John',
+                    'last_name' => 'Doe',
+                    'birth_date' => '1980-01-01',
+                    'admission_cause' => 'Routine checkup'
+                ]);
+
+            $this->customGroupRepoMock->expects($this->once())
+                ->method('getGroupsByUser')
+                ->with(1)
+                ->willReturn([]);
+
+            ob_start();
+            $this->patientController->dashboard();
+            $output = ob_get_clean();
+
+            $this->assertStringContainsString('DashMed', $output ?? '');
+        }
+
+        public function testApiHistoryReturnsJson()
+        {
+            $_SESSION['user_id'] = 1;
+            $_GET['param'] = 'FC';
+
+            $this->contextServiceMock->expects($this->once())
+                ->method('handleRequest');
+            $this->contextServiceMock->expects($this->once())
+                ->method('getCurrentPatientId')
+                ->willReturn(123);
+
+            $this->monitorModelMock->expects($this->once())
+                ->method('getRawHistoryByParameter')
+                ->willReturn([
                 ['timestamp' => '2023-10-10 10:00:00', 'value' => 80, 'alert_flag' => 0]
             ]);
 
-        ob_start();
-        $this->patientController->apiHistory();
-        $output = ob_get_clean();
+            ob_start();
+            try {
+                $this->patientController->apiHistory();
+            }
+            catch (\Exception $e) {
 
-        $this->assertJson($output);
-        $this->assertStringContainsString('80', $output);
-    }
+            }
+            $output = ob_get_clean();
 
-    public function testExploreRendersView()
-    {
-        $_SESSION['user_id'] = 1;
+            $this->assertJson($output);
+            $this->assertStringContainsString('80', $output);
+        }
 
-        $this->contextServiceMock->expects($this->once())
-            ->method('getCurrentPatientId')
-            ->willReturn(123);
+        public function testExploreRendersView()
+        {
+            $_SESSION['user_id'] = 1;
 
-        $this->patientRepoMock->expects($this->once())
-            ->method('findById')
-            ->with(123)
-            ->willReturn(['id_patient' => 123, 'first_name' => 'John', 'last_name' => 'Doe']);
+            $this->contextServiceMock->expects($this->once())
+                ->method('getCurrentPatientId')
+                ->willReturn(123);
 
-        ob_start();
-        $this->patientController->explorer();
-        $output = ob_get_clean();
+            $this->patientRepoMock->expects($this->once())
+                ->method('findById')
+                ->with(123)
+                ->willReturn(['id_patient' => 123, 'first_name' => 'John', 'last_name' => 'Doe']);
 
-        $this->assertStringContainsString('Explorateur', $output);
-    }
+            ob_start();
+            $this->patientController->explorer();
+            $output = ob_get_clean();
 
-    public function testRecordPostUpdatesData()
-    {
-        $_SERVER['REQUEST_METHOD'] = 'POST';
-        $_SESSION['user_id'] = 1;
-        $_SESSION['email'] = 'test@example.com';
-        $_SESSION['csrf_patient'] = 'valid_token';
+            $this->assertStringContainsString('Explorateur', $output);
+        }
 
-        $_POST['csrf'] = 'valid_token';
-        $_POST['first_name'] = 'Jane';
-        $_POST['last_name'] = 'Smith';
-        $_POST['admission_cause'] = 'Checkup';
-        $_POST['birth_date'] = '1990-01-01';
+        public function testRecordPostUpdatesData()
+        {
+            $_SERVER['REQUEST_METHOD'] = 'POST';
+            $_SESSION['user_id'] = 1;
+            $_SESSION['email'] = 'test@example.com';
+            $_SESSION['csrf_patient'] = 'valid_token';
 
-        $this->contextServiceMock->expects($this->once())
-            ->method('getCurrentPatientId')
-            ->willReturn(123);
+            $_POST['csrf'] = 'valid_token';
+            $_POST['first_name'] = 'Jane';
+            $_POST['last_name'] = 'Smith';
+            $_POST['admission_cause'] = 'Checkup';
+            $_POST['birth_date'] = '1990-01-01';
 
-        $this->patientRepoMock->expects($this->once())
-            ->method('update')
-            ->with(123, $this->callback(function($arg) {
+            $this->contextServiceMock->expects($this->once())
+                ->method('getCurrentPatientId')
+                ->willReturn(123);
+
+            $this->patientRepoMock->expects($this->once())
+                ->method('update')
+                ->with(123, $this->callback(function ($arg) {
                 return $arg['first_name'] === 'Jane' && $arg['last_name'] === 'Smith';
             }))
-            ->willReturn(true);
+                ->willReturn(true);
 
-        ob_start();
-        try {
-            $this->patientController->record();
-        } catch (\PHPUnit\Framework\Error\Warning $e) {
-            // Silence header warnings
+            ob_start();
+            try {
+                $this->patientController->record();
+            }
+            catch (\Exception $e) {
+
+            }
+            ob_end_clean();
+
+            $this->assertEquals('success', $_SESSION['patient_msg']['type'] ?? '');
         }
-        ob_end_clean();
-
-        $this->assertEquals('success', $_SESSION['patient_msg']['type'] ?? '');
     }
 }

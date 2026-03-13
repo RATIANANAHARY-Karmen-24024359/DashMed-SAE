@@ -15,10 +15,9 @@ require_once __DIR__ . '/../../../app/controllers/api/SearchController.php';
 require_once __DIR__ . '/../../../app/models/repositories/SearchRepository.php';
 
 /**
- * Class TestableSearchController | Contrôleur Testable
+ * Class TestableSearchController
  *
  * Extension to verify API responses without sending HTTP headers.
- * Extension permettant de vérifier les réponses API sans envoyer d'en-têtes HTTP.
  */
 class TestableSearchController extends SearchController
 {

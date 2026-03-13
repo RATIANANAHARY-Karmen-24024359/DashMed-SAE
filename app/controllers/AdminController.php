@@ -25,13 +25,11 @@ use assets\includes\Database;
 use PDO;
 
 /**
- * Class AdminController | Contrôleur Admin Système
+ * Class AdminController
  *
  * System Administrator Dashboard Controller.
- * Contrôleur du tableau de bord administrateur.
  *
  * Replaces: SysadminController.
- * Remplace : SysadminController.
  *
  * @package DashMed\Modules\Controllers
  * @author  DashMed Team
@@ -40,7 +38,7 @@ use PDO;
 class AdminController
 {
     /**
-     * @var UserRepository User repository | Repository utilisateur
+     * @var UserRepository User repository
      */
     private UserRepository $userRepo;
 
@@ -55,12 +53,12 @@ class AdminController
     private RoomRepository $roomRepo;
 
     /**
-     * @var PDO Database connection | Connexion BDD
+     * @var PDO Database connection
      */
     private PDO $pdo;
 
     /**
-     * Constructor | Constructeur
+     * Constructor
      *
      * @param UserRepository|null    $model        Optional user repository injection
      * @param PatientRepository|null $patientModel Optional patient repository injection
@@ -82,7 +80,6 @@ class AdminController
 
     /**
      * Admin panel entry point (GET & POST).
-     * Point d'entrée du panneau admin (GET & POST).
      *
      * @return void
      */
@@ -97,7 +94,6 @@ class AdminController
 
     /**
      * Displays the admin panel.
-     * Affiche le panneau administrateur.
      *
      * @return void
      */
@@ -118,7 +114,6 @@ class AdminController
 
     /**
      * Handles POST requests: dispatches to create, edit, or delete.
-     * Gestionnaire POST : dispatche vers création, édition ou suppression.
      *
      * @return void
      */
@@ -327,7 +322,6 @@ class AdminController
 
     /**
      * Handles user deletion.
-     * Gère la suppression d'un utilisateur.
      *
      * @return void
      */
@@ -380,7 +374,6 @@ class AdminController
 
     /**
      * Handles user editing.
-     * Gère la modification d'un utilisateur.
      *
      * @return void
      */
@@ -462,7 +455,6 @@ class AdminController
 
     /**
      * Handles patient creation.
-     * Gère la création d'un patient.
      *
      * @return void
      */
@@ -569,7 +561,6 @@ class AdminController
 
     /**
      * Checks if user is logged in.
-     * Vérifie si l'utilisateur est connecté.
      *
      * @return bool
      */
@@ -580,7 +571,6 @@ class AdminController
 
     /**
      * Checks if user is admin.
-     * Vérifie si l'utilisateur est un administrateur.
      *
      * @return bool
      */
@@ -592,7 +582,6 @@ class AdminController
 
     /**
      * Redirects to location.
-     * Redirige vers une destination.
      *
      * @param  string $location
      * @return void
@@ -604,7 +593,6 @@ class AdminController
 
     /**
      * Terminates execution.
-     * Termine l'exécution.
      *
      * @return void
      */
@@ -615,7 +603,6 @@ class AdminController
 
     /**
      * Retrieves all medical specialties.
-     * Récupère la liste de toutes les spécialités médicales.
      *
      * @return array<int, array{id_profession: int, label_profession: string}>
      */

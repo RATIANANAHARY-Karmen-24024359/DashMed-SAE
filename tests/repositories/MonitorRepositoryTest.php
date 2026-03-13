@@ -7,10 +7,9 @@ use modules\models\repositories\MonitorRepository;
 use PDO;
 
 /**
- * Class MonitorRepositoryTest | Tests du Modèle Monitoring
+ * Class MonitorRepositoryTest
  *
  * Tests for raw monitoring data retrieval.
- * Tests pour la récupération des données de monitoring brutes.
  *
  * @package Tests\Models\Monitoring
  * @author DashMed Team
@@ -22,7 +21,6 @@ class MonitorRepositoryTest extends TestCase
 
     /**
      * Setup.
-     * Configuration.
      */
     protected function setUp(): void
     {
@@ -66,12 +64,14 @@ class MonitorRepositoryTest extends TestCase
 
         $this->monitorModel = new MonitorRepository($this->pdo, 'patient_data');
 
-        $this->pdo->sqliteCreateFunction('UNIX_TIMESTAMP', function($timestamp) {
-            return strtotime($timestamp);
-        }, 1);
-        $this->pdo->sqliteCreateFunction('FROM_UNIXTIME', function($unix) {
-            return date('Y-m-d H:i:s', (int)$unix);
-        }, 1);
+        if ($this->pdo->getAttribute(PDO::ATTR_DRIVER_NAME) === 'sqlite') {
+            call_user_func([$this->pdo, 'sqliteCreateFunction'], 'UNIX_TIMESTAMP', function ($timestamp) {
+                return strtotime($timestamp);
+            }, 1);
+            call_user_func([$this->pdo, 'sqliteCreateFunction'], 'FROM_UNIXTIME', function ($unix) {
+                return date('Y-m-d H:i:s', (int)$unix);
+            }, 1);
+        }
 
         $this->pdo->exec(
             "INSERT INTO parameter_reference (parameter_id, display_name, category, default_chart)
@@ -84,7 +84,6 @@ class MonitorRepositoryTest extends TestCase
 
     /**
      * Test retrieval of raw history data.
-     * Test de récupération de l'historique brut.
      */
     public function testGetRawHistory()
     {
@@ -97,32 +96,26 @@ class MonitorRepositoryTest extends TestCase
             VALUES (1, 1, 85, '2023-01-01 10:05:00')"
         );
 
-        // Should return ASC order by default
         $history = $this->monitorModel->getRawHistory(1);
         $this->assertCount(2, $history);
         $this->assertEquals(80.0, (float)$history[0]['value']);
         $this->assertEquals(85.0, (float)$history[1]['value']);
 
-        // Test with limit
         $historyLimit = $this->monitorModel->getRawHistory(1, 1);
         $this->assertCount(1, $historyLimit);
-        $this->assertEquals(85.0, (float)$historyLimit[0]['value']); // Should be the latest one (but returned ASC)
+        $this->assertEquals(85.0, (float)$historyLimit[0]['value']);
     }
 
     public function testGetLatestHistoryForAllParameters()
     {
-        // Patient 1, Param 1: 3 points
         $this->pdo->exec("INSERT INTO patient_data (id_patient, parameter_id, value, timestamp) VALUES (1, 'BPM', 70, '2023-01-01 09:00:00')");
         $this->pdo->exec("INSERT INTO patient_data (id_patient, parameter_id, value, timestamp) VALUES (1, 'BPM', 75, '2023-01-01 09:10:00')");
         $this->pdo->exec("INSERT INTO patient_data (id_patient, parameter_id, value, timestamp) VALUES (1, 'BPM', 80, '2023-01-01 09:20:00')");
 
-        // Patient 1, Param 2: 2 points
         $this->pdo->exec("INSERT INTO patient_data (id_patient, parameter_id, value, timestamp) VALUES (1, 'SpO2', 98, '2023-01-01 09:00:00')");
         $this->pdo->exec("INSERT INTO patient_data (id_patient, parameter_id, value, timestamp) VALUES (1, 'SpO2', 99, '2023-01-01 09:10:00')");
 
         $history = $this->monitorModel->getLatestHistoryForAllParameters(1, 2);
-
-        // Should have 2 points for BPM (75, 80) and 2 for SpO2 (98, 99)
         $this->assertCount(4, $history);
 
         $bpm = array_filter($history, fn($h) => $h['parameter_id'] === 'BPM');
@@ -133,18 +126,15 @@ class MonitorRepositoryTest extends TestCase
 
     /**
      * Test retrieval of available chart types.
-     * Test de r\u00e9cup\u00e9ration des types de graphiques disponibles.
      */
     public function testGetTailHistoryByParameter()
     {
-        // Insert 3 points
         $this->pdo->exec("INSERT INTO patient_data (id_patient, parameter_id, value, timestamp) VALUES (1, 'BPM', 70, '2023-01-01 09:00:00')");
         $this->pdo->exec("INSERT INTO patient_data (id_patient, parameter_id, value, timestamp) VALUES (1, 'BPM', 75, '2023-01-01 09:10:00')");
         $this->pdo->exec("INSERT INTO patient_data (id_patient, parameter_id, value, timestamp) VALUES (1, 'BPM', 80, '2023-01-01 09:20:00')");
 
         $tail = $this->monitorModel->getTailHistoryByParameter(1, 'BPM', 2);
         $this->assertCount(2, $tail);
-        // Returned ASC
         $this->assertEquals(75.0, (float)$tail[0]['value']);
         $this->assertEquals(80.0, (float)$tail[1]['value']);
     }
@@ -160,7 +150,6 @@ class MonitorRepositoryTest extends TestCase
         $this->assertEquals(75.0, (float)$chunk[0]['value']);
         $this->assertEquals(80.0, (float)$chunk[1]['value']);
 
-        // Robust seq cursor version
         $chunk2 = $this->monitorModel->getHistoryChunkAfterSeq(1, 'BPM', 1, 10);
         $this->assertCount(2, $chunk2);
         $this->assertEquals(75.0, (float)$chunk2[0]['value']);

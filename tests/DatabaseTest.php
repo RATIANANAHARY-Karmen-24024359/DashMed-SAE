@@ -7,28 +7,24 @@ use PDO;
 use PDOException;
 
 /**
- * Class DatabaseTest | Tests de la Base de Données
+ * Class DatabaseTest
  *
  * PHPUnit tests using in-memory SQLite database.
- * Tests PHPUnit utilisant une base de données SQLite en mémoire.
  *
  * Demonstrates isolation and basic CRUD operations.
- * Démontre l'isolation et les opérations CRUD de base.
  *
  * @package Tests
  * @author DashMed Team
  */
 class DatabaseTest extends TestCase
 {
-    /** @var PDO Database connection | Connexion à la base de données */
+    /** @var PDO Database connection */
     private PDO $pdo;
 
     /**
      * Sets up the test environment.
-     * Prépare l'environnement de test.
      *
      * Creates a fresh in-memory SQLite database for each test.
-     * Crée une nouvelle base SQLite en mémoire pour chaque test.
      */
     protected function setUp(): void
     {
@@ -49,7 +45,6 @@ class DatabaseTest extends TestCase
 
     /**
      * Verifies that PHPUnit is running correctly.
-     * Vérifie que PHPUnit s'exécute correctement.
      */
     public function testPhpunitIsRunning(): void
     {
@@ -58,7 +53,6 @@ class DatabaseTest extends TestCase
 
     /**
      * Tests inserting and fetching a user.
-     * Teste l'insertion et la récupération d'un utilisateur.
      */
     public function testCanInsertAndFetchUser(): void
     {
@@ -78,7 +72,6 @@ class DatabaseTest extends TestCase
 
     /**
      * Tests unique email constraint.
-     * Teste la contrainte d'unicité de l'email.
      */
     public function testUniqueEmailIsEnforced(): void
     {

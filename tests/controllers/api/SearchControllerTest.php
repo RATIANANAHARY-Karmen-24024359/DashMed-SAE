@@ -14,10 +14,9 @@ require_once __DIR__ . '/../../../app/models/repositories/SearchRepository.php';
 require_once __DIR__ . '/../../mocks/controllers/TestableSearchController.php';
 
 /**
- * Class SearchControllerTest | Tests API Recherche
+ * Class SearchControllerTest
  *
  * Unit tests for the search API.
- * Tests unitaires pour l'API de recherche.
  *
  * @package Tests\Controllers\Api
  * @author DashMed Team
@@ -28,7 +27,6 @@ class SearchControllerTest extends TestCase
 
     /**
      * Setup test session.
-     * Configuration de la session de test.
      */
     protected function setUp(): void
     {
@@ -41,7 +39,6 @@ class SearchControllerTest extends TestCase
 
     /**
      * Teardown cleanup.
-     * Nettoyage après test.
      */
     protected function tearDown(): void
     {
@@ -59,7 +56,6 @@ class SearchControllerTest extends TestCase
 
     /**
      * Verify 401 unauthorized.
-     * Vérifie le code 401 si non connecté.
      */
     public function testGetReturns401IfNotLoggedIn(): void
     {
@@ -72,7 +68,6 @@ class SearchControllerTest extends TestCase
 
     /**
      * Verify empty results for short query.
-     * Vérifie une liste vide pour une requête trop courte.
      */
     public function testGetReturnsEmptyIfQueryTooShort(): void
     {
@@ -88,7 +83,6 @@ class SearchControllerTest extends TestCase
 
     /**
      * Verify empty results if no query.
-     * Vérifie une liste vide sans requête.
      */
     public function testGetReturnsEmptyIfNoQuery(): void
     {
@@ -103,7 +97,6 @@ class SearchControllerTest extends TestCase
 
     /**
      * Verify successful search.
-     * Vérifie une recherche réussie.
      */
     public function testGetPerformsSearchAndReturnsResults(): void
     {
@@ -133,7 +126,6 @@ class SearchControllerTest extends TestCase
 
     /**
      * Verify search without patient ID.
-     * Vérifie la recherche sans ID patient.
      */
     public function testGetPerformsSearchWithoutPatientId(): void
     {
@@ -162,7 +154,6 @@ class SearchControllerTest extends TestCase
 
     /**
      * Verify 500 error on exception.
-     * Vérifie l'erreur 500 en cas d'exception.
      */
     public function testGetHandlesModelException(): void
     {
@@ -184,7 +175,6 @@ class SearchControllerTest extends TestCase
 
     /**
      * Verify whitespace trimming.
-     * Vérifie le nettoyage des espaces.
      */
     public function testGetTrimsQueryWhitespace(): void
     {
@@ -208,7 +198,6 @@ class SearchControllerTest extends TestCase
 
     /**
      * Verify invalid patient ID ignored.
-     * Vérifie que l'ID patient invalide est ignoré.
      */
     public function testGetIgnoresNonNumericPatientId(): void
     {

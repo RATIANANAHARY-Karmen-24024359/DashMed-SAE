@@ -11,10 +11,9 @@ use PHPUnit\Framework\TestCase;
 require_once __DIR__ . '/../assets/includes/Dev.php';
 
 /**
- * Class DevTest | Tests de la classe Dev
+ * Class DevTest
  *
  * Unit tests for development/production mode management.
- * Tests unitaires pour la gestion des modes développement/production.
  *
  * @package Tests
  * @author DashMed Team
@@ -31,7 +30,6 @@ final class DevTest extends TestCase
 
     /**
      * Setup backup of environment variables.
-     * Configuration de la sauvegarde des variables d'environnement.
      */
     protected function setUp(): void
     {
@@ -50,7 +48,6 @@ final class DevTest extends TestCase
 
     /**
      * Restore environment after test.
-     * Restauration de l'environnement après le test.
      */
     protected function tearDown(): void
     {
@@ -78,7 +75,6 @@ final class DevTest extends TestCase
 
     /**
      * Clears APP_DEBUG from all locations.
-     * Purge APP_DEBUG de tous les emplacements.
      */
     private function clearAppDebug(): void
     {
@@ -88,7 +84,6 @@ final class DevTest extends TestCase
 
     /**
      * Sets APP_DEBUG everywhere.
-     * Définit APP_DEBUG partout.
      */
     private function setAppDebug(string $value): void
     {
@@ -99,7 +94,6 @@ final class DevTest extends TestCase
 
     /**
      * Data provider for truthy values.
-     * Fournisseur de données pour les valeurs vraies.
      * @return array
      */
     public static function trueValuesProvider(): array
@@ -109,7 +103,6 @@ final class DevTest extends TestCase
 
     /**
      * Data provider for falsy values.
-     * Fournisseur de données pour les valeurs fausses.
      * @return array
      */
     public static function falseValuesProvider(): array

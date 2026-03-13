@@ -9,10 +9,9 @@ use modules\models\repositories\PatientRepository;
 use PDO;
 
 /**
- * Class PatientRepositoryTest | Tests du repository Patient
+ * Class PatientRepositoryTest
  *
  * Tests for patient management (CRUD, searching linked doctors).
- * Tests pour la gestion des patients (CRUD, recherche de médecins liés).
  *
  * @package Tests\Models
  * @author DashMed Team
@@ -24,7 +23,6 @@ class PatientRepositoryTest extends TestCase
 
     /**
      * Setup.
-     * Configuration.
      */
     protected function setUp(): void
     {
@@ -72,7 +70,6 @@ class PatientRepositoryTest extends TestCase
 
     /**
      * Test patient creation.
-     * Test de création patient.
      */
     public function testCreatePatient(): void
     {
@@ -102,13 +99,12 @@ class PatientRepositoryTest extends TestCase
 
     /**
      * Test finding patient by ID.
-     * Test de recherche par ID.
      */
     public function testFindById(): void
     {
         $this->pdo->exec("INSERT INTO patients (first_name, last_name, email, description)
             VALUES ('Jean', 'Valjean', 'jv@mis.com', 'Cause admission')");
-        $id = $this->pdo->lastInsertId();
+        $id = (int) $this->pdo->lastInsertId();
 
         $patient = $this->patientModel->findById($id);
         $this->assertIsArray($patient);
@@ -120,13 +116,12 @@ class PatientRepositoryTest extends TestCase
 
     /**
      * Test updating patient.
-     * Test de mise à jour patient.
      */
     public function testUpdatePatient(): void
     {
         $this->pdo->exec("INSERT INTO patients (first_name, last_name, email, description)
             VALUES ('Old', 'Name', 'old@e.com', 'Old Desc')");
-        $id = $this->pdo->lastInsertId();
+        $id = (int) $this->pdo->lastInsertId();
 
         $updateData = [
             'first_name' => 'New',
@@ -149,7 +144,6 @@ class PatientRepositoryTest extends TestCase
 
     /**
      * Test getting doctors linked to a patient.
-     * Test de récupération des médecins liés à un patient.
      */
     public function testGetDoctors(): void
     {
@@ -176,7 +170,6 @@ class PatientRepositoryTest extends TestCase
 
     /**
      * Test getting patient ID by room number.
-     * Test de récupération de l'ID patient par numéro de chambre.
      */
     public function testGetPatientIdByRoom(): void
     {

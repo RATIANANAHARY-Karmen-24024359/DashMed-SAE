@@ -194,10 +194,9 @@ class UserRepository extends BaseRepository
 
     /**
      * Deletes a user by ID.
-     * Supprime un utilisateur par son ID.
      *
-     * @param  int $id User ID | ID utilisateur
-     * @return bool True if deleted | Vrai si supprimé
+     * @param  int $id User ID
+     * @return bool True if deleted
      */
     public function deleteById(int $id): bool
     {
@@ -209,11 +208,10 @@ class UserRepository extends BaseRepository
 
     /**
      * Updates a user by ID.
-     * Met à jour un utilisateur par son ID.
      *
-     * @param  int                  $id   User ID | ID utilisateur
-     * @param  array<string, mixed> $data Fields to update | Champs à mettre à jour
-     * @return bool True if updated | Vrai si mis à jour
+     * @param  int                  $id   User ID
+     * @param  array<string, mixed> $data Fields to update
+     * @return bool True if updated
      */
     public function updateById(int $id, array $data): bool
     {
@@ -256,7 +254,6 @@ class UserRepository extends BaseRepository
 
     /**
      * Gets all users with their profession label.
-     * Récupère tous les utilisateurs avec le libellé de leur profession.
      *
      * @return array<int, array{
      *   id_user: int,

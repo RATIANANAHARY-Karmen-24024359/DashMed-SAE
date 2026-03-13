@@ -7,10 +7,9 @@ use modules\models\repositories\UserRepository;
 use PDO;
 
 /**
- * Class UserRepositoryTest | Tests du Modèle Utilisateur
+ * Class UserRepositoryTest
  *
  * Tests for user management operations (CRUD, Auth).
- * Tests pour les opérations de gestion des utilisateurs (CRUD, Auth).
  *
  * @package Tests\Models
  * @author DashMed Team
@@ -22,7 +21,6 @@ class UserRepositoryTest extends TestCase
 
     /**
      * Setup in-memory DB and seed tables.
-     * Configuration de la base en mémoire et remplissage des tables.
      */
     protected function setUp(): void
     {
@@ -53,7 +51,6 @@ class UserRepositoryTest extends TestCase
 
     /**
      * Test user creation.
-     * Test de création d'utilisateur.
      */
     public function testCreateUser(): void
     {
@@ -81,7 +78,6 @@ class UserRepositoryTest extends TestCase
 
     /**
      * Test retrieval by email.
-     * Test de récupération par email.
      */
     public function testGetByEmail()
     {
@@ -101,6 +97,7 @@ class UserRepositoryTest extends TestCase
 
         $user = $this->userModel->getByEmail('ALICE@example.com');
         $this->assertNotNull($user);
+        $user = $user->toArray();
         $this->assertEquals('Alice', $user['first_name']);
 
 
@@ -110,7 +107,6 @@ class UserRepositoryTest extends TestCase
 
     /**
      * Test getByEmail with unknown email.
-     * Test getByEmail avec un email inconnu.
      */
     public function testGetByEmailReturnsNullForUnknownUser()
     {
@@ -120,7 +116,6 @@ class UserRepositoryTest extends TestCase
 
     /**
      * Test credential verification.
-     * Test de vérification des identifiants.
      */
     public function testVerifyCredentialsResponse()
     {
@@ -135,6 +130,7 @@ class UserRepositoryTest extends TestCase
 
         $user = $this->userModel->verifyCredentials('bob@example.com', 'guitar');
         $this->assertNotNull($user);
+        $user = $user->toArray();
         $this->assertEquals('Bob', $user['first_name']);
         $this->assertArrayNotHasKey('password', $user);
 
@@ -147,7 +143,6 @@ class UserRepositoryTest extends TestCase
 
     /**
      * Test retrieval by ID.
-     * Test de récupération par ID.
      */
     public function testGetById()
     {
@@ -161,6 +156,7 @@ class UserRepositoryTest extends TestCase
 
         $user = $this->userModel->getById($id);
         $this->assertNotNull($user);
+        $user = $user->toArray();
         $this->assertEquals('Jane', $user['first_name']);
 
         $this->assertNull($this->userModel->getById(999));
@@ -168,15 +164,14 @@ class UserRepositoryTest extends TestCase
 
     /**
      * Test retrieving all doctors.
-     * Test de récupération de tous les médecins.
      */
     public function testGetAllDoctors()
     {
         $this->userModel->create(
-            ['first_name' => 'A', 'last_name' => 'Zeta', 'email' => 'a@a.com', 'password' => 'p']
+        ['first_name' => 'A', 'last_name' => 'Zeta', 'email' => 'a@a.com', 'password' => 'p']
         );
         $this->userModel->create(
-            ['first_name' => 'B', 'last_name' => 'Alpha', 'email' => 'b@b.com', 'password' => 'p']
+        ['first_name' => 'B', 'last_name' => 'Alpha', 'email' => 'b@b.com', 'password' => 'p']
         );
 
         $doctors = $this->userModel->getAllDoctors();

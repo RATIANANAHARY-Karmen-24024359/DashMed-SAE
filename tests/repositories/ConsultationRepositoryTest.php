@@ -8,10 +8,9 @@ use modules\models\entities\Consultation;
 use PDO;
 
 /**
- * Class ConsultationRepositoryTest | Tests du Modèle Consultation
+ * Class ConsultationRepositoryTest
  *
  * Tests for consultation management CRUD.
- * Tests pour la gestion CRUD des consultations.
  *
  * @package Tests\Models
  * @author DashMed Team
@@ -23,7 +22,6 @@ class ConsultationRepositoryTest extends TestCase
 
     /**
      * Setup.
-     * Configuration.
      */
     protected function setUp(): void
     {
@@ -31,12 +29,14 @@ class ConsultationRepositoryTest extends TestCase
         $this->pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
 
-        $this->pdo->sqliteCreateFunction('NOW', function () {
-            return date('Y-m-d H:i:s');
-        });
-        $this->pdo->sqliteCreateFunction('CURDATE', function () {
-            return date('Y-m-d');
-        });
+        if ($this->pdo->getAttribute(PDO::ATTR_DRIVER_NAME) === 'sqlite') {
+            call_user_func([$this->pdo, 'sqliteCreateFunction'], 'NOW', function () {
+                return date('Y-m-d H:i:s');
+            });
+            call_user_func([$this->pdo, 'sqliteCreateFunction'], 'CURDATE', function () {
+                return date('Y-m-d');
+            });
+        }
 
 
         $this->pdo->exec("CREATE TABLE consultations (
@@ -67,9 +67,8 @@ class ConsultationRepositoryTest extends TestCase
 
     /**
      * Test creating a consultation.
-     * Test de création d'une consultation.
      */
-    public function testCreateConsultation()
+    public function testCreateConsultation(): void
     {
         $result = $this->consultationModel->createConsultation(
             1,
@@ -86,15 +85,18 @@ class ConsultationRepositoryTest extends TestCase
         $stmt->execute();
         $row = $stmt->fetch(PDO::FETCH_ASSOC);
 
-        $this->assertEquals('Consultation 1', $row['title']);
-        $this->assertEquals('Checkup', $row['type']);
+        if (is_array($row)) {
+            $this->assertEquals('Consultation 1', $row['title'] ?? '');
+            $this->assertEquals('Checkup', $row['type'] ?? '');
+        } else {
+            $this->fail('No row found in consultations table');
+        }
     }
 
     /**
      * Test retrieving consultations by patient.
-     * Test de récupération des consultations par patient.
      */
-    public function testGetConsultationsByPatientId()
+    public function testGetConsultationsByPatientId(): void
     {
         $this->pdo->exec(
             "INSERT INTO view_consultations (
@@ -112,16 +114,15 @@ class ConsultationRepositoryTest extends TestCase
 
         $consultations = $this->consultationModel->getConsultationsByPatientId(1);
         $this->assertCount(1, $consultations);
-        $this->assertInstanceOf(Consultation::class, $consultations[0]);
+        $this->assertInstanceOf(Consultation::class , $consultations[0]);
         $this->assertEquals('Dr. Strange', $consultations[0]->getDoctor());
         $this->assertEquals('Magic check', $consultations[0]->getTitle());
     }
 
     /**
      * Test updating a consultation.
-     * Test de mise à jour d'une consultation.
      */
-    public function testUpdateConsultation()
+    public function testUpdateConsultation(): void
     {
         $this->pdo->exec(
             "INSERT INTO consultations (id_consultations, id_patient, id_user, date, type, note, title)
@@ -139,19 +140,22 @@ class ConsultationRepositoryTest extends TestCase
         );
         $this->assertTrue($result);
 
-        $stmt = $this->pdo->prepare("SELECT * FROM consultations WHERE id_consultations = 1");
+        $stmt = $this->pdo->prepare("SELECT * FROM consultations WHERE id_consultationS = 1");
         $stmt->execute();
         $row = $stmt->fetch(PDO::FETCH_ASSOC);
 
-        $this->assertEquals('New Title', $row['title']);
-        $this->assertEquals(3, $row['id_user']);
+        if (is_array($row)) {
+            $this->assertEquals('New Title', $row['title'] ?? '');
+            $this->assertEquals(3, $row['id_user'] ?? 0);
+        } else {
+            $this->fail('No row found in consultations table');
+        }
     }
 
     /**
      * Test deleting a consultation.
-     * Test de suppression d'une consultation.
      */
-    public function testDeleteConsultation()
+    public function testDeleteConsultation(): void
     {
         $this->pdo->exec("INSERT INTO consultations (id_consultations, id_patient, id_user) VALUES (1, 1, 2)");
         $this->assertTrue($this->consultationModel->deleteConsultation(1));

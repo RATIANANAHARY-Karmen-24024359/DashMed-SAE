@@ -60,7 +60,7 @@ class RoomRepositoryTest extends TestCase
         $this->pdo->exec("INSERT INTO patients (id_patient, first_name, last_name, email, status, room_id)
             VALUES (1, 'John', 'Doe', 'john@example.com', 'En réanimation', 1)");
 
-        // Occupy room 2 but patient is discharged ('Sorti')
+        // Occupy room 2 with a discharged patient
         $this->pdo->exec("INSERT INTO patients (id_patient, first_name, last_name, email, status, room_id)
             VALUES (2, 'Jane', 'Doe', 'jane@example.com', 'Sorti', 2)");
 

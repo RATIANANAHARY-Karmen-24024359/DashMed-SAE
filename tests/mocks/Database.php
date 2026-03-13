@@ -4,7 +4,6 @@ namespace assets\includes;
 
 /**
  * Mock of the Database class.
- * Mock de la classe Database.
  */
 class Database
 {

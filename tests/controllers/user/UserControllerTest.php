@@ -4,8 +4,6 @@ namespace Tests\Controllers\User;
 
 use PHPUnit\Framework\TestCase;
 use modules\controllers\UserController;
-use modules\models\repositories\UserRepository;
-use modules\models\monitoring\MonitorPreferenceModel;
 use modules\services\UserLayoutService;
 use PDO;
 
@@ -15,15 +13,19 @@ class UserControllerTest extends TestCase
 {
     private $userController;
     private $pdoMock;
-    private $userRepoMock;
-
     private $layoutServiceMock;
-    private $prefModelMock;
+
 
     protected function setUp(): void
     {
         $this->pdoMock = $this->createMock(PDO::class);
-        $this->prefModelMock = $this->createMock(MonitorPreferenceModel::class);
+        $stmtMock = $this->createMock(\PDOStatement::class);
+        $this->pdoMock->method('prepare')->willReturn($stmtMock);
+        $this->pdoMock->method('query')->willReturn($stmtMock);
+        $stmtMock->method('execute')->willReturn(true);
+        $stmtMock->method('fetchAll')->willReturn([]);
+        $stmtMock->method('fetch')->willReturn(false);
+
         $this->layoutServiceMock = $this->createMock(UserLayoutService::class);
 
         $this->userController = new UserController($this->pdoMock);
@@ -60,8 +62,12 @@ class UserControllerTest extends TestCase
             ->willReturn(['widgets' => [], 'hidden' => []]);
 
         ob_start();
-        $this->userController->customization();
-        $output = ob_get_clean();
+        try {
+            $this->userController->customization();
+        }
+        finally {
+            $output = ob_get_clean();
+        }
 
         $this->assertIsString($output);
     }

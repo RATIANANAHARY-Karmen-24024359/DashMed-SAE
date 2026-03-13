@@ -10,10 +10,9 @@ require_once __DIR__ . '/../../vendor/autoload.php';
 require_once __DIR__ . '/../mocks/Database.php';
 
 /**
- * Class AdminControllerTest | Tests du Contrôleur Admin
+ * Class AdminControllerTest
  *
  * Unit tests for AdminController.
- * Tests unitaires pour AdminController.
  *
  * @package Tests\Controllers
  * @author DashMed Team
@@ -28,7 +27,6 @@ class AdminControllerTest extends TestCase
             @session_start();
         }
 
-        // Set up in-memory SQLite for Database::getInstance()
         $pdo = new \PDO('sqlite::memory:');
         $pdo->setAttribute(\PDO::ATTR_ERRMODE, \PDO::ERRMODE_EXCEPTION);
         \assets\includes\Database::setInstance($pdo);

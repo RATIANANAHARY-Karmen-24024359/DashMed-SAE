@@ -55,10 +55,14 @@ class CustomGroupRepository extends BaseRepository
      */
     public function addIndicator(int $groupId, string $parameterId): void
     {
-        $st = $this->pdo->prepare(
-            'INSERT IGNORE INTO custom_group_indicators (group_id, indicator_id)
+        $driver = $this->pdo->getAttribute(PDO::ATTR_DRIVER_NAME);
+        $sql = $driver === 'sqlite'
+            ? 'INSERT OR IGNORE INTO custom_group_indicators (group_id, indicator_id)
              VALUES (:group_id, :indicator_id)'
-        );
+            : 'INSERT IGNORE INTO custom_group_indicators (group_id, indicator_id)
+             VALUES (:group_id, :indicator_id)';
+
+        $st = $this->pdo->prepare($sql);
         $st->execute([':group_id' => $groupId, ':indicator_id' => $parameterId]);
     }
 

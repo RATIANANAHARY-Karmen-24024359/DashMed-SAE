@@ -7,10 +7,12 @@ namespace modules\controllers {
      * Override header() in the controller's namespace to prevent "headers already sent"
      * and throw an exception ONLY on redirects to short-circuit the execution before exit; is called.
      */
-    function header($string, $replace = true, $http_response_code = null): void
-    {
-        if (str_contains(strtolower($string), 'location:')) {
-            throw new \Exception($string);
+    if (!function_exists(__NAMESPACE__ . '\\header')) {
+        function header($string, $replace = true, $http_response_code = null): void
+        {
+            if (str_contains(strtolower($string), 'location:')) {
+                throw new \Exception($string);
+            }
         }
     }
 }
@@ -20,6 +22,8 @@ namespace Tests\Controllers\Auth {
     use modules\controllers\AuthController;
     use modules\models\repositories\UserRepository;
     use PDO;
+
+    require_once __DIR__ . '/../../mocks/Database.php';
 
     class AuthControllerTest extends TestCase
     {
@@ -36,6 +40,8 @@ namespace Tests\Controllers\Auth {
 
             $this->pdoMock = $this->createMock(PDO::class);
             $this->userRepoMock = $this->createMock(UserRepository::class);
+
+            \assets\includes\Database::setInstance($this->pdoMock);
 
             $this->controller = new AuthController();
 
@@ -208,7 +214,6 @@ namespace Tests\Controllers\Auth {
                 $this->controller->signup();
             }
             catch (\Exception $e) {
-            // Header redirect
             }
             ob_end_clean();
 

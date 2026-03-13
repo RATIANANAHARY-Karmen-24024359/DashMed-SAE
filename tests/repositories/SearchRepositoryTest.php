@@ -7,10 +7,9 @@ use modules\models\repositories\SearchRepository;
 use PDO;
 
 /**
- * Class SearchRepositoryTest | Tests du Modèle de Recherche
+ * Class SearchRepositoryTest
  *
  * Tests for global cross-entity search functionalities.
- * Tests pour les fonctionnalités de recherche globale multi-entités.
  *
  * @package Tests\Models
  * @author DashMed Team
@@ -22,7 +21,6 @@ class SearchRepositoryTest extends TestCase
 
     /**
      * Setup.
-     * Configuration.
      */
     protected function setUp(): void
     {
@@ -78,7 +76,6 @@ class SearchRepositoryTest extends TestCase
 
     /**
      * Test empty result for short query.
-     * Test résultat vide pour requête courte.
      */
     public function testSearchGlobalReturnsEmptyForShortQuery()
     {
@@ -88,7 +85,6 @@ class SearchRepositoryTest extends TestCase
 
     /**
      * Test searching patients.
-     * Test recherche de patients.
      */
     public function testSearchGlobalPatients()
     {
@@ -102,7 +98,6 @@ class SearchRepositoryTest extends TestCase
 
     /**
      * Test searching doctors.
-     * Test recherche de médecins.
      */
     public function testSearchGlobalDoctors()
     {
@@ -113,7 +108,6 @@ class SearchRepositoryTest extends TestCase
 
     /**
      * Test searching consultations.
-     * Test recherche de consultations.
      */
     public function testSearchGlobalConsultations()
     {
@@ -125,7 +119,6 @@ class SearchRepositoryTest extends TestCase
 
     /**
      * Test contextual search with patient ID.
-     * Test recherche contextuelle avec ID patient.
      */
     public function testSearchContextualWithPatientId()
     {
