@@ -1,0 +1,196 @@
+{
+  "generatedAt": "2026-03-30T19:02:10.741Z",
+  "tool": "playwright-chromium",
+  "authSession": {
+    "sessionId": "c1d2e3f40516273849a5b6c7d8e9f012"
+  },
+  "captures": [
+    {
+      "label": "dashboard_30s",
+      "url": "http://localhost:8000/?page=dashboard&room=8",
+      "capturedAt": "2026-03-30T19:01:40.079Z",
+      "windowMs": 31261,
+      "requests": {
+        "requestCount": 66,
+        "totalEncodedBytes": 1341728,
+        "byType": {
+          "Stylesheet": 20,
+          "Image": 11,
+          "Script": 17,
+          "Document": 1,
+          "Font": 4,
+          "EventSource": 1,
+          "Fetch": 10,
+          "Media": 2
+        },
+        "topByBytes": [
+          {
+            "url": "http://localhost:8000/assets/sounds/critical.wav",
+            "type": "Media",
+            "encodedDataLength": 494234
+          },
+          {
+            "url": "https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js",
+            "type": "Script",
+            "encodedDataLength": 333660
+          },
+          {
+            "url": "http://localhost:8000/assets/sounds/warning.wav",
+            "type": "Media",
+            "encodedDataLength": 187534
+          },
+          {
+            "url": "http://localhost:8000/?page=dashboard&room=8",
+            "type": "Document",
+            "encodedDataLength": 167068
+          },
+          {
+            "url": "https://cdn.jsdelivr.net/npm/izitoast@1.4.0/dist/css/iziToast.min.css",
+            "type": "Stylesheet",
+            "encodedDataLength": 10621
+          },
+          {
+            "url": "http://localhost:8000/assets/js/component/modal/chart.js?v=2026-03-30",
+            "type": "Script",
+            "encodedDataLength": 10050
+          },
+          {
+            "url": "http://localhost:8000/assets/js/alerts-global.js?v=2026-03-30",
+            "type": "Script",
+            "encodedDataLength": 9212
+          },
+          {
+            "url": "https://fonts.gstatic.com/s/poppins/v24/pxiEyp8kv8JHgFVrJJfecnFHGPc.woff2",
+            "type": "Font",
+            "encodedDataLength": 8431
+          },
+          {
+            "url": "https://fonts.gstatic.com/s/poppins/v24/pxiByp8kv8JHgFVrLEj6Z1xlFd2JQEk.woff2",
+            "type": "Font",
+            "encodedDataLength": 8109
+          },
+          {
+            "url": "https://fonts.gstatic.com/s/poppins/v24/pxiByp8kv8JHgFVrLCz7Z1xlFd2JQEk.woff2",
+            "type": "Font",
+            "encodedDataLength": 7965
+          }
+        ]
+      },
+      "longTasks": {
+        "longTaskCountOver50ms": 3,
+        "totalLongTaskDurationMs": 797,
+        "maxLongTaskDurationMs": 361,
+        "samples": [
+          {
+            "name": "self",
+            "startTime": 348.2999999988824,
+            "duration": 216
+          },
+          {
+            "name": "self",
+            "startTime": 651.2999999988824,
+            "duration": 361
+          },
+          {
+            "name": "self",
+            "startTime": 1015.1999999992549,
+            "duration": 220
+          }
+        ]
+      }
+    },
+    {
+      "label": "monitoring_30s",
+      "url": "http://localhost:8000/?page=monitoring&room=8",
+      "capturedAt": "2026-03-30T19:02:10.731Z",
+      "windowMs": 30449,
+      "requests": {
+        "requestCount": 56,
+        "totalEncodedBytes": 46602,
+        "byType": {
+          "Stylesheet": 17,
+          "Image": 10,
+          "Script": 16,
+          "Document": 1,
+          "Font": 3,
+          "EventSource": 1,
+          "Fetch": 8
+        },
+        "topByBytes": [
+          {
+            "url": "http://localhost:8000/?page=monitoring&room=8",
+            "type": "Document",
+            "encodedDataLength": 24183
+          },
+          {
+            "url": "http://localhost:8000/api_stream?id_patient=8",
+            "type": "EventSource",
+            "encodedDataLength": 4525
+          },
+          {
+            "url": "http://localhost:8000/assets/css/components/modal.css",
+            "type": "Stylesheet",
+            "encodedDataLength": 3055
+          },
+          {
+            "url": "http://localhost:8000/api-alerts.php?room=8",
+            "type": "Fetch",
+            "encodedDataLength": 2115
+          },
+          {
+            "url": "http://localhost:8000/api-alerts.php?room=8",
+            "type": "Fetch",
+            "encodedDataLength": 2115
+          },
+          {
+            "url": "http://localhost:8000/api-alerts.php?room=8",
+            "type": "Fetch",
+            "encodedDataLength": 2115
+          },
+          {
+            "url": "http://localhost:8000/api-alerts.php?room=8",
+            "type": "Fetch",
+            "encodedDataLength": 2115
+          },
+          {
+            "url": "http://localhost:8000/api-alerts.php?room=8",
+            "type": "Fetch",
+            "encodedDataLength": 2115
+          },
+          {
+            "url": "http://localhost:8000/api-alerts.php?room=8",
+            "type": "Fetch",
+            "encodedDataLength": 2115
+          },
+          {
+            "url": "http://localhost:8000/api_history_meta?patient_id=8&param=compliance-pulmonaire-mesur--e",
+            "type": "Fetch",
+            "encodedDataLength": 1081
+          }
+        ]
+      },
+      "longTasks": {
+        "longTaskCountOver50ms": 3,
+        "totalLongTaskDurationMs": 285,
+        "maxLongTaskDurationMs": 149,
+        "samples": [
+          {
+            "name": "self",
+            "startTime": 171.90000000037253,
+            "duration": 56
+          },
+          {
+            "name": "self",
+            "startTime": 230.69999999925494,
+            "duration": 149
+          },
+          {
+            "name": "self",
+            "startTime": 470.40000000037253,
+            "duration": 80
+          }
+        ]
+      }
+    }
+  ]
+}

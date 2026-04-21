@@ -1,0 +1,9 @@
+metric	value
+samples	60
+http_200	60
+http_5xx	0
+non_empty_bodies	60
+samples_with_data_prefix	60
+samples_with_unauth_error	0
+samples_with_internal_error	0
+samples_with_unexpected_curl_rc	0

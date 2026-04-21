@@ -1,0 +1,12 @@
+metric	value
+snapshot_rows	930
+metric	value
+patients_checked	30
+metric	value
+series_checked	930
+metric	value
+missing_snapshot_rows	0
+metric	value
+snapshot_behind_history	0
+metric	value
+snapshot_missing_source_seq	0

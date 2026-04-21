@@ -19,10 +19,16 @@ namespace modules\services;
 use modules\models\entities\AlertItem;
 
 /**
- * Class AlertService
+ * Application service converting domain alert DTOs into UI notification payloads.
  *
- * Service for transforming alerts into UI messages.
- * Handles severity determination and message formatting.
+ * Responsibilities:
+ * - normalize severity (`error` / `warning` / `info`) from precomputed flags,
+ * - generate a clinician-readable title/message pair,
+ * - expose a stable payload consumed by toast and banner presenters.
+ *
+ * Design note:
+ * this class stays presentation-focused; threshold math is already performed
+ * upstream by repositories/entities.
  *
  * @package DashMed\Modules\Services
  * @author  DashMed Team
@@ -103,16 +109,26 @@ class AlertService
     }
 
     /**
-     * Builds the text message for an alert.
+     * Builds the human-facing message line for one alert.
      *
-     * @param  AlertItem $alert The alert item
-     * @return string The formatted message string
+     * Messaging priority:
+     * 1) explicit critical state (including `alert_flag = 1`) even when the
+     *    value is not outside normal min/max bounds,
+     * 2) below-min warning,
+     * 3) above-max warning,
+     * 4) fallback informational current value.
+     *
+     * @param  AlertItem $alert The alert item.
+     * @return string Formatted French message suitable for direct UI rendering.
      */
     private function buildMessage(AlertItem $alert): string
     {
         $val = $this->fmt($alert->value);
         $unit = $this->esc($alert->unit);
 
+        if ($alert->isCritical && !$alert->isBelowMin && !$alert->isAboveMax) {
+            return "Valeur critique détectée : {$val} {$unit}";
+        }
         if ($alert->isBelowMin && $alert->minThreshold !== null) {
             return "Valeur basse : {$val} {$unit} (seuil min : {$this->fmt($alert->minThreshold)} {$unit})";
         }

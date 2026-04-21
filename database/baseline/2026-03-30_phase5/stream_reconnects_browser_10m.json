@@ -1,0 +1,91 @@
+{
+  "generatedAt": "2026-04-01T07:58:34.769Z",
+  "startedAt": "2026-04-01T07:48:30.020Z",
+  "baseUrl": "http://localhost:8000",
+  "roomId": "8",
+  "totalDurationMs": 600000,
+  "perPageMs": 300000,
+  "cookieFile": "/tmp/phase5_signup_cookie_ok.txt",
+  "results": [
+    {
+      "label": "dashboard",
+      "url": "http://localhost:8000/?page=dashboard&room=8",
+      "startedAt": "2026-04-01T07:48:32.958Z",
+      "endedAt": "2026-04-01T07:53:34.044Z",
+      "durationMs": 301086,
+      "stream": {
+        "streamRequestCount": 1,
+        "reconnectCount": 0,
+        "reconnectsPerHour": 0,
+        "statuses": {
+          "200": 1
+        },
+        "urlsSample": [
+          "http://localhost:8000/api_stream?id_patient=8"
+        ]
+      },
+      "ui": {
+        "valueChanges": 279,
+        "messageEvents": 283,
+        "dashMedEvents": 283,
+        "esConstructed": 1,
+        "esErrors": 0,
+        "lastMessageAt": 1775030013096,
+        "sampleCount": 300,
+        "currentValues": [
+          "24.72",
+          "24.72",
+          "59.42",
+          "59.42",
+          "71.73",
+          "71.73"
+        ],
+        "visibility": "visible",
+        "title": "DashMed - Dashboard",
+        "href": "http://localhost:8000/?page=dashboard&room=8",
+        "consoleWarnCount": 0,
+        "consoleWarnSample": []
+      }
+    },
+    {
+      "label": "monitoring",
+      "url": "http://localhost:8000/?page=monitoring&room=8",
+      "startedAt": "2026-04-01T07:53:34.128Z",
+      "endedAt": "2026-04-01T07:58:34.683Z",
+      "durationMs": 300555,
+      "stream": {
+        "streamRequestCount": 1,
+        "reconnectCount": 0,
+        "reconnectsPerHour": 0,
+        "statuses": {
+          "200": 1
+        },
+        "urlsSample": [
+          "http://localhost:8000/api_stream?id_patient=8"
+        ]
+      },
+      "ui": {
+        "valueChanges": 289,
+        "messageEvents": 291,
+        "dashMedEvents": 291,
+        "esConstructed": 1,
+        "esErrors": 0,
+        "lastMessageAt": 1775030314374,
+        "sampleCount": 300,
+        "currentValues": [
+          "33.76",
+          "33.76",
+          "44.62",
+          "44.62",
+          "77.92",
+          "77.92"
+        ],
+        "visibility": "visible",
+        "title": "DashMed - Monitoring",
+        "href": "http://localhost:8000/?page=monitoring&room=8",
+        "consoleWarnCount": 0,
+        "consoleWarnSample": []
+      }
+    }
+  ]
+}

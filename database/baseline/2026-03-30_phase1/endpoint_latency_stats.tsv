@@ -1,0 +1,8 @@
+endpoint	n	p50_s	p95_s	max_s
+dashboard	12	10.417252	11.212469	11.212469
+monitoring	12	4.292241	5.703031	5.703031
+api_history_tail	20	0.005417	0.007222	0.019356
+api_history_chunk	20	0.030933	0.053147	0.104075
+api_history_meta	20	0.046511	0.063106	0.104038
+api_alerts	20	5.246855	5.516502	5.761565
+api_stream_first_event	10	5.357	9.312	9.312

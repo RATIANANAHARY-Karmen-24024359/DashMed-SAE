@@ -286,6 +286,15 @@ class ExplorerView
             .explorer-container ::-webkit-scrollbar-thumb { background: var(--explorer-glass-stroke); border-radius: 10px; }
             .explorer-container ::-webkit-scrollbar-thumb:hover { background: var(--text-secondary); }
         ';
+        /**
+         * Stable cache token for local frontend assets.
+         *
+         * This keeps browser cache warm between refreshes and still allows
+         * explicit busting through APP_ASSET_VERSION on deploy.
+         *
+         * @var string $assetVersion
+         */
+        $assetVersion = rawurlencode((string) (getenv('APP_ASSET_VERSION') ?: '2026-03-30'));
 
         $layout = new \modules\views\layout\Layout(
             'Explorateur de données',
@@ -297,7 +306,7 @@ class ExplorerView
                 'https://cdn.jsdelivr.net/npm/echarts@5.5.0/theme/vintage.js',
                 'https://cdn.jsdelivr.net/npm/echarts@5.5.0/theme/macarons.js',
                 'https://cdn.jsdelivr.net/npm/echarts@5.5.0/theme/shine.js',
-                'assets/js/pages/explorer.js?v=' . time(),
+                'assets/js/pages/explorer.js?v=' . $assetVersion,
             ],
             $inlineStyles,
             true,

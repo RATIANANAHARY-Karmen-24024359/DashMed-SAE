@@ -1,0 +1,114 @@
+dashboard	1	10.619251
+dashboard	2	11.208149
+dashboard	3	10.372880
+dashboard	4	10.002440
+dashboard	5	10.880357
+dashboard	6	10.123297
+dashboard	7	10.417252
+dashboard	8	11.212469
+dashboard	9	10.626430
+dashboard	10	10.410211
+dashboard	11	11.148486
+dashboard	12	9.771882
+monitoring	1	5.703031
+monitoring	2	5.030046
+monitoring	3	4.430413
+monitoring	4	4.086436
+monitoring	5	4.571399
+monitoring	6	4.009249
+monitoring	7	4.233732
+monitoring	8	4.800798
+monitoring	9	4.077522
+monitoring	10	4.692383
+monitoring	11	4.143746
+monitoring	12	4.292241
+api_history_tail	1	0.019356
+api_history_tail	2	0.005232
+api_history_tail	3	0.005326
+api_history_tail	4	0.005992
+api_history_tail	5	0.004795
+api_history_tail	6	0.004628
+api_history_tail	7	0.004826
+api_history_tail	8	0.004712
+api_history_tail	9	0.006046
+api_history_tail	10	0.006590
+api_history_tail	11	0.007029
+api_history_tail	12	0.006351
+api_history_tail	13	0.005862
+api_history_tail	14	0.006030
+api_history_tail	15	0.006125
+api_history_tail	16	0.007222
+api_history_tail	17	0.004060
+api_history_tail	18	0.004729
+api_history_tail	19	0.004905
+api_history_tail	20	0.005417
+api_history_chunk	1	0.104075
+api_history_chunk	2	0.025901
+api_history_chunk	3	0.053147
+api_history_chunk	4	0.035158
+api_history_chunk	5	0.036541
+api_history_chunk	6	0.032894
+api_history_chunk	7	0.028857
+api_history_chunk	8	0.025228
+api_history_chunk	9	0.037601
+api_history_chunk	10	0.039827
+api_history_chunk	11	0.036223
+api_history_chunk	12	0.027062
+api_history_chunk	13	0.032222
+api_history_chunk	14	0.030933
+api_history_chunk	15	0.033510
+api_history_chunk	16	0.026358
+api_history_chunk	17	0.029567
+api_history_chunk	18	0.025938
+api_history_chunk	19	0.028313
+api_history_chunk	20	0.026748
+api_history_meta	1	0.104038
+api_history_meta	2	0.047133
+api_history_meta	3	0.048910
+api_history_meta	4	0.063106
+api_history_meta	5	0.041551
+api_history_meta	6	0.043268
+api_history_meta	7	0.041185
+api_history_meta	8	0.046511
+api_history_meta	9	0.052171
+api_history_meta	10	0.050590
+api_history_meta	11	0.047954
+api_history_meta	12	0.044674
+api_history_meta	13	0.046768
+api_history_meta	14	0.049368
+api_history_meta	15	0.041363
+api_history_meta	16	0.046753
+api_history_meta	17	0.045167
+api_history_meta	18	0.040486
+api_history_meta	19	0.045421
+api_history_meta	20	0.041962
+api_alerts	1	4.860872
+api_alerts	2	5.343055
+api_alerts	3	5.294363
+api_alerts	4	5.761565
+api_alerts	5	4.810031
+api_alerts	6	5.428352
+api_alerts	7	4.855134
+api_alerts	8	5.233123
+api_alerts	9	5.180128
+api_alerts	10	5.460277
+api_alerts	11	5.010322
+api_alerts	12	5.246855
+api_alerts	13	5.437444
+api_alerts	14	5.516502
+api_alerts	15	5.110140
+api_alerts	16	5.416329
+api_alerts	17	4.859230
+api_alerts	18	5.348757
+api_alerts	19	4.855419
+api_alerts	20	5.311199
+api_stream_first_event	1	9.312	ok
+api_stream_first_event	2	9.282	ok
+api_stream_first_event	3	9.046	ok
+api_stream_first_event	4	9.129	ok
+api_stream_first_event	5	7.387	ok
+api_stream_first_event	6	5.357	ok
+api_stream_first_event	7	5.166	ok
+api_stream_first_event	8	5.018	ok
+api_stream_first_event	9	4.281	ok
+api_stream_first_event	10	4.239	ok

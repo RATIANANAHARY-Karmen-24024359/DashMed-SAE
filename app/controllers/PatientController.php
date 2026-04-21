@@ -1250,21 +1250,25 @@ class PatientController
     }
 
     /**
-     * Loads monitoring data and user layout.
+     * Loads monitoring payload for dashboard rendering.
      *
-     * @param  int      $userId
-     * @param  int|null $patientId
+     * Returned tuple:
+     * - index 0: processed indicators ready for the card grid,
+     * - index 1: persisted user layout definition.
+     *
+     * Performance notes:
+     * - supports a `fast=1` bypass for lightweight dashboard loads,
+     * - limits initial sparkline prefetch and relies on lazy exact backfill.
+     *
+     * @param  int      $userId    Authenticated user identifier.
+     * @param  int|null $patientId Active patient identifier.
      * @return array{0: array<int, array<string, mixed>|\modules\models\entities\Indicator>, 1: array<int|string, mixed>}
      */
     private function loadMonitoringData(int $userId, ?int $patientId): array
     {
-        /**
- * @var array<int, array<string, mixed>|\modules\models\entities\Indicator> $processedMetrics
-*/
+        /** @var array<int, array<string, mixed>|\modules\models\entities\Indicator> $processedMetrics */
         $processedMetrics = [];
-        /**
- * @var array<string, mixed> $userLayout
-*/
+        /** @var array<string, mixed> $userLayout */
         $userLayout = [];
 
         if ($patientId === null) {
@@ -1326,8 +1330,8 @@ class PatientController
             // Custom-group indicators are fetched on demand when the user switches group.
             $rawHistory = [];
             if (!empty($allIds)) {
-                // 250 points keeps the initial render snappy; the frontend can load more lazily.
-                $rawHistory = $this->monitorModel->getLatestHistoryForSpecificParameters($patientId, $allIds, 250);
+                // Keep initial HTML payload bounded; frontend still backfills exact history lazily.
+                $rawHistory = $this->monitorModel->getLatestHistoryForSpecificParameters($patientId, $allIds, 120);
             }
 
             $processedMetrics = $this->monitoringService->processMetrics($metrics, $rawHistory, $prefs, true);
@@ -1359,9 +1363,18 @@ class PatientController
     }
 
     /**
-     * Streams real-time metrics for the current patient using SSE (Server-Sent Events).
+     * Streams real-time metric updates via Server-Sent Events (SSE).
      *
-     * @return void
+     * Stream contract:
+     * - first event: bootstrap snapshot of current cards (`seq` is nullable),
+     * - subsequent events: forward-only incremental updates ordered by `seq`.
+     *
+     * Robustness behavior:
+     * - emits structured `{error: ...}` payloads on authorization/context issues,
+     * - closes PHP session lock before entering the long-running loop,
+     * - polls using `getRawHistoryAfterSeq()` to avoid timestamp ambiguity.
+     *
+     * @return void Writes SSE frames directly to the response output.
      */
     public function apiStream(): void
     {
@@ -1410,19 +1423,39 @@ class PatientController
             $rawUserId = $_SESSION['user_id'] ?? 0;
             $prefs = $this->prefModel->getUserPreferences(is_numeric($rawUserId) ? (int) $rawUserId : 0);
 
-            /**
- * @var \modules\models\entities\Indicator[] $indicators
-*/
+            /** @var \modules\models\entities\Indicator[] $indicators */
             $indicators = $this->monitorModel->getLatestMetrics($patientId);
             $indicatorsById = [];
-            $lastSentTimestamp = '1970-01-01 00:00:00';
+            $lastSentSeq = $this->monitorModel->getLatestSeqWatermark($patientId);
+            $bootstrapPayload = [];
 
             foreach ($indicators as $ind) {
                 $indicatorsById[$ind->getId()] = $ind;
-                $ts = $ind->getTimestamp();
-                if (is_string($ts) && $ts > $lastSentTimestamp) {
-                    $lastSentTimestamp = $ts;
+                $vd = $this->monitoringService->prepareViewData($ind);
+                $rawTs = $ind->getTimestamp();
+                $timeIso = '';
+                if (is_string($rawTs) && $rawTs !== '') {
+                    $timeIso = date('c', (int) strtotime($rawTs));
                 }
+                $bootstrapPayload[] = [
+                    'parameter_id' => $ind->getId(),
+                    'slug' => $vd['slug'] ?? (string) $ind->getId(),
+                    'value' => $vd['value'] ?? null,
+                    'unit' => $vd['unit'] ?? '',
+                    'state_class' => $vd['card_class'] ?? '',
+                    'is_crit_flag' => (bool) ($vd['is_crit_flag'] ?? false),
+                    'time_iso' => $timeIso,
+                    'seq' => null,
+                    'display_name' => $vd['display_name'] ?? ''
+                ];
+            }
+
+            if (!empty($bootstrapPayload)) {
+                echo "data: " . json_encode($bootstrapPayload) . "\n\n";
+                if (ob_get_level() > 0) {
+                    @ob_flush();
+                }
+                flush();
             }
 
             while (true) {
@@ -1430,8 +1463,7 @@ class PatientController
                     break;
                 }
 
-
-                $allNewHistory = $this->monitorModel->getRawHistory($patientId, 0, $lastSentTimestamp);
+                $allNewHistory = $this->monitorModel->getRawHistoryAfterSeq($patientId, $lastSentSeq, 5000);
 
                 if (!empty($allNewHistory)) {
                     $formatted = [];
@@ -1440,9 +1472,10 @@ class PatientController
                         $ts = $hItem['timestamp'];
                         $val = $hItem['value'];
                         $flag = $hItem['alert_flag'];
+                        $seq = isset($hItem['seq']) && is_numeric($hItem['seq']) ? (int) $hItem['seq'] : null;
 
-                        if ($ts > $lastSentTimestamp) {
-                            $lastSentTimestamp = $ts;
+                        if ($seq !== null && $seq > $lastSentSeq) {
+                            $lastSentSeq = $seq;
                         }
 
                         $indicator = $indicatorsById[$pid] ?? null;
@@ -1462,6 +1495,7 @@ class PatientController
                                 'state_class' => $vd['card_class'] ?? '',
                                 'is_crit_flag' => (bool) ($vd['is_crit_flag'] ?? false),
                                 'time_iso' => date('c', (int) strtotime($rawTs)),
+                                'seq' => $seq,
                                 'display_name' => $vd['display_name'] ?? ''
                             ];
                         }
@@ -1725,16 +1759,19 @@ class PatientController
     }
 
     /**
-     * API: Returns lightweight metadata (watermarks) for a given parameter.
-     *
-     * Clients use this to determine whether their local cache is fully synced.
-     * `max_seq` is the preferred watermark for the robust chunk cursor.
+     * API endpoint returning sync metadata (watermarks) for one parameter series.
      *
      * Query params:
-     * - patient_id (int, optional)
-     * - param (string, required)
+     * - `patient_id` (int, optional): explicit patient context override.
+     * - `param` (string, required): parameter identifier.
+     * - `include_count` (optional: `1|true|yes`): include expensive exact row count.
      *
-     * @return void Outputs JSON.
+     * Response fields:
+     * - `max_ts`: latest timestamp,
+     * - `max_seq`: monotonic cursor watermark,
+     * - `count`: optional exact row count when requested.
+     *
+     * @return void Outputs JSON directly.
      */
     public function apiHistoryMeta(): void
     {
@@ -1777,14 +1814,17 @@ class PatientController
                 return;
             }
 
-            $meta = $this->monitorModel->getHistoryMeta($patientId, $parameterId);
+            $rawIncludeCount = $_GET['include_count'] ?? null;
+            $includeCount = in_array((string) $rawIncludeCount, ['1', 'true', 'yes'], true);
+
+            $meta = $this->monitorModel->getHistoryMeta($patientId, $parameterId, $includeCount);
             echo json_encode(
                 [
                 'patient_id' => $patientId,
                 'param' => $parameterId,
                 'max_ts' => $meta['max_ts'] ?? null,
                 'max_seq' => $meta['max_seq'] ?? null,
-                'count' => $meta['count'] ?? null,
+                'count' => $includeCount ? ($meta['count'] ?? null) : null,
                 'server_time' => date('c'),
                 'schema_version' => 1,
                 ]

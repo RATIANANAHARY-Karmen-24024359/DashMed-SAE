@@ -137,16 +137,25 @@ class DashboardView
         } else {
             $current = null;
         }
+        /**
+         * Stable cache token for locally served CSS/JS assets.
+         *
+         * We avoid per-request timestamps to preserve browser cache efficiency
+         * while still allowing explicit invalidation through APP_ASSET_VERSION.
+         *
+         * @var string $assetVersion
+         */
+        $assetVersion = rawurlencode((string) (getenv('APP_ASSET_VERSION') ?: '2026-03-30'));
 
         $layout = new \modules\views\layout\Layout(
             'Dashboard',
             [
-                'assets/css/pages/dashboard.css?v=' . time(),
+                'assets/css/pages/dashboard.css?v=' . $assetVersion,
                 'assets/css/pages/monitoring.css',
                 'assets/css/components/searchbar/searchbar.css',
                 'assets/css/components/card.css',
                 'assets/css/components/popup.css',
-                'assets/css/components/modal.css?v=' . time(),
+                'assets/css/components/modal.css?v=' . $assetVersion,
                 'assets/css/layout/aside/patient-info.css',
                 'assets/css/layout/aside/events.css',
                 'assets/css/layout/aside/doctor-list.css',
@@ -156,20 +165,14 @@ class DashboardView
                 'assets/js/consultation-filter.js',
                 'assets/js/pages/dash.js',
                 'https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js',
-                'https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js',
-                'https://cdn.jsdelivr.net/npm/moment@2.30.1/moment.min.js',
-                'https://cdn.jsdelivr.net/npm/moment@2.30.1/locale/fr.js',
-                'https://cdn.jsdelivr.net/npm/chartjs-adapter-moment@1.0.1/dist/chartjs-adapter-moment.min.js',
-                'https://cdn.jsdelivr.net/npm/hammerjs@2.0.8',
-                'https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1/dist/chartjs-plugin-zoom.min.js',
-                'assets/js/service/stream.js?v=' . time(),
-                'assets/js/service/history-cache.js?v=' . time(),
-                'assets/js/component/charts/sparkline-loader.js?v=' . time(),
-                'assets/js/service/history-sync.js?v=' . time(),
-                'assets/js/component/modal/chart.js?v=' . time(),
+                'assets/js/service/stream.js?v=' . $assetVersion,
+                'assets/js/service/history-cache.js?v=' . $assetVersion,
+                'assets/js/component/charts/sparkline-loader.js?v=' . $assetVersion,
+                'assets/js/service/history-sync.js?v=' . $assetVersion,
+                'assets/js/component/modal/chart.js?v=' . $assetVersion,
                 'assets/js/component/modal/navigation.js',
                 'assets/js/component/modal/modal.js',
-                'assets/js/component/charts/card-sparklines.js?v=' . time(),
+                'assets/js/component/charts/card-sparklines.js?v=' . $assetVersion,
             ],
             '.evenement-content {
                     display: flex;
@@ -944,10 +947,23 @@ class DashboardView
 
                         syncAllCards();
 
+                        const URGENT_LOOP_MS = 1000;
                         setInterval(() => {
+                            if (document.hidden) {
+                                return;
+                            }
+                            const urgentActive = isUrgentFilter();
+
+                            if (!urgentActive) {
+                                const passiveAlertCount = mainGrid.querySelectorAll('.card.card--alert, .card.card--warn').length;
+                                const passiveBadge = document.getElementById('urgent-badge');
+                                if (passiveBadge) passiveBadge.textContent = String(passiveAlertCount);
+                                if (clearBtn) clearBtn.style.display = 'none';
+                                return;
+                            }
+
                             const now = Date.now();
                             const isModalGlobalOpen = document.body.classList.contains('modal-open');
-                            const urgentActive = isUrgentFilter();
                             let activeAlertsCount = 0;
 
                             Array.from(mainGrid.querySelectorAll('.card')).forEach(card => {
@@ -1036,7 +1052,7 @@ class DashboardView
                              if (clearBtn) {
                                  clearBtn.style.display = (urgentActive && dismissibleCount > 0) ? 'flex' : 'none';
                              }
-                         }, 250);
+                         }, URGENT_LOOP_MS);
                     });
                 </script>
                 <?php include dirname(__DIR__) . '/partials/_scroll-to-top.php'; ?>

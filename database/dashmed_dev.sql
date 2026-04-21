@@ -7,6 +7,7 @@ SET FOREIGN_KEY_CHECKS = 0;
 -- Sécurité : triggers (au cas où le DROP TABLE ne s'est pas fait lors d'un précédent run interrompu)
 DROP TRIGGER IF EXISTS `trg_check_room_occupation`;
 DROP TRIGGER IF EXISTS `trg_check_room_occupation_update`;
+DROP TRIGGER IF EXISTS `trg_patient_data_latest_after_insert`;
 
 -- Drops (views d'abord)
 DROP VIEW IF EXISTS `view_consultations`;
@@ -25,6 +26,7 @@ DROP TABLE IF EXISTS `user_parameter_chart_pref`;
 DROP TABLE IF EXISTS `parameter_chart_allowed`;
 DROP TABLE IF EXISTS `chart_types`;
 DROP TABLE IF EXISTS `patient_alert_threshold`;
+DROP TABLE IF EXISTS `patient_data_latest`;
 DROP TABLE IF EXISTS `patient_data`;
 DROP TABLE IF EXISTS `parameter_reference`;
 DROP TABLE IF EXISTS `patients`;
@@ -295,9 +297,8 @@ CREATE TABLE `patient_data` (
                                 `created_by` INT UNSIGNED DEFAULT NULL,
                                 `archived` TINYINT(1) DEFAULT 0, -- à voir pour la partie historique des données
 
-                                PRIMARY KEY (`id_patient`, `parameter_id`, `timestamp`),
-                                UNIQUE KEY `uq_patient_data_seq` (`seq`),
-                                INDEX `ix_patient_param_time` (`id_patient`, `parameter_id`, `timestamp`),
+                                PRIMARY KEY (`seq`),
+                                UNIQUE KEY `uq_patient_data_patient_param_ts` (`id_patient`, `parameter_id`, `timestamp`),
                                 INDEX `ix_patient_param_seq` (`id_patient`, `parameter_id`, `seq`),
                                 INDEX `ix_patient_archived_time` (`id_patient`, `archived`, `timestamp`),
 
@@ -312,6 +313,34 @@ CREATE TABLE `patient_data` (
                                 CONSTRAINT `fk_patient_data_user`
                                     FOREIGN KEY (`created_by`) REFERENCES `users` (`id_user`)
                                         ON DELETE SET NULL ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+-- Snapshot latest point per patient + parameter (read path for latest/alerts)
+CREATE TABLE `patient_data_latest` (
+                                       `id_patient` INT UNSIGNED NOT NULL,
+                                       `parameter_id` VARCHAR(50) NOT NULL,
+                                       `seq` BIGINT UNSIGNED NOT NULL,
+                                       `value` DECIMAL(15,2) DEFAULT NULL,
+                                       `timestamp` DATETIME NOT NULL,
+                                       `alert_flag` TINYINT(1) DEFAULT 0,
+                                       `archived` TINYINT(1) DEFAULT 0,
+                                       `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+
+                                       PRIMARY KEY (`id_patient`, `parameter_id`),
+                                       UNIQUE KEY `uq_patient_data_latest_seq` (`seq`),
+                                       INDEX `ix_patient_data_latest_patient_seq` (`id_patient`, `seq`),
+
+                                       CONSTRAINT `fk_patient_data_latest_patient`
+                                           FOREIGN KEY (`id_patient`) REFERENCES `patients` (`id_patient`)
+                                               ON DELETE CASCADE ON UPDATE CASCADE,
+
+                                       CONSTRAINT `fk_patient_data_latest_parameter`
+                                           FOREIGN KEY (`parameter_id`) REFERENCES `parameter_reference` (`parameter_id`)
+                                               ON DELETE CASCADE ON UPDATE CASCADE,
+
+                                       CONSTRAINT `fk_patient_data_latest_seq`
+                                           FOREIGN KEY (`seq`) REFERENCES `patient_data` (`seq`)
+                                               ON DELETE CASCADE ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 -- Table patient_alert_threshold (seuils d'alerte personnalisés par patient)
@@ -387,6 +416,26 @@ BEGIN
     END IF;
 END$$
 
+CREATE TRIGGER `trg_patient_data_latest_after_insert`
+    AFTER INSERT ON `patient_data`
+    FOR EACH ROW
+BEGIN
+    IF NEW.archived = 0 THEN
+        INSERT INTO `patient_data_latest` (
+            `id_patient`, `parameter_id`, `seq`, `value`, `timestamp`, `alert_flag`, `archived`, `updated_at`
+        ) VALUES (
+            NEW.id_patient, NEW.parameter_id, NEW.seq, NEW.value, NEW.timestamp, NEW.alert_flag, NEW.archived, CURRENT_TIMESTAMP
+        )
+        ON DUPLICATE KEY UPDATE
+            `value` = IF(VALUES(`seq`) > `patient_data_latest`.`seq`, VALUES(`value`), `patient_data_latest`.`value`),
+            `timestamp` = IF(VALUES(`seq`) > `patient_data_latest`.`seq`, VALUES(`timestamp`), `patient_data_latest`.`timestamp`),
+            `alert_flag` = IF(VALUES(`seq`) > `patient_data_latest`.`seq`, VALUES(`alert_flag`), `patient_data_latest`.`alert_flag`),
+            `archived` = IF(VALUES(`seq`) > `patient_data_latest`.`seq`, VALUES(`archived`), `patient_data_latest`.`archived`),
+            `updated_at` = IF(VALUES(`seq`) > `patient_data_latest`.`seq`, CURRENT_TIMESTAMP, `patient_data_latest`.`updated_at`),
+            `seq` = IF(VALUES(`seq`) > `patient_data_latest`.`seq`, VALUES(`seq`), `patient_data_latest`.`seq`);
+    END IF;
+END$$
+
 DELIMITER ;
 
 -- =========================
@@ -408,15 +457,8 @@ FROM `consultations`
 
 CREATE OR REPLACE VIEW `view_latest_patient_data` AS
 SELECT pd.*
-FROM `patient_data` pd
-         JOIN (
-    SELECT `id_patient`, `parameter_id`, MAX(`timestamp`) AS max_ts
-    FROM `patient_data`
-    GROUP BY `id_patient`, `parameter_id`
-) m
-              ON m.`id_patient` = pd.`id_patient`
-                  AND m.`parameter_id` = pd.`parameter_id`
-                  AND m.max_ts = pd.`timestamp`;
+FROM `patient_data_latest` pdl
+         JOIN `patient_data` pd ON pd.`seq` = pdl.`seq`;
 
 CREATE OR REPLACE VIEW `view_patient_indicator_status` AS
 SELECT

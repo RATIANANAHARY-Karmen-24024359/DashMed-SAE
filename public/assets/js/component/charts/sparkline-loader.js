@@ -21,6 +21,30 @@
     return Array.from(document.querySelectorAll('article.card[data-slug]'));
   }
 
+  function readPointsFromDom(card) {
+    const ul = card.querySelector('ul[data-spark]');
+    if (!ul) return [];
+
+    const points = [];
+    ul.querySelectorAll('li').forEach((li) => {
+      const timeIso = li.dataset.time || '';
+      if (!timeIso) return;
+
+      const rawValue = li.dataset.value;
+      const value = (rawValue === '' || rawValue === undefined || rawValue === 'null') ? null : Number(rawValue);
+      if (value !== null && !Number.isFinite(value)) return;
+
+      points.push({
+        time_iso: timeIso,
+        value,
+        flag: li.dataset.flag === undefined ? '0' : String(li.dataset.flag),
+      });
+    });
+
+    points.sort((a, b) => new Date(a.time_iso).getTime() - new Date(b.time_iso).getTime());
+    return points;
+  }
+
   function setPointsInDom(card, points) {
     const ul = card.querySelector('ul[data-spark]');
     if (!ul) return;
@@ -44,23 +68,41 @@
   async function loadCard(card, patientId) {
     const param = card.dataset.paramId || card.dataset.slug;
     if (!param) return;
+    const domSeedPoints = readPointsFromDom(card);
+    let hasCached = false;
 
     // 1) render cached immediately if present
     if (window.DashMedHistoryCache) {
       try {
         const cached = await window.DashMedHistoryCache.get(patientId, param);
         if (Array.isArray(cached) && cached.length) {
+          hasCached = true;
           setPointsInDom(card, cached);
           if (window.renderSparkline) window.renderSparkline(card);
         }
       } catch (_) {}
     }
 
-    // 2) fetch fresh tail
+    // 2) if server-side seed already exists, keep it as source-of-truth for first paint
+    // and persist it in cache without issuing an extra tail HTTP call.
+    if (domSeedPoints.length > 0) {
+      if (window.DashMedHistoryCache) {
+        try {
+          await window.DashMedHistoryCache.put(patientId, param, domSeedPoints, { maxPoints: CACHE_MAX_POINTS });
+        } catch (_) {}
+      }
+      if (!hasCached && window.renderSparkline) window.renderSparkline(card);
+      return;
+    }
+
+    // 3) if cache already had data and no DOM seed, avoid immediate duplicate network fetch.
+    if (hasCached) return;
+
+    // 4) fallback: fetch fresh tail only when neither DOM seed nor cache is available.
     const data = await fetchTail(patientId, param, DEFAULT_LIMIT);
     const points = (data && data.points) ? data.points : [];
 
-    // 3) store in cache (merged)
+    // 5) store in cache (merged)
     let merged = points;
     if (window.DashMedHistoryCache) {
       try {
@@ -68,7 +110,7 @@
       } catch (_) {}
     }
 
-    // 4) render
+    // 6) render
     setPointsInDom(card, merged);
     if (window.renderSparkline) window.renderSparkline(card);
   }

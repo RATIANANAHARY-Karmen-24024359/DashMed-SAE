@@ -1,0 +1,8 @@
+Id	User	Host	db	Command	Time	State	Info	Progress
+4	dashmed	172.18.0.3:35680	dashmed_data	Sleep	2		NULL	0.000
+5	dashmed	172.18.0.3:35696	dashmed_data	Sleep	1		NULL	0.000
+6	dashmed	172.18.0.3:35708	dashmed_data	Sleep	0		NULL	0.000
+7	dashmed	172.18.0.3:35718	dashmed_data	Sleep	4		NULL	0.000
+8	dashmed	172.18.0.3:35720	dashmed_data	Sleep	3		NULL	0.000
+136	dashmed	172.18.0.1:63586	dashmed_data	Sleep	1427		NULL	0.000
+737	root	localhost	NULL	Query	0	starting	SHOW FULL PROCESSLIST	0.000

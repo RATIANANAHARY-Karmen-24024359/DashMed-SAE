@@ -1,0 +1,3 @@
+label	request_count	transferred_kb	long_tasks_over_50ms	total_long_task_ms	max_long_task_ms
+dashboard_30s	66	1310.28	3	797	361
+monitoring_30s	56	45.51	3	285	149

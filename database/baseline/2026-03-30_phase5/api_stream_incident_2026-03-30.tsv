@@ -1,0 +1,15 @@
+timestamp_utc	status	endpoint	source
+2026-03-30T19:00:52Z	500	/api_stream?id_patient=8	curl/8.7.1
+2026-03-30T19:01:10Z	500	/api_stream?id_patient=8	HeadlessChrome/145.0.7632.6
+2026-03-30T19:01:40Z	500	/api_stream?id_patient=8	HeadlessChrome/145.0.7632.6
+2026-03-30T19:04:48Z	500	/api_stream?id_patient=8	Safari/605.1.15
+2026-03-30T19:06:04Z	500	/api_stream?id_patient=8	Safari/605.1.15
+2026-03-30T19:34:23Z	200	/api_stream?id_patient=8	curl/8.7.1
+2026-03-30T19:34:44Z	500	/api_stream?id_patient=8	curl/8.7.1
+2026-03-30T19:35:13Z	200	/api_stream?id_patient=8	curl/8.7.1
+2026-03-30T19:39:13Z	302	/api_stream?id_patient=8	Safari/605.1.15 (session timeout)
+2026-03-30T19:39:23Z	200	/api_stream?id_patient=8	Safari/605.1.15
+2026-03-30T19:39:31Z	200	/api_stream?id_patient=8	Safari/605.1.15
+
+# source:
+# docker compose logs --since=3h web | rg "GET /api_stream"

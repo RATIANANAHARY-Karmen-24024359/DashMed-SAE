@@ -1,0 +1,8 @@
+2026-03-30 Phase 3 healthcheck verification
+
+- docker-compose healthcheck updated to authenticated ping:
+  CMD-SHELL mysqladmin ping -h localhost -udashmed -p$${MYSQL_PASSWORD} --silent
+- DB container recreated and healthy:
+  dashmed-sae-db-1 Up (healthy)
+- Log check window after restart and multiple healthcheck intervals:
+  no occurrence of "Access denied for user 'root'@'localhost' (using password: NO)"

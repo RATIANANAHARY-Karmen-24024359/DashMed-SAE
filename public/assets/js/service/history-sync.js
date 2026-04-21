@@ -14,9 +14,10 @@
 (function () {
   const MAX_PARALLEL_TOTAL = 2;
   const META_REFRESH_MS = 60_000;
-  const INITIAL_LIMIT = 2000;
+  const INITIAL_LIMIT = 1000;
   const LIMIT_MIN = 500;
   const LIMIT_MAX = 20000;
+  const MAX_PARAMS_PER_KICK = 4;
 
   const BACKOFF_BASE_MS = 250;
   const BACKOFF_MAX_MS = 10_000;
@@ -39,12 +40,21 @@
   }
 
   function getParamsToSync() {
-    // Only parameters present on screen.
-    return Array.from(new Set(
-      Array.from(document.querySelectorAll('article.card[data-slug]'))
-        .map(c => c.dataset.slug)
-        .filter(Boolean)
-    ));
+    const cards = Array.from(document.querySelectorAll('article.card[data-slug]'));
+    const viewportHeight = window.innerHeight || document.documentElement.clientHeight || 0;
+    const visibleCards = cards.filter((card) => {
+      const rect = card.getBoundingClientRect();
+      return rect.bottom >= -200 && rect.top <= (viewportHeight + 200);
+    });
+
+    const selected = (visibleCards.length > 0 ? visibleCards : cards.slice(0, MAX_PARAMS_PER_KICK));
+    return Array.from(
+      new Set(
+        selected
+          .map(c => c.dataset.slug)
+          .filter(Boolean)
+      )
+    ).slice(0, MAX_PARAMS_PER_KICK);
   }
 
   async function fetchJson(url) {
@@ -84,12 +94,19 @@
       this.limit = INITIAL_LIMIT;
       this.backoffMs = 0;
       this.lastUserActivityAt = 0;
+      this.kickDebounce = null;
 
       // Simple user activity detection to avoid background thrash during interaction.
       const mark = () => { this.lastUserActivityAt = now(); };
+      const requestKick = () => {
+        if (this.kickDebounce) clearTimeout(this.kickDebounce);
+        this.kickDebounce = setTimeout(() => this.kick(), 250);
+      };
       window.addEventListener('pointerdown', mark, { passive: true });
       window.addEventListener('wheel', mark, { passive: true });
       window.addEventListener('keydown', mark, { passive: true });
+      window.addEventListener('scroll', requestKick, { passive: true });
+      window.addEventListener('resize', requestKick, { passive: true });
       document.addEventListener('visibilitychange', () => {
         if (!document.hidden) this.kick();
       });
@@ -98,6 +115,7 @@
     async kick() {
       if (this.stopped) return;
       if (!window.DashMedHistoryCache) return;
+      if (document.hidden) return;
 
       const patientId = getPatientId();
       if (!patientId) return;

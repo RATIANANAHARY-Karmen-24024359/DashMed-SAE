@@ -35,6 +35,13 @@ class MonitorRepository extends BaseRepository
      * @var string The main table containing measurement samples (e.g., 'patient_data').
      */
     private string $table;
+    /**
+     * @var string Snapshot table storing the latest immutable row per (patient, parameter).
+     *
+     * This additive structure is used to avoid repeated `MAX(timestamp)` scans
+     * on large `patient_data` histories.
+     */
+    private string $latestTable = 'patient_data_latest';
 
     /**
      * @var string Status: Normal
@@ -70,12 +77,17 @@ class MonitorRepository extends BaseRepository
     }
 
     /**
-     * Retrieves the latest metrics for a patient.
+     * Retrieves latest metric states for all known parameters of one patient.
      *
-     * Returns an empty array on SQL error to prevent blocking display.
+     * Query strategy:
+     * - base catalog from `parameter_reference`,
+     * - left-join latest values from `patient_data_latest`,
+     * - keep parameter rows even when no value exists yet.
      *
-     * @param  int $patientId Patient ID
-     * @return array<int, \modules\models\entities\Indicator> List of metrics or empty array
+     * Returns an empty array on SQL error to avoid blocking UI rendering.
+     *
+     * @param  int $patientId Patient identifier.
+     * @return array<int, \modules\models\entities\Indicator> Latest indicator list.
      */
     public function getLatestMetrics(int $patientId): array
     {
@@ -83,9 +95,9 @@ class MonitorRepository extends BaseRepository
             $sql = "
         SELECT
             pr.parameter_id,
-            pd.value,
-            pd.`timestamp`,
-            pd.alert_flag,
+            pdl.value,
+            pdl.`timestamp`,
+            pdl.alert_flag,
 
             pr.display_name,
             pr.category,
@@ -108,15 +120,15 @@ class MonitorRepository extends BaseRepository
 
             -- Status calculation (Logic preserved for View)
             CASE
-                WHEN pd.value IS NULL THEN 'unknown'
+                WHEN pdl.value IS NULL THEN 'unknown'
                 WHEN (
-                    pd.alert_flag = 1
-                    OR (COALESCE(pat.critical_min, pr.critical_min) IS NOT NULL AND pd.value <= COALESCE(pat.critical_min, pr.critical_min))
-                    OR (COALESCE(pat.critical_max, pr.critical_max) IS NOT NULL AND pd.value >= COALESCE(pat.critical_max, pr.critical_max))
+                    pdl.alert_flag = 1
+                    OR (COALESCE(pat.critical_min, pr.critical_min) IS NOT NULL AND pdl.value <= COALESCE(pat.critical_min, pr.critical_min))
+                    OR (COALESCE(pat.critical_max, pr.critical_max) IS NOT NULL AND pdl.value >= COALESCE(pat.critical_max, pr.critical_max))
                 ) THEN '" . self::STATUS_CRITICAL . "'
                 WHEN (
-                    (COALESCE(pat.normal_min, pr.normal_min) IS NOT NULL AND pd.value <= COALESCE(pat.normal_min, pr.normal_min))
-                    OR (COALESCE(pat.normal_max, pr.normal_max) IS NOT NULL AND pd.value >= COALESCE(pat.normal_max, pr.normal_max))
+                    (COALESCE(pat.normal_min, pr.normal_min) IS NOT NULL AND pdl.value <= COALESCE(pat.normal_min, pr.normal_min))
+                    OR (COALESCE(pat.normal_max, pr.normal_max) IS NOT NULL AND pdl.value >= COALESCE(pat.normal_max, pr.normal_max))
                 ) THEN '" . self::STATUS_WARNING . "'
                 ELSE '" . self::STATUS_NORMAL . "'
                 END AS status
@@ -127,21 +139,10 @@ class MonitorRepository extends BaseRepository
           ON pat.parameter_id = pr.parameter_id
          AND pat.id_patient = :id_pat_threshold
 
-        -- Last measurement for patient
-        LEFT JOIN (
-            SELECT pd1.*
-            FROM {$this->table} pd1
-            INNER JOIN (
-                SELECT parameter_id, MAX(`timestamp`) AS ts
-                FROM {$this->table}
-                WHERE id_patient = :id_pat_inner AND archived = 0
-                GROUP BY parameter_id
-            ) last
-              ON last.parameter_id = pd1.parameter_id
-             AND last.ts = pd1.`timestamp`
-            WHERE pd1.id_patient = :id_pat_outer AND pd1.archived = 0
-        ) pd
-          ON pd.parameter_id = pr.parameter_id
+        LEFT JOIN {$this->latestTable} pdl
+          ON pdl.parameter_id = pr.parameter_id
+         AND pdl.id_patient = :id_pat_latest
+         AND pdl.archived = 0
 
         ORDER BY
             pr.display_name ASC
@@ -151,8 +152,7 @@ class MonitorRepository extends BaseRepository
             $st->execute(
                 [
                 ':id_pat_threshold' => $patientId,
-                ':id_pat_inner' => $patientId,
-                ':id_pat_outer' => $patientId,
+                ':id_pat_latest' => $patientId,
                 ]
             );
 
@@ -195,11 +195,15 @@ class MonitorRepository extends BaseRepository
     }
 
     /**
-     * Retrieves the latest metrics for a patient, restricted to specific parameters.
+     * Retrieves latest metric states for a constrained set of parameters.
      *
-     * @param int $patientId Patient ID
-     * @param array<int, string> $parameterIds Parameter IDs to include
-     * @return array<int, \modules\models\entities\Indicator>
+     * This variant is used for reduced payload contexts (custom groups, partial
+     * dashboards). It still reads from snapshot rows to keep latency stable on
+     * very large historical datasets.
+     *
+     * @param int                $patientId    Patient identifier.
+     * @param array<int, string> $parameterIds Parameter IDs to include.
+     * @return array<int, \modules\models\entities\Indicator> Latest indicator list.
      */
     public function getLatestMetricsForParameters(int $patientId, array $parameterIds): array
     {
@@ -219,9 +223,9 @@ class MonitorRepository extends BaseRepository
             $sql = "
         SELECT
             pr.parameter_id,
-            pd.value,
-            pd.`timestamp`,
-            pd.alert_flag,
+            pdl.value,
+            pdl.`timestamp`,
+            pdl.alert_flag,
 
             pr.display_name,
             pr.category,
@@ -243,15 +247,15 @@ class MonitorRepository extends BaseRepository
             ) AS allowed_charts_str,
 
             CASE
-                WHEN pd.value IS NULL THEN 'unknown'
+                WHEN pdl.value IS NULL THEN 'unknown'
                 WHEN (
-                    pd.alert_flag = 1
-                    OR (COALESCE(pat.critical_min, pr.critical_min) IS NOT NULL AND pd.value <= COALESCE(pat.critical_min, pr.critical_min))
-                    OR (COALESCE(pat.critical_max, pr.critical_max) IS NOT NULL AND pd.value >= COALESCE(pat.critical_max, pr.critical_max))
+                    pdl.alert_flag = 1
+                    OR (COALESCE(pat.critical_min, pr.critical_min) IS NOT NULL AND pdl.value <= COALESCE(pat.critical_min, pr.critical_min))
+                    OR (COALESCE(pat.critical_max, pr.critical_max) IS NOT NULL AND pdl.value >= COALESCE(pat.critical_max, pr.critical_max))
                 ) THEN '" . self::STATUS_CRITICAL . "'
                 WHEN (
-                    (COALESCE(pat.normal_min, pr.normal_min) IS NOT NULL AND pd.value <= COALESCE(pat.normal_min, pr.normal_min))
-                    OR (COALESCE(pat.normal_max, pr.normal_max) IS NOT NULL AND pd.value >= COALESCE(pat.normal_max, pr.normal_max))
+                    (COALESCE(pat.normal_min, pr.normal_min) IS NOT NULL AND pdl.value <= COALESCE(pat.normal_min, pr.normal_min))
+                    OR (COALESCE(pat.normal_max, pr.normal_max) IS NOT NULL AND pdl.value >= COALESCE(pat.normal_max, pr.normal_max))
                 ) THEN '" . self::STATUS_WARNING . "'
                 ELSE '" . self::STATUS_NORMAL . "'
                 END AS status
@@ -262,22 +266,10 @@ class MonitorRepository extends BaseRepository
           ON pat.parameter_id = pr.parameter_id
          AND pat.id_patient = ?
 
-        LEFT JOIN (
-            SELECT pd1.*
-            FROM {$this->table} pd1
-            INNER JOIN (
-                SELECT parameter_id, MAX(`timestamp`) AS ts
-                FROM {$this->table}
-                WHERE id_patient = ? AND archived = 0
-                  AND parameter_id IN ($placeholders)
-                GROUP BY parameter_id
-            ) last
-              ON last.parameter_id = pd1.parameter_id
-             AND last.ts = pd1.`timestamp`
-            WHERE pd1.id_patient = ? AND pd1.archived = 0
-              AND pd1.parameter_id IN ($placeholders)
-        ) pd
-          ON pd.parameter_id = pr.parameter_id
+        LEFT JOIN {$this->latestTable} pdl
+          ON pdl.parameter_id = pr.parameter_id
+         AND pdl.id_patient = ?
+         AND pdl.archived = 0
 
         WHERE pr.parameter_id IN ($placeholders)
 
@@ -289,14 +281,7 @@ class MonitorRepository extends BaseRepository
             // Bind values in the exact order of placeholders used above.
             $bind = [];
             $bind[] = $patientId; // pat.id_patient
-            $bind[] = $patientId; // inner id_patient
-            foreach ($parameterIds as $pid) {
-                $bind[] = $pid;
-            }
-            $bind[] = $patientId; // outer id_patient
-            foreach ($parameterIds as $pid) {
-                $bind[] = $pid;
-            }
+            $bind[] = $patientId; // latest snapshot id_patient
             foreach ($parameterIds as $pid) {
                 $bind[] = $pid;
             }
@@ -401,11 +386,16 @@ class MonitorRepository extends BaseRepository
     }
 
     /**
-     * Efficiently retrieves the latest history points for SPECIFIC parameters of a patient.
+     * Retrieves exact tail history for selected parameters.
      *
-     * @param  int                $patientId     Patient ID
-     * @param  array<int, string> $parameterIds  List of parameter IDs
-     * @param  int                $limitPerParam Max points per parameter (default 1000)
+     * Implementation detail:
+     * each parameter is queried independently on a tail-friendly index path,
+     * then rows are merged and sorted in memory. This avoids expensive global
+     * window ranking across millions of rows.
+     *
+     * @param  int                $patientId     Patient identifier.
+     * @param  array<int, string> $parameterIds  Parameter IDs to fetch.
+     * @param  int                $limitPerParam Max rows per parameter (hard-capped to 5000).
      * @return array<int, array{parameter_id: string, value: float|null, timestamp: string, alert_flag: int}>
      */
     public function getLatestHistoryForSpecificParameters(int $patientId, array $parameterIds, int $limitPerParam = 1000): array
@@ -415,26 +405,50 @@ class MonitorRepository extends BaseRepository
         }
 
         try {
-            $placeholders = implode(',', array_fill(0, count($parameterIds), '?'));
+            $limitPerParam = max(1, min(5000, $limitPerParam));
 
+            // Query each requested parameter independently using the tail-friendly index path.
+            // This avoids global window ranking scans on very large patient_data history.
             $sql = "
                 SELECT parameter_id, value, `timestamp`, alert_flag
                 FROM (
-                    SELECT 
-                        parameter_id, value, `timestamp`, alert_flag,
-                        ROW_NUMBER() OVER(PARTITION BY parameter_id ORDER BY `timestamp` DESC) as rn
+                    SELECT parameter_id, value, `timestamp`, alert_flag
                     FROM {$this->table}
-                    WHERE id_patient = ? AND archived = 0 AND parameter_id IN ($placeholders)
-                ) ranked
-                WHERE rn <= ?
-                ORDER BY parameter_id, `timestamp` ASC
+                    WHERE id_patient = :id
+                      AND archived = 0
+                      AND parameter_id = :paramId
+                    ORDER BY `timestamp` DESC
+                    LIMIT :limit
+                ) sub
+                ORDER BY `timestamp` ASC
             ";
 
             $st = $this->pdo->prepare($sql);
-            $params = array_merge([$patientId], $parameterIds, [$limitPerParam]);
-            $st->execute($params);
+            $rows = [];
 
-            return $st->fetchAll();
+            foreach ($parameterIds as $parameterId) {
+                $st->bindValue(':id', $patientId, \PDO::PARAM_INT);
+                $st->bindValue(':paramId', (string) $parameterId, \PDO::PARAM_STR);
+                $st->bindValue(':limit', $limitPerParam, \PDO::PARAM_INT);
+                $st->execute();
+                $chunk = $st->fetchAll();
+                if (!empty($chunk)) {
+                    array_push($rows, ...$chunk);
+                }
+            }
+
+            usort(
+                $rows,
+                static function (array $a, array $b): int {
+                    $cmp = strcmp((string) ($a['parameter_id'] ?? ''), (string) ($b['parameter_id'] ?? ''));
+                    if ($cmp !== 0) {
+                        return $cmp;
+                    }
+                    return strcmp((string) ($a['timestamp'] ?? ''), (string) ($b['timestamp'] ?? ''));
+                }
+            );
+
+            return $rows;
         } catch (\PDOException $e) {
             error_log("MonitorRepository::getLatestHistoryForSpecificParameters Error: " . $e->getMessage());
             return [];
@@ -980,26 +994,114 @@ class MonitorRepository extends BaseRepository
     }
 
     /**
-     * Lightweight metadata for sync/validation.
+     * Fetches exact forward-only rows across all parameters for one patient, using the `seq` cursor.
      *
-     * This is intentionally cheap to compute compared to serving large histories.
-     * The `max_seq` watermark enables a client to determine when it is fully synced.
+     * @param int      $patientId The patient identifier.
+     * @param int|null $afterSeq  Exclusive cursor (seq). Use null to start from the beginning.
+     * @param int      $limit     Max number of rows to return (hard-capped to 20000).
      *
-     * @param int    $patientId   The patient identifier.
-     * @param string $parameterId The parameter identifier.
-     *
-     * @return array{max_ts: string|null, max_seq: int|null, count: int|null}
+     * @return array<int, array{
+     *   seq: int|string,
+     *   parameter_id: string,
+     *   value: float|string|null,
+     *   timestamp: string,
+     *   alert_flag: string|int
+     * }>
      */
-    public function getHistoryMeta(int $patientId, string $parameterId): array
+    public function getRawHistoryAfterSeq(
+        int $patientId,
+        ?int $afterSeq,
+        int $limit = 5000
+    ): array {
+        $limit = max(1, min(20000, $limit));
+
+        try {
+            $afterCondition = '';
+            if ($afterSeq !== null && $afterSeq > 0) {
+                $afterCondition = 'AND seq > :afterSeq';
+            }
+
+            $sql = "
+                SELECT seq, parameter_id, value, `timestamp`, alert_flag
+                FROM {$this->table}
+                WHERE id_patient = :id
+                  AND archived = 0
+                  $afterCondition
+                ORDER BY seq ASC
+                LIMIT :limit
+            ";
+
+            $st = $this->pdo->prepare($sql);
+            $st->bindValue(':id', $patientId, \PDO::PARAM_INT);
+            if ($afterCondition !== '') {
+                $st->bindValue(':afterSeq', $afterSeq, \PDO::PARAM_INT);
+            }
+            $st->bindValue(':limit', $limit, \PDO::PARAM_INT);
+            $st->execute();
+            return $st->fetchAll();
+        } catch (\PDOException $e) {
+            error_log('MonitorRepository::getRawHistoryAfterSeq Error: ' . $e->getMessage());
+            return [];
+        }
+    }
+
+    /**
+     * Returns the latest known seq watermark for a patient from the snapshot table.
+     *
+     * @param int $patientId The patient identifier.
+     * @return int Latest seq watermark, or 0 if unavailable.
+     */
+    public function getLatestSeqWatermark(int $patientId): int
     {
         try {
             $sql = "
-                SELECT MAX(`timestamp`) AS max_ts, COUNT(*) AS cnt, MAX(seq) AS max_seq
-                FROM {$this->table}
+                SELECT MAX(seq) AS max_seq
+                FROM {$this->latestTable}
                 WHERE id_patient = :id
-                  AND parameter_id = :paramId
                   AND archived = 0
             ";
+            $st = $this->pdo->prepare($sql);
+            $st->bindValue(':id', $patientId, \PDO::PARAM_INT);
+            $st->execute();
+            $raw = $st->fetchColumn();
+            return is_numeric($raw) ? (int) $raw : 0;
+        } catch (\PDOException $e) {
+            error_log('MonitorRepository::getLatestSeqWatermark Error: ' . $e->getMessage());
+            return 0;
+        }
+    }
+
+    /**
+     * Returns sync metadata for one patient/parameter time-series.
+     *
+     * Default mode is lightweight (`MAX(timestamp)`, `MAX(seq)` only). The
+     * optional count is explicitly opt-in because `COUNT(*)` can be expensive
+     * under large histories and high polling cadence.
+     *
+     * @param int    $patientId    Patient identifier.
+     * @param string $parameterId  Parameter identifier.
+     * @param bool   $includeCount When true, compute and return exact row count.
+     *
+     * @return array{max_ts: string|null, max_seq: int|null, count: int|null}
+     */
+    public function getHistoryMeta(int $patientId, string $parameterId, bool $includeCount = false): array
+    {
+        try {
+            $sql = $includeCount
+                ? "
+                    SELECT MAX(`timestamp`) AS max_ts, COUNT(*) AS cnt, MAX(seq) AS max_seq
+                    FROM {$this->table}
+                    WHERE id_patient = :id
+                      AND parameter_id = :paramId
+                      AND archived = 0
+                "
+                : "
+                    SELECT MAX(`timestamp`) AS max_ts, MAX(seq) AS max_seq
+                    FROM {$this->table}
+                    WHERE id_patient = :id
+                      AND parameter_id = :paramId
+                      AND archived = 0
+                ";
             $st = $this->pdo->prepare($sql);
             $st->bindValue(':id', $patientId, \PDO::PARAM_INT);
             $st->bindValue(':paramId', $parameterId, \PDO::PARAM_STR);
@@ -1011,7 +1113,7 @@ class MonitorRepository extends BaseRepository
 
             // max_seq may not exist on older schema; keep null-safe.
             $maxTs = $row['max_ts'] ?? null;
-            $cnt = $row['cnt'] ?? null;
+            $cnt = $includeCount ? ($row['cnt'] ?? null) : null;
             $maxSeq = $row['max_seq'] ?? null;
 
             return [

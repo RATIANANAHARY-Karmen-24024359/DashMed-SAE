@@ -76,11 +76,16 @@ if (_audioCtx.state === 'suspended') {
     document.addEventListener('click', () => _audioCtx.resume(), { once: true });
 }
 
+function isDndEnabled(value) {
+    return value === true || value === 1 || value === '1' || value === 'true';
+}
+
 const DashMedGlobalAlerts = (function () {
     const API_URL = 'api-alerts.php';
     const CHECK_INTERVAL = 5000;
     let displayedIds = new Set();
     let activeCriticalToasts = new Map();
+    let hasRenderedInitialSnapshot = false;
 
     function getNotificationTimeout() {
         const saved = localStorage.getItem('dashmed_notif_timeout');
@@ -240,7 +245,15 @@ const DashMedGlobalAlerts = (function () {
     }
 
     function getAlertId(a) {
-        return `${a.parameterId}_${a.type || a.rdvTime || ''}`;
+        const parameterId = String(a?.parameterId ?? 'unknown');
+        const type = String(a?.type ?? 'alert');
+        const sourceTimestamp = a?.sourceTimestamp || a?.timestamp || '';
+
+        if (type === 'info') {
+            return `${parameterId}_${type}_${String(a?.rdvTime || sourceTimestamp)}`;
+        }
+
+        return `${parameterId}_${type}_${String(sourceTimestamp)}`;
     }
 
     function playAlertSound(type) {
@@ -266,12 +279,6 @@ const DashMedGlobalAlerts = (function () {
         if (!a?.type) return;
         const id = getAlertId(a);
         if (displayedIds.has(id)) return;
-        if (typeof NotifHistory !== 'undefined' && typeof NotifHistory.isInHistory === 'function') {
-            if (NotifHistory.isInHistory(id)) {
-                displayedIds.add(id);
-                return;
-            }
-        }
         displayedIds.add(id);
 
         if (typeof NotifHistory !== 'undefined') NotifHistory.add(a);
@@ -300,7 +307,7 @@ const DashMedGlobalAlerts = (function () {
                     localStorage.setItem('dashmed_notif_timeout', data.settings.alert_duration.toString());
                 }
                 if (data.settings.alert_dnd !== undefined) {
-                    const dnd = data.settings.alert_dnd ? 'true' : 'false';
+                    const dnd = isDndEnabled(data.settings.alert_dnd) ? 'true' : 'false';
                     localStorage.setItem('dashmed_dnd', dnd);
                 }
                 if (data.settings.chart_animation !== undefined) {
@@ -314,8 +321,7 @@ const DashMedGlobalAlerts = (function () {
                 }
             }
 
-            const alerts = data.alerts;
-            const currentIds = new Set(alerts.map(a => getAlertId(a)));
+            const alerts = Array.isArray(data.alerts) ? data.alerts : [];
             for (const [id] of activeCriticalToasts.entries()) {
                 const parameterId = id.split('_')[0];
                 const stillActive = alerts.some(a => a.type === 'error' && String(a.parameterId) === String(parameterId));
@@ -325,7 +331,8 @@ const DashMedGlobalAlerts = (function () {
         } catch { return []; }
     }
 
-    const ACTIVE_STATES_KEY = 'dashmed_active_states_by_room';
+    const ACTIVE_STATES_KEY = 'dashmed_active_states_by_room_v2';
+    const ACTIVE_STATES_TTL_MS = 15 * 60 * 1000;
 
     function getCurrentRoom() {
         const urlRoom = new URLSearchParams(location.search).get('room');
@@ -337,17 +344,32 @@ const DashMedGlobalAlerts = (function () {
     function getActiveStates() {
         const room = getCurrentRoom() || 'global';
         const all = JSON.parse(localStorage.getItem(ACTIVE_STATES_KEY) || '{}');
-        return all[room] || {};
+        const roomState = all[room];
+        if (!roomState || typeof roomState !== 'object') return {};
+
+        const updatedAt = Number(roomState.updatedAt || 0);
+        if (!updatedAt || (Date.now() - updatedAt) > ACTIVE_STATES_TTL_MS) {
+            return {};
+        }
+
+        const states = roomState.states;
+        if (!states || typeof states !== 'object') return {};
+        return states;
     }
 
     function saveActiveStates(states) {
         const room = getCurrentRoom() || 'global';
         const all = JSON.parse(localStorage.getItem(ACTIVE_STATES_KEY) || '{}');
-        all[room] = states;
+        all[room] = {
+            states,
+            updatedAt: Date.now()
+        };
         localStorage.setItem(ACTIVE_STATES_KEY, JSON.stringify(all));
     }
 
     async function check() {
+        if (document.hidden) return;
+
         const alerts = await fetchAlerts();
         const activeStates = getActiveStates();
         const newStates = {};
@@ -365,13 +387,14 @@ const DashMedGlobalAlerts = (function () {
                 const type = a.type;
                 newStates[paramId] = type;
 
-                if (activeStates[paramId] !== type) {
+                if (!hasRenderedInitialSnapshot || activeStates[paramId] !== type) {
                     toShow.push(a);
                 }
             }
         });
 
         saveActiveStates(newStates);
+        hasRenderedInitialSnapshot = true;
 
         toShow.forEach((a, i) => setTimeout(() => showAlert(a), i * 600));
     }
@@ -410,6 +433,11 @@ const DashMedGlobalAlerts = (function () {
 
         setTimeout(check, 100);
         setInterval(check, CHECK_INTERVAL);
+        document.addEventListener('visibilitychange', () => {
+            if (!document.hidden) {
+                requestCheck();
+            }
+        });
     }
 
     let checkTimeout = null;
@@ -461,7 +489,7 @@ const NotifHistory = (function () {
 
     function addToHistory(a) {
         const h = getHistory();
-        h.unshift({ ...a, timestamp: Date.now() });
+        h.unshift({ ...a, sourceTimestamp: a.timestamp, timestamp: Date.now() });
         saveHistory(h);
         updateBadge();
         if (panel?.classList.contains('active')) {
@@ -478,10 +506,7 @@ const NotifHistory = (function () {
 
     function isInHistory(alertId) {
         const h = getHistory();
-        return h.some(n => {
-            const nId = `${n.parameterId}_${n.value || n.rdvTime || ''}`;
-            return nId === alertId;
-        });
+        return h.some(n => getAlertId(n) === alertId);
     }
 
     function updateBadge() {
@@ -529,7 +554,7 @@ const NotifHistory = (function () {
     }
 
     function setDndState(enabled) {
-        localStorage.setItem('dashmed_dnd', enabled);
+        localStorage.setItem('dashmed_dnd', enabled ? 'true' : 'false');
         const toggle = panel?.querySelector('#notif-panel-dnd');
         if (toggle) toggle.checked = enabled;
         syncProfileToggle(enabled);
@@ -539,7 +564,7 @@ const NotifHistory = (function () {
 
     function syncProfileToggle(enabled) {
         const profileToggle = document.getElementById('dnd-toggle');
-        if (profileToggle) profileToggle.checked = enabled === true || enabled === 1 || enabled === 'true';
+        if (profileToggle) profileToggle.checked = isDndEnabled(enabled);
     }
 
     function syncPanelUI(settings) {
@@ -563,7 +588,7 @@ const NotifHistory = (function () {
             });
         }
         if (settings.alert_dnd !== undefined) {
-            const isOn = settings.alert_dnd === true || settings.alert_dnd === 1 || settings.alert_dnd === 'true';
+            const isOn = isDndEnabled(settings.alert_dnd);
             const dndToggle = panel.querySelector('#notif-panel-dnd');
             if (dndToggle) dndToggle.checked = isOn;
         }

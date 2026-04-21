@@ -1,0 +1,4 @@
+label	duration_ms	stream_requests	reconnect_count	reconnects_per_hour	statuses	value_changes	message_events	dashmed_events	es_constructed	es_errors	console_warn_count	live_updates_ok
+dashboard	301086	1	0	0.000	{"200":1}	279	283	283	1	0	0	yes
+monitoring	300555	1	0	0.000	{"200":1}	289	291	291	1	0	0	yes
+TOTAL	601641	2	0	0.000								yes

@@ -1,0 +1,6 @@
+Tables_in_dashmed_data (patient_data_latest)
+patient_data_latest
+snapshot_rows	min_snapshot_seq	max_snapshot_seq
+930	186977213	186978142
+TRIGGER_NAME	EVENT_MANIPULATION	EVENT_OBJECT_TABLE
+trg_patient_data_latest_after_insert	INSERT	patient_data

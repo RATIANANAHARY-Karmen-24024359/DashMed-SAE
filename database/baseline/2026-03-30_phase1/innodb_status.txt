@@ -1,0 +1,79 @@
+*************************** 1. row ***************************
+  Type: InnoDB
+  Name: 
+Status: 
+=====================================
+2026-03-30 01:39:51 0xffff88436000 INNODB MONITOR OUTPUT
+=====================================
+Per second averages calculated from the last 56 seconds
+-----------------
+BACKGROUND THREAD
+-----------------
+srv_master_thread loops: 0 srv_active, 0 srv_shutdown, 2681 srv_idle
+srv_master_thread log flush and writes: 2681
+----------
+SEMAPHORES
+----------
+------------
+TRANSACTIONS
+------------
+Trx id counter 1868962
+Purge done for trx's n:o < 1868962 undo n:o < 0 state: running but idle
+History list length 0
+LIST OF TRANSACTIONS FOR EACH SESSION:
+---TRANSACTION (0xffff9c777900), not started
+0 lock struct(s), heap size 1128, 0 row lock(s)
+---TRANSACTION (0xffff9c776d00), not started
+0 lock struct(s), heap size 1128, 0 row lock(s)
+---TRANSACTION (0xffff9c776100), not started
+0 lock struct(s), heap size 1128, 0 row lock(s)
+---TRANSACTION (0xffff9c775500), not started
+0 lock struct(s), heap size 1128, 0 row lock(s)
+---TRANSACTION (0xffff9c774900), not started
+0 lock struct(s), heap size 1128, 0 row lock(s)
+---TRANSACTION (0xffff9c773d00), not started
+0 lock struct(s), heap size 1128, 0 row lock(s)
+--------
+FILE I/O
+--------
+Pending flushes (fsync): 0
+19628216 OS file reads, 11493100 OS file writes, 245985 OS fsyncs
+10556.49 reads/s, 16347 avg bytes/read, 4747.68 writes/s, 102.68 fsyncs/s
+---
+LOG
+---
+Log sequence number 50585400653
+Log flushed up to   50585400560
+Pages flushed up to 50569048540
+Last checkpoint at  50569048540
+----------------------
+BUFFER POOL AND MEMORY
+----------------------
+Total large memory allocated 167772160
+Dictionary memory allocated 886632
+Buffer pool size   8112
+Free buffers       1039
+Database pages     7073
+Old database pages 2630
+Modified db pages  3267
+Percent of dirty pages(LRU & free pages): 40.269
+Max dirty pages percent: 90.000
+Pending reads 0
+Pending writes: LRU 0, flush list 0
+Pages made young 7192914, not young 301289970
+881.20 youngs/s, 201477.17 non-youngs/s
+Pages read 19628181, created 35638, written 11393047
+10556.49 reads/s, 15.00 creates/s, 4705.72 writes/s
+Buffer pool hit rate 744 / 1000, young-making rate 21 / 1000 not 4883 / 1000
+Pages read ahead 0.00/s, evicted without access 0.00/s, Random read ahead 0.00/s
+LRU len: 7073, unzip_LRU len: 0
+I/O sum[925531]:cur[168265], unzip sum[0]:cur[0]
+--------------
+ROW OPERATIONS
+--------------
+0 read views open inside InnoDB
+state: sleeping
+----------------------------
+END OF INNODB MONITOR OUTPUT
+============================
+

@@ -1,0 +1,367 @@
+{
+  "generatedAt": "2026-03-30T11:53:48.037Z",
+  "tool": "playwright-chromium",
+  "authSession": {
+    "email": "phase1.browser.1774871524322@dashmed.local"
+  },
+  "captures": [
+    {
+      "label": "dashboard_30s",
+      "url": "http://localhost:8000/?page=dashboard&room=8",
+      "capturedAt": "2026-03-30T11:53:14.736Z",
+      "windowMs": 44310,
+      "requests": {
+        "requestCount": 151,
+        "totalEncodedBytes": 876308,
+        "byType": {
+          "Document": 1,
+          "Stylesheet": 20,
+          "Image": 10,
+          "Script": 23,
+          "Font": 4,
+          "EventSource": 1,
+          "Fetch": 82,
+          "Media": 10
+        },
+        "topByBytes": [
+          {
+            "url": "http://localhost:8000/assets/sounds/critical.wav",
+            "type": "Media",
+            "encodedDataLength": 494234
+          },
+          {
+            "url": "http://localhost:8000/assets/sounds/warning.wav",
+            "type": "Media",
+            "encodedDataLength": 187534
+          },
+          {
+            "url": "http://localhost:8000/?page=dashboard&room=8",
+            "type": "Document",
+            "encodedDataLength": 79901
+          },
+          {
+            "url": "http://localhost:8000/assets/js/component/modal/chart.js?v=1774871564",
+            "type": "Script",
+            "encodedDataLength": 10051
+          },
+          {
+            "url": "http://localhost:8000/assets/js/alerts-global.js?v=1774871564",
+            "type": "Script",
+            "encodedDataLength": 9165
+          },
+          {
+            "url": "http://localhost:8000/assets/js/component/charts/card-sparklines.js?v=1774871564",
+            "type": "Script",
+            "encodedDataLength": 6426
+          },
+          {
+            "url": "http://localhost:8000/assets/css/components/modal.css?v=1774871564",
+            "type": "Stylesheet",
+            "encodedDataLength": 3055
+          },
+          {
+            "url": "http://localhost:8000/assets/js/service/history-sync.js?v=1774871564",
+            "type": "Script",
+            "encodedDataLength": 2956
+          },
+          {
+            "url": "http://localhost:8000/api-alerts.php?room=8",
+            "type": "Fetch",
+            "encodedDataLength": 2634
+          },
+          {
+            "url": "http://localhost:8000/api-alerts.php?room=8",
+            "type": "Fetch",
+            "encodedDataLength": 2117
+          }
+        ]
+      },
+      "longTasks": {
+        "longTaskCountOver50ms": 30,
+        "totalLongTaskDurationMs": 2389,
+        "maxLongTaskDurationMs": 175,
+        "samples": [
+          {
+            "name": "self",
+            "startTime": 14048.199999999953,
+            "duration": 175
+          },
+          {
+            "name": "self",
+            "startTime": 14224.099999999977,
+            "duration": 71
+          },
+          {
+            "name": "self",
+            "startTime": 14311.900000000023,
+            "duration": 66
+          },
+          {
+            "name": "self",
+            "startTime": 17042.199999999953,
+            "duration": 141
+          },
+          {
+            "name": "self",
+            "startTime": 18048.199999999953,
+            "duration": 66
+          },
+          {
+            "name": "self",
+            "startTime": 19053.800000000047,
+            "duration": 60
+          },
+          {
+            "name": "self",
+            "startTime": 20064,
+            "duration": 126
+          },
+          {
+            "name": "self",
+            "startTime": 21073.5,
+            "duration": 61
+          },
+          {
+            "name": "self",
+            "startTime": 22080.900000000023,
+            "duration": 64
+          },
+          {
+            "name": "self",
+            "startTime": 23095,
+            "duration": 57
+          },
+          {
+            "name": "self",
+            "startTime": 25109.5,
+            "duration": 116
+          },
+          {
+            "name": "self",
+            "startTime": 26114.5,
+            "duration": 62
+          },
+          {
+            "name": "self",
+            "startTime": 27123.800000000047,
+            "duration": 61
+          },
+          {
+            "name": "self",
+            "startTime": 28127.400000000023,
+            "duration": 68
+          },
+          {
+            "name": "self",
+            "startTime": 29134.599999999977,
+            "duration": 63
+          },
+          {
+            "name": "self",
+            "startTime": 30139.699999999953,
+            "duration": 65
+          },
+          {
+            "name": "self",
+            "startTime": 31142.900000000023,
+            "duration": 88
+          },
+          {
+            "name": "self",
+            "startTime": 32145.300000000047,
+            "duration": 91
+          },
+          {
+            "name": "self",
+            "startTime": 33148,
+            "duration": 87
+          },
+          {
+            "name": "self",
+            "startTime": 34150.19999999995,
+            "duration": 91
+          }
+        ]
+      }
+    },
+    {
+      "label": "monitoring_30s",
+      "url": "http://localhost:8000/?page=monitoring&room=8",
+      "capturedAt": "2026-03-30T11:53:48.037Z",
+      "windowMs": 33242,
+      "requests": {
+        "requestCount": 130,
+        "totalEncodedBytes": 104682,
+        "byType": {
+          "Document": 1,
+          "Stylesheet": 17,
+          "Image": 9,
+          "Script": 22,
+          "Font": 3,
+          "EventSource": 1,
+          "Fetch": 75,
+          "Media": 2
+        },
+        "topByBytes": [
+          {
+            "url": "http://localhost:8000/?page=monitoring&room=8",
+            "type": "Document",
+            "encodedDataLength": 23949
+          },
+          {
+            "url": "http://localhost:8000/assets/js/component/modal/chart.js?v=1774871597",
+            "type": "Script",
+            "encodedDataLength": 10051
+          },
+          {
+            "url": "http://localhost:8000/assets/js/alerts-global.js?v=1774871597",
+            "type": "Script",
+            "encodedDataLength": 9165
+          },
+          {
+            "url": "http://localhost:8000/assets/js/component/charts/card-sparklines.js?v=1774871597",
+            "type": "Script",
+            "encodedDataLength": 6426
+          },
+          {
+            "url": "http://localhost:8000/assets/css/components/modal.css",
+            "type": "Stylesheet",
+            "encodedDataLength": 3054
+          },
+          {
+            "url": "http://localhost:8000/assets/js/service/history-sync.js?v=1774871597",
+            "type": "Script",
+            "encodedDataLength": 2956
+          },
+          {
+            "url": "http://localhost:8000/api-alerts.php?room=8",
+            "type": "Fetch",
+            "encodedDataLength": 2641
+          },
+          {
+            "url": "http://localhost:8000/api-alerts.php?room=8",
+            "type": "Fetch",
+            "encodedDataLength": 2638
+          },
+          {
+            "url": "http://localhost:8000/api-alerts.php?room=8",
+            "type": "Fetch",
+            "encodedDataLength": 2128
+          },
+          {
+            "url": "http://localhost:8000/api-alerts.php?room=8",
+            "type": "Fetch",
+            "encodedDataLength": 2094
+          }
+        ]
+      },
+      "longTasks": {
+        "longTaskCountOver50ms": 30,
+        "totalLongTaskDurationMs": 1903,
+        "maxLongTaskDurationMs": 180,
+        "samples": [
+          {
+            "name": "self",
+            "startTime": 3038.79999999993,
+            "duration": 138
+          },
+          {
+            "name": "self",
+            "startTime": 3177.899999999907,
+            "duration": 54
+          },
+          {
+            "name": "self",
+            "startTime": 3249.6999999999534,
+            "duration": 67
+          },
+          {
+            "name": "self",
+            "startTime": 6126.599999999977,
+            "duration": 180
+          },
+          {
+            "name": "self",
+            "startTime": 7134.79999999993,
+            "duration": 53
+          },
+          {
+            "name": "self",
+            "startTime": 8143,
+            "duration": 52
+          },
+          {
+            "name": "self",
+            "startTime": 9148.599999999977,
+            "duration": 52
+          },
+          {
+            "name": "self",
+            "startTime": 10154.099999999977,
+            "duration": 54
+          },
+          {
+            "name": "self",
+            "startTime": 11162.5,
+            "duration": 55
+          },
+          {
+            "name": "self",
+            "startTime": 12170.599999999977,
+            "duration": 54
+          },
+          {
+            "name": "self",
+            "startTime": 13178.099999999977,
+            "duration": 59
+          },
+          {
+            "name": "self",
+            "startTime": 14182.099999999977,
+            "duration": 51
+          },
+          {
+            "name": "self",
+            "startTime": 15187.599999999977,
+            "duration": 52
+          },
+          {
+            "name": "self",
+            "startTime": 16189.79999999993,
+            "duration": 55
+          },
+          {
+            "name": "self",
+            "startTime": 17192.599999999977,
+            "duration": 58
+          },
+          {
+            "name": "self",
+            "startTime": 18195.199999999953,
+            "duration": 58
+          },
+          {
+            "name": "self",
+            "startTime": 19201.099999999977,
+            "duration": 54
+          },
+          {
+            "name": "self",
+            "startTime": 20203.099999999977,
+            "duration": 58
+          },
+          {
+            "name": "self",
+            "startTime": 21205.899999999907,
+            "duration": 55
+          },
+          {
+            "name": "self",
+            "startTime": 22210.29999999993,
+            "duration": 58
+          }
+        ]
+      }
+    }
+  ]
+}
